@@ -8,7 +8,7 @@
 
 ## Full commit hash
 - Implementation commit: `2af032fc38bae8255adbf5ea27b62f6e66025cfc`
-- - Review fixes commit: `9f3280ba7f3a9a45c35e48c3d827636a6ab3a251`
+- - Review fixes commit: `0505981d7722da54c3594d4236b5993d8616e63e`
 
 ## Exact tests and results
 - `npm test -- src/app/AppRouter.test.tsx server/app.test.ts`
