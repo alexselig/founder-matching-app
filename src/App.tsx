@@ -17,9 +17,9 @@ const planSections = [
   {
     id: 'experience',
     label: 'Founder experience',
-    title: 'Discovery before search',
-    body: 'The founder view opens with useful people rather than an empty search box. A selected “you” profile powers explainable collections: same sector, different role; complementary operators; shared context; and outside your usual circle.',
-    decision: 'Use explainable, deterministic recommendations rather than opaque compatibility scores.',
+    title: 'Search first, discovery underneath',
+    body: 'Search is the first visual action. The rest of the page remains dedicated to explainable discovery: same sector, different role; complementary operators; shared context; and outside your usual circle.',
+    decision: 'Give search top hierarchy while reserving roughly 75% of the page below it for discovery.',
   },
   {
     id: 'search',
@@ -73,18 +73,21 @@ function initials(name: string) {
     .join('')
 }
 
-function Header({ active }: { active: 'plan' | 'directory' | 'admin' }) {
+function Header({ active }: { active: 'plan' | 'directory' | 'algorithm' | 'admin' }) {
   return (
     <header className="masthead">
       <a className="wordmark" href="/">
         Founder Table
       </a>
       <nav aria-label="Primary navigation">
-        <a className={active === 'plan' ? 'active' : ''} href="/">
+        <a className={active === 'plan' ? 'active' : ''} href="/plan">
           Plan review
         </a>
         <a className={active === 'directory' ? 'active' : ''} href="/directory">
           Directory
+        </a>
+        <a className={active === 'algorithm' ? 'active' : ''} href="/algorithm">
+          Algorithm
         </a>
         <a className={active === 'admin' ? 'active' : ''} href="/admin">
           Admin grouping
@@ -209,12 +212,14 @@ function PlanReview() {
                   <div className="decision-buttons" aria-label={`${section.title} decision`}>
                     <button
                       className={decision === 'approve' ? 'selected approve' : ''}
+                      aria-pressed={decision === 'approve'}
                       onClick={() => updateDecision(section.id, 'approve')}
                     >
                       Approve
                     </button>
                     <button
                       className={decision === 'change' ? 'selected change' : ''}
+                      aria-pressed={decision === 'change'}
                       onClick={() => updateDecision(section.id, 'change')}
                     >
                       Needs changes
@@ -262,6 +267,207 @@ function PlanReview() {
             Export feedback
           </button>
         </footer>
+      </main>
+    </>
+  )
+}
+
+const algorithmSteps = [
+  {
+    number: '01',
+    title: 'Choose the pool',
+    body: 'The organizer filters the attendee list. Only people in that pool are assigned. Missing batch and interest data stays missing.',
+  },
+  {
+    number: '02',
+    title: 'Set table capacity',
+    body: 'The engine calculates the number of tables, then distributes extra seats so table sizes differ by no more than one.',
+  },
+  {
+    number: '03',
+    title: 'Measure distance',
+    body: 'Each enabled parameter produces a normalized 0–1 distance between two founders. Zero means alike; one means different.',
+  },
+  {
+    number: '04',
+    title: 'Place each founder',
+    body: 'The seeded order places one founder at every table, then evaluates each remaining founder against every table with an open seat.',
+  },
+]
+
+const distanceRows = [
+  ['Age', 'Absolute age difference ÷ 20, capped at 1'],
+  ['Industry', '0 for the same top-level vertical; 1 otherwise'],
+  ['Role', '0 for the same role; 1 otherwise'],
+  ['Education', '0 for the same category; 1 otherwise'],
+  ['Company', '0 for the same company; 1 otherwise'],
+  ['Prior group', '0 for the same historical group; 1 otherwise'],
+  ['Batch', 'Same/different comparison when batch is captured'],
+  ['Interests', 'Jaccard distance across the selected interest tags'],
+]
+
+function AlgorithmPage() {
+  return (
+    <>
+      <Header active="algorithm" />
+      <main className="algorithm-page">
+        <section className="algorithm-hero">
+          <div>
+            <p className="eyebrow">Dinner matching · v1</p>
+            <h1>How tables are composed.</h1>
+          </div>
+          <div className="algorithm-principle">
+            <strong>Deterministic, adjustable, explainable.</strong>
+            <p>
+              The algorithm is a fast grouping heuristic. It helps organizers
+              express the kind of room they want without presenting the result
+              as a scientifically perfect match.
+            </p>
+            <a className="yc-link-button" href="/admin">Try the grouping workspace</a>
+          </div>
+        </section>
+
+        <section className="algorithm-index">
+          {algorithmSteps.map((step) => (
+            <article key={step.number}>
+              <span>{step.number}</span>
+              <h2>{step.title}</h2>
+              <p>{step.body}</p>
+            </article>
+          ))}
+        </section>
+
+        <section className="algorithm-section two-column">
+          <div className="section-heading">
+            <p className="eyebrow">Table sizing</p>
+            <h2>Balanced capacity comes first.</h2>
+          </div>
+          <div className="algorithm-copy">
+            <p>
+              For <strong>N</strong> attendees and a target size of{' '}
+              <strong>T</strong>, v1 creates <code>ceil(N ÷ T)</code> tables.
+              It then assigns a base size to every table and gives one extra
+              seat to the first remainder tables.
+            </p>
+            <div className="worked-example">
+              <span>Example</span>
+              <strong>26 attendees · target 8</strong>
+              <p>4 tables: 7, 7, 6, 6. No table differs by more than one seat.</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="algorithm-section">
+          <div className="section-heading">
+            <p className="eyebrow">Distance model</p>
+            <h2>Every parameter speaks the same numeric language.</h2>
+            <p>
+              The engine converts enabled attributes into distances from zero
+              to one, then averages them. Organizers control which attributes
+              matter by turning them on or off.
+            </p>
+          </div>
+          <div className="distance-table" role="table" aria-label="Attribute distance rules">
+            {distanceRows.map(([attribute, rule]) => (
+              <div role="row" key={attribute}>
+                <strong role="cell">{attribute}</strong>
+                <span role="cell">{rule}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="strategy-section">
+          <div className="strategy-intro">
+            <p className="eyebrow">Organizer intent</p>
+            <h2>One distance model. Four ways to use it.</h2>
+          </div>
+          <div className="strategy-doc-grid">
+            <article>
+              <span className="strategy-marker blue" />
+              <h3>Similar</h3>
+              <p>Choose the table with the lowest average distance. Useful for focused peer conversations.</p>
+            </article>
+            <article>
+              <span className="strategy-marker orange" />
+              <h3>Diverse</h3>
+              <p>Choose the table with the highest average distance. Useful for cross-pollination and broader rooms.</p>
+            </article>
+            <article>
+              <span className="strategy-marker yellow" />
+              <h3>Balanced</h3>
+              <p>Choose the table whose average distance is closest to 0.55, a product heuristic for mixing overlap with difference.</p>
+            </article>
+            <article>
+              <span className="strategy-marker ink" />
+              <h3>Random</h3>
+              <p>Ignore the selected similarity attributes, while retaining seeded ordering and the same-company penalty.</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="algorithm-section two-column">
+          <div className="section-heading">
+            <p className="eyebrow">Placement cost</p>
+            <h2>Same-company pairs receive a strong penalty.</h2>
+          </div>
+          <div className="algorithm-copy">
+            <p>
+              For each founder, the engine averages their distance from the
+              founders already at a candidate table. It converts that average
+              into a strategy cost, then adds a <strong>+3 penalty</strong> if
+              the table already contains someone from the same company.
+            </p>
+            <p>
+              That penalty separates colleagues when capacity allows. It is a
+              soft constraint in v1, so the engine can still finish when the
+              attendee pool makes perfect separation impossible.
+            </p>
+          </div>
+        </section>
+
+        <section className="algorithm-section seed-section">
+          <div className="section-heading">
+            <p className="eyebrow">Reproducibility</p>
+            <h2>The seed changes the arrangement, not the rules.</h2>
+          </div>
+          <div className="seed-diagram" aria-label="Seeded grouping flow">
+            <span>dinner-01</span>
+            <i>→</i>
+            <span>Stable founder order</span>
+            <i>→</i>
+            <span>Repeatable tables</span>
+          </div>
+          <p>
+            The seed and founder ID are passed through a stable FNV-1a hash.
+            The same pool, settings, and seed always return the same result.
+            Change only the seed to explore another capacity-compliant arrangement.
+          </p>
+        </section>
+
+        <section className="limits-section">
+          <div>
+            <p className="eyebrow">What v1 does not claim</p>
+            <h2>This is a useful heuristic, not a global optimum.</h2>
+          </div>
+          <ul>
+            <li>It assigns greedily and does not yet backtrack through every possible arrangement.</li>
+            <li>Company separation is a penalty, not a guaranteed hard constraint.</li>
+            <li>Batch and interests remain disabled until organizers collect those values.</li>
+            <li>It does not infer interests, compatibility, or sensitive traits.</li>
+          </ul>
+        </section>
+
+        <section className="roadmap-section">
+          <p className="eyebrow">Planned next</p>
+          <h2>From fast grouping to constraint-aware optimization.</h2>
+          <div className="roadmap-grid">
+            <div><span>01</span><strong>Hard constraints</strong><p>Lock seats, keep people together or apart, and exclude attendees.</p></div>
+            <div><span>02</span><strong>Pairwise improvement</strong><p>Swap founders after the first pass when the total score improves.</p></div>
+            <div><span>03</span><strong>Group diagnostics</strong><p>Show composition summaries, score drivers, and unsatisfied constraints.</p></div>
+            <div><span>04</span><strong>Custom weights</strong><p>Let organizers choose similarity, diversity, and importance per parameter.</p></div>
+          </div>
+        </section>
       </main>
     </>
   )
@@ -317,56 +523,68 @@ function Directory() {
   const discovery = useMemo(() => buildDiscovery(founders, selected), [selected])
   const searching = Boolean(query || role || vertical)
 
+  useEffect(() => {
+    if (!openFounder) return
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenFounder(null)
+    }
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [openFounder])
+
   return (
     <>
       <Header active="directory" />
       <main>
-        <section className="directory-intro">
-          <div>
+        <section className="directory-search-hero">
+          <div className="directory-search-copy">
             <p className="eyebrow">Founder directory</p>
-            <h1>Who should you meet next?</h1>
+            <h1>Find a founder.</h1>
+            <label className="search-input hero-search">
+              <span>Search</span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Name, company, industry, role…"
+                autoFocus
+              />
+            </label>
           </div>
-          <label className="profile-select">
-            Browsing as
-            <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
-              {founders.map((founder) => (
-                <option key={founder.id} value={founder.id}>
-                  {founder.name} · {founder.company}
-                </option>
-              ))}
-            </select>
-          </label>
-        </section>
-        <section className="search-bar">
-          <label className="search-input">
-            <span>Search</span>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Name, company, industry, role…"
-            />
-          </label>
-          <label>
-            Role
-            <select value={role} onChange={(event) => setRole(event.target.value)}>
-              <option value="">All roles</option>
-              <option>Design</option>
-              <option>Engineering</option>
-              <option>Sales</option>
-            </select>
-          </label>
-          <label>
-            Industry
-            <select value={vertical} onChange={(event) => setVertical(event.target.value)}>
-              <option value="">All industries</option>
-              {verticals.map((value) => <option key={value}>{value}</option>)}
-            </select>
-          </label>
-          {searching && (
-            <button className="clear" onClick={() => { setQuery(''); setRole(''); setVertical('') }}>
-              Clear
-            </button>
-          )}
+          <div className="directory-search-tools">
+            <label className="profile-select">
+              Browsing as
+              <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
+                {founders.map((founder) => (
+                  <option key={founder.id} value={founder.id}>
+                    {founder.name} · {founder.company}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="filter-grid">
+              <label>
+                Role
+                <select value={role} onChange={(event) => setRole(event.target.value)}>
+                  <option value="">All roles</option>
+                  <option>Design</option>
+                  <option>Engineering</option>
+                  <option>Sales</option>
+                </select>
+              </label>
+              <label>
+                Industry
+                <select value={vertical} onChange={(event) => setVertical(event.target.value)}>
+                  <option value="">All industries</option>
+                  {verticals.map((value) => <option key={value}>{value}</option>)}
+                </select>
+              </label>
+            </div>
+            {searching && (
+              <button className="clear" onClick={() => { setQuery(''); setRole(''); setVertical('') }}>
+                Clear search and filters
+              </button>
+            )}
+          </div>
         </section>
 
         {!searching ? (
@@ -392,7 +610,7 @@ function Directory() {
         ) : (
           <section className="results">
             <div className="results-head">
-              <h2>{results.length} founders</h2>
+              <h2 aria-live="polite">{results.length} founders</h2>
               <span>All active filters are combined</span>
             </div>
             {results.length ? (
@@ -414,11 +632,17 @@ function Directory() {
       </main>
       {openFounder && (
         <div className="drawer-scrim" onClick={() => setOpenFounder(null)}>
-          <aside className="drawer" onClick={(event) => event.stopPropagation()}>
-            <button className="drawer-close" onClick={() => setOpenFounder(null)}>Close</button>
+          <aside
+            className="drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="founder-drawer-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button className="drawer-close" autoFocus onClick={() => setOpenFounder(null)}>Close</button>
             <span className="avatar large">{initials(openFounder.name)}</span>
             <p className="eyebrow">{openFounder.role}</p>
-            <h2>{openFounder.name}</h2>
+            <h2 id="founder-drawer-title">{openFounder.name}</h2>
             <p className="drawer-company">{openFounder.company}</p>
             <dl>
               <div><dt>Industry</dt><dd>{openFounder.vertical}</dd></div>
@@ -455,7 +679,10 @@ function Admin() {
   const [attributes, setAttributes] = useState<GroupingAttribute[]>(['industry', 'role', 'age'])
   const [industry, setIndustry] = useState('')
   const verticals = [...new Set(founders.map((founder) => founder.topLevelVertical))].sort()
-  const pool = founders.filter((founder) => !industry || founder.topLevelVertical === industry)
+  const pool = useMemo(
+    () => founders.filter((founder) => !industry || founder.topLevelVertical === industry),
+    [industry],
+  )
   const result = useMemo(
     () => generateGroups(pool, { targetSize, strategy, seed, attributes }),
     [pool, targetSize, strategy, seed, attributes],
@@ -487,7 +714,7 @@ function Admin() {
             <h1>Compose the tables.</h1>
             <p>Set the social logic, inspect the arrangement, then export it for the dinner team.</p>
           </div>
-          <div className="admin-stat"><strong>{result.groups.length}</strong><span>tables from {pool.length} attendees</span></div>
+          <div className="admin-stat" aria-live="polite"><strong>{result.groups.length}</strong><span>tables from {pool.length} attendees</span></div>
         </section>
         <div className="admin-layout">
           <aside className="control-rail">
@@ -500,7 +727,14 @@ function Admin() {
               <p className="eyebrow">Grouping strategy</p>
               <div className="strategy-grid">
                 {(['balanced', 'diverse', 'similar', 'random'] as GroupingStrategy[]).map((value) => (
-                  <button className={strategy === value ? 'selected' : ''} key={value} onClick={() => setStrategy(value)}>{value}</button>
+                  <button
+                    className={strategy === value ? 'selected' : ''}
+                    key={value}
+                    aria-pressed={strategy === value}
+                    onClick={() => setStrategy(value)}
+                  >
+                    {value}
+                  </button>
                 ))}
               </div>
             </div>
@@ -555,6 +789,7 @@ function Admin() {
 export default function App() {
   const path = window.location.pathname
   if (path.startsWith('/admin')) return <Admin />
-  if (path.startsWith('/directory')) return <Directory />
-  return <PlanReview />
+  if (path.startsWith('/algorithm')) return <AlgorithmPage />
+  if (path.startsWith('/plan')) return <PlanReview />
+  return <Directory />
 }

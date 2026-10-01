@@ -20,10 +20,10 @@ const raw = (id: string, company = `Company ${id}`): RawFounder => ({
 
 describe('founder domain', () => {
   it('normalizes source records and derives the top-level vertical', () => {
-    expect(normalizeFounders([raw('1')])[0]).toMatchObject({
+    expect(normalizeFounders([{ ...raw('1'), Interests: ['AI', ' AI ', 'AI'] }])[0]).toMatchObject({
       id: '1',
       topLevelVertical: 'Healthcare',
-      interests: [],
+      interests: ['AI'],
     })
   })
 
@@ -45,6 +45,66 @@ describe('founder domain', () => {
     expect(first.groups.map((group) => group.map((founder) => founder.id))).toEqual(
       second.groups.map((group) => group.map((founder) => founder.id)),
     )
+  })
+
+  it('changes arrangements when the seed changes', () => {
+    const founders = normalizeFounders(
+      Array.from({ length: 12 }, (_, index) => raw(String(index + 1))),
+    )
+    const config = {
+      targetSize: 4,
+      strategy: 'balanced' as const,
+      attributes: ['industry', 'role'] as const,
+    }
+    const first = generateGroups(founders, { ...config, seed: 'first', attributes: [...config.attributes] })
+    const second = generateGroups(founders, { ...config, seed: 'second', attributes: [...config.attributes] })
+    expect(first.groups.map((group) => group.map((founder) => founder.id))).not.toEqual(
+      second.groups.map((group) => group.map((founder) => founder.id)),
+    )
+  })
+
+  it('uses enabled attributes for diverse grouping', () => {
+    const founders = normalizeFounders(
+      Array.from({ length: 12 }, (_, index) => ({
+        ...raw(String(index + 1)),
+        Role: index < 6 ? 'Engineering' : 'Design',
+        'Company vertical': index % 2 ? 'Consumer' : 'Healthcare',
+      })),
+    )
+    const roleGroups = generateGroups(founders, {
+      targetSize: 4,
+      strategy: 'diverse',
+      seed: 'diverse',
+      attributes: ['role'],
+    })
+    const industryGroups = generateGroups(founders, {
+      targetSize: 4,
+      strategy: 'diverse',
+      seed: 'diverse',
+      attributes: ['industry'],
+    })
+    expect(roleGroups.groups.map((group) => group.map((founder) => founder.id))).not.toEqual(
+      industryGroups.groups.map((group) => group.map((founder) => founder.id)),
+    )
+  })
+
+  it('rejects invalid target sizes and handles an empty pool', () => {
+    expect(() =>
+      generateGroups([], {
+        targetSize: 0,
+        strategy: 'balanced',
+        seed: 'test',
+        attributes: [],
+      }),
+    ).toThrow('Target table size')
+    expect(
+      generateGroups([], {
+        targetSize: 8,
+        strategy: 'balanced',
+        seed: 'test',
+        attributes: [],
+      }).groups,
+    ).toEqual([])
   })
 
   it('escapes exported CSV values', () => {

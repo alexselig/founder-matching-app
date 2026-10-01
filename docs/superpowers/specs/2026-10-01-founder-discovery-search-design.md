@@ -267,21 +267,20 @@ the strongest reasons behind its composition.
 
 ## Visual design
 
-Use the Alex Tools house system:
+Use the project `DESIGN.md`, sourced from the supplied YC design system:
 
-- Paper background `#fbfaf7`
-- Ink `#111111`
-- Instrument Sans
-- Square corners
-- One-pixel rules instead of soft shadows
-- Navy for process/navigation
-- Teal for verified or shared context
-- Rust for unmet needs or warnings
-- Tan for provisional data
+- White `surface` with warm `surface-alt` cells
+- League Spartan for display and Figtree for body copy
+- A 96px modular grid separated by one-pixel hairlines
+- Square controls and cells, with circles reserved for avatars
+- One primary YC-orange block per view
+- Bauhaus blue for active states and focus
+- Bauhaus yellow as a small tertiary accent
+- No gradients or shadows
 
-The interface should feel like an editorial directory rather than a social
-network or swipe application. Dense data is acceptable, but controls and result
-cards must remain legible on mobile.
+The interface should feel like a functional YC/Bauhaus directory rather than a
+social network or swipe application. Dense data is acceptable, but controls and
+result cards must remain legible on mobile.
 
 ## Architecture
 

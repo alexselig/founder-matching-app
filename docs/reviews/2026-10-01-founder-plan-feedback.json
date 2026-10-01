@@ -1,0 +1,15 @@
+{
+  "exportedAt": "2026-10-01T17:47:46.192Z",
+  "plan": "Founder discovery, search, and organizer grouping",
+  "decisions": {
+    "experience": "change",
+    "search": "approve",
+    "profiles": "approve",
+    "grouping": "approve",
+    "delivery": "approve"
+  },
+  "comments": {
+    "experience": "I want search to be first hierarchicaly but feel free to take 75% of the screen below search to support discovery. "
+  },
+  "overall": "Make sure to build something fast - I have 15 minutes to demo a v1 wireframe "
+}

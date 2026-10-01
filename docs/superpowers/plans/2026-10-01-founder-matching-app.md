@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Use the Alex Tools design system: paper `#fbfaf7`, ink `#111111`, Instrument Sans, square corners, and one-pixel rules.
+- Use the supplied YC design system in `DESIGN.md`: League Spartan, Figtree, a 96px hairline grid, square controls, one YC-orange block per view, blue active states, and no shadows.
 - Do not fabricate missing batch or interest values.
 - Age and education must not affect default search relevance.
 - Search uses AND semantics across query tokens.

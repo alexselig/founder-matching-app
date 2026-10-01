@@ -5,10 +5,14 @@ dinner grouping.
 
 ## Views
 
-- `/` — proposed product plan with section-level decisions, inline comments,
+- `/` — founder discovery and search
+- `/plan` — proposed product plan with section-level decisions, inline comments,
   browser autosave, and JSON feedback export
-- `/directory` — zero-query founder discovery plus name, company, industry,
+- `/directory` — alternate URL for founder discovery plus name, company, industry,
   role, and education search
+- `/algorithm` — plain-language documentation of table sizing, attribute
+  distance, strategy behavior, deterministic seeds, v1 limitations, and planned
+  constraint-aware improvements
 - `/admin` — organizer preview with attendee filtering, target table size,
   grouping strategy, parameter selection, deterministic seeds, and CSV export
 
@@ -54,8 +58,8 @@ profile fields only and does not present scores as scientific compatibility.
 Dinner grouping is a deterministic heuristic. Organizers choose a Similar,
 Diverse, Balanced, or Random arrangement and select the available parameters.
 Groups differ in size by no more than one, and same-company founders are
-separated when possible. The algorithm does not claim a globally optimal
-solution.
+strongly discouraged from sharing a table. Because assignment is greedy, that
+penalty does not guarantee globally optimal separation.
 
 ## Feedback persistence
 

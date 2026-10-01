@@ -60,7 +60,12 @@ export function normalizeFounders(input: unknown): Founder[] {
       role: requireString('Role'),
       batch: typeof row.Batch === 'string' && row.Batch.trim() ? row.Batch.trim() : undefined,
       interests: Array.isArray(row.Interests)
-        ? row.Interests.filter((interest): interest is string => typeof interest === 'string')
+        ? [...new Set(
+            row.Interests
+              .filter((interest): interest is string => typeof interest === 'string')
+              .map((interest) => interest.trim())
+              .filter(Boolean),
+          )]
         : [],
     }
   })
@@ -75,7 +80,11 @@ function stableHash(value: string) {
   return hash >>> 0
 }
 
-function founderDistance(a: Founder, b: Founder, attribute: GroupingAttribute) {
+function founderDistance(
+  a: Founder,
+  b: Founder,
+  attribute: GroupingAttribute,
+): number | null {
   switch (attribute) {
     case 'age': return Math.min(Math.abs(a.age - b.age) / 20, 1)
     case 'industry': return a.topLevelVertical === b.topLevelVertical ? 0 : 1
@@ -83,11 +92,17 @@ function founderDistance(a: Founder, b: Founder, attribute: GroupingAttribute) {
     case 'education': return a.education === b.education ? 0 : 1
     case 'company': return a.company === b.company ? 0 : 1
     case 'historicalGroup': return a.group === b.group ? 0 : 1
-    case 'batch': return a.batch && b.batch && a.batch === b.batch ? 0 : 1
+    case 'batch': {
+      if (!a.batch || !b.batch) return null
+      return a.batch === b.batch ? 0 : 1
+    }
     case 'interests': {
-      const shared = a.interests.filter((interest) => b.interests.includes(interest)).length
+      if (!a.interests.length || !b.interests.length) return null
+      const aInterests = new Set(a.interests)
+      const bInterests = new Set(b.interests)
+      const shared = [...aInterests].filter((interest) => bInterests.has(interest)).length
       const union = new Set([...a.interests, ...b.interests]).size
-      return union ? 1 - shared / union : 1
+      return 1 - shared / union
     }
   }
 }
@@ -164,6 +179,11 @@ interface GroupingConfig {
 }
 
 export function generateGroups(founders: Founder[], config: GroupingConfig) {
+  if (!Number.isFinite(config.targetSize) || !Number.isInteger(config.targetSize) || config.targetSize < 2) {
+    throw new Error('Target table size must be an integer of at least 2')
+  }
+  if (!founders.length) return { groups: [] }
+
   const groupCount = Math.max(1, Math.ceil(founders.length / config.targetSize))
   const baseSize = Math.floor(founders.length / groupCount)
   const largerGroups = founders.length % groupCount
@@ -175,22 +195,21 @@ export function generateGroups(founders: Founder[], config: GroupingConfig) {
   const ordered = [...founders].sort(
     (a, b) => stableHash(`${config.seed}:${a.id}`) - stableHash(`${config.seed}:${b.id}`),
   )
-  for (const founder of ordered) {
+  ordered.slice(0, groupCount).forEach((founder, index) => groups[index].push(founder))
+
+  for (const founder of ordered.slice(groupCount)) {
     const available = groups
       .map((group, index) => ({ group, index }))
       .filter(({ group, index }) => group.length < capacities[index])
     const scored = available.map(({ group, index }) => {
-      if (!group.length) return { index, score: index * 0.0001 }
-      const distance =
-        group.reduce(
-          (sum, peer) =>
-            sum +
-            config.attributes.reduce(
-              (attributeSum, attribute) => attributeSum + founderDistance(founder, peer, attribute),
-              0,
-            ),
-          0,
-        ) / (group.length * Math.max(config.attributes.length, 1))
+      const distances = group.flatMap((peer) =>
+        config.attributes
+          .map((attribute) => founderDistance(founder, peer, attribute))
+          .filter((distance): distance is number => distance !== null),
+      )
+      const distance = distances.length
+        ? distances.reduce((sum, value) => sum + value, 0) / distances.length
+        : 0.5
       const companyPenalty = group.some((peer) => peer.company === founder.company) ? 3 : 0
       const strategyScore =
         config.strategy === 'similar'
@@ -202,6 +221,7 @@ export function generateGroups(founders: Founder[], config: GroupingConfig) {
               : Math.abs(distance - 0.55)
       return { index, score: strategyScore + companyPenalty }
     })
+    if (!scored.length) throw new Error('No table has capacity for the remaining attendees')
     scored.sort((a, b) => a.score - b.score || a.index - b.index)
     groups[scored[0].index].push(founder)
   }
