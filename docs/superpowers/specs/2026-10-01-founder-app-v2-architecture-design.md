@@ -275,6 +275,17 @@ Footer states are:
 Expanded founder cards request enrichment from the active provider using known
 identity fields only.
 
+Enrichment is persisted in an append-only `web_results` dataset rather than
+being merged into the authoritative founder record. Each row is keyed by
+founder ID and enrichment-run ID. A completed run retains at most the top five
+ranked, deduplicated results for that founder.
+
+The enrichment query may use every non-secret identity and company field in the
+founder dataset, including name, company, company vertical, role, education,
+cohort group, and cohort section. Those fields are query context only; they do
+not become unsupported factual claims. Ranking favors results that jointly
+match the founder and company over generic company-only or same-name results.
+
 Web Search content:
 
 - is clearly labeled `Web Search`
@@ -287,6 +298,27 @@ Web Search content:
 Adapters may emit evidence only from provider-returned citations or source
 metadata. If usable provenance is unavailable, the result is unsupported or
 summary-only with an explicit warning. The system never invents sources.
+
+Each `web_results` row stores:
+
+- founder ID
+- enrichment-run ID and query fingerprint
+- rank from 1 through 5
+- result classification: founder, company, or both
+- title, canonical URL, domain, snippet or cited text
+- provider and provider result ID when available
+- retrieval timestamp
+- confidence and entity-match signals
+- stale-after timestamp
+- raw provider metadata after credential and personal-data redaction
+
+Bulk enrichment covers every founder in the loaded dataset through a bounded
+concurrency queue with retry and rate-limit handling. Existing non-stale query
+fingerprints are reused. A failed founder search does not fail the batch; its
+run records an explicit error state. Refreshes append a new run and preserve
+prior evidence for auditability. The UI reads the latest successful run by
+default and can distinguish no results, stale results, unsupported evidence,
+and provider failure.
 
 ## Dinner criteria
 
@@ -485,10 +517,35 @@ and optimizes unlocked founders only.
 SQLite stores:
 
 - normalized founder documents
+- append-only founder `web_results` and enrichment-run metadata
 - provider credential ciphertext and metadata
 - saved dinner configurations and versions
 - criteria, rules, locks, assignments, alternatives, and selected solution
 - optional enrichment cache with provenance and expiry
+
+The authoritative founder object and `web_results` remain separate in storage,
+APIs, exports, and type contracts. Founder exports may optionally include the
+latest five web results under a clearly labeled nested `web_results` field.
+They never flatten enrichment into source columns.
+
+## Scale fixtures
+
+Development and automated tests include deterministic founder subsets derived
+from the 574-founder reference fixture:
+
+- `three-tables`: 24 founders, 3 tables, 8 seats per table
+- `five-tables`: 40 founders, 5 tables, 8 seats per table
+- `twenty-tables`: 160 founders, 20 tables, 8 seats per table
+
+Each subset preserves stable founder IDs and includes enough variation across
+company vertical, company, age, education, role, cohort group, and cohort
+section to exercise similarity, diversity, and hard rules. Each fixture also
+has a matching `web_results` sample dataset containing up to five deterministic
+provider-shaped results per founder.
+
+An additional uneven-capacity fixture uses 48 founders and 5 tables to verify
+balanced capacities of 10, 10, 10, 9, and 9 without dropping or duplicating
+founders.
 
 Saved configurations support name, save, save as, reopen, edit, and rerun.
 Missing founder data produces a recovery warning instead of silent deletion.
@@ -623,6 +680,8 @@ tests. No screenshot may depict mocked or unimplemented behavior.
 - Integration order is A, then B and C in parallel, then D, then E.
 - V1 regression tests run at every integration gate.
 - Provider adapters use recorded redacted fixtures for deterministic tests.
+- Web enrichment uses recorded provider-shaped `web_results` fixtures in tests;
+  live search is never required for deterministic CI.
 - Final review compares the implementation with every V2 acceptance criterion.
 
 ## Screenshot package
@@ -660,6 +719,8 @@ email caption, and email order.
 - AI fallback and invalid-output tests.
 - Credential redaction and encrypted-storage tests.
 - Web evidence provenance and five-result-cap tests.
+- `web_results` append-only history, query-fingerprint reuse, deduplication,
+  ranking, stale-result, partial-batch-failure, and redaction tests.
 - Criteria parity between AI and manual paths.
 - Direct-entry and Search-handoff Dinner setup tests.
 - Cohort-before-table gating and disabled-generation tests.
@@ -672,6 +733,10 @@ email caption, and email order.
 - Rule feasibility and conflict-report tests.
 - Optimizer conservation, capacity, determinism, maximin, lock, and alternative
   diversity tests.
+- Full engine, persistence, export, and primary UI coverage for the 3-, 5-, and
+  20-table scale fixtures.
+- Uneven 48-founder/5-table capacity tests proving 10/10/10/9/9 assignment with
+  no loss or duplication.
 - Save/reopen/export round trips.
 - Tables/Analysis shared-frame and action-bar tests.
 - Table avatar and Analysis circle color-band tests.
