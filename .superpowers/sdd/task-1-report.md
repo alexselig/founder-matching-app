@@ -9,7 +9,7 @@
 ## Full commit hash
 - Implementation commit: `2af032fc38bae8255adbf5ea27b62f6e66025cfc`
 - Review fixes commit: `05059812695ca5043243cd59d36346f307ea12c4`
-- Final SPA fallback fix commit: `dcacfb6c83ba3f548f3a2486f835084545705b40`
+- Final SPA fallback fix commit: `dcacfb64d700d17fe85a50ad3df2cca691d5ae3c`
 
 ## Exact tests and results
 - `npm test -- src/app/AppRouter.test.tsx server/app.test.ts`
