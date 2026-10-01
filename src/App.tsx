@@ -65,6 +65,21 @@ const emptyFeedback: FeedbackState = {
   overall: '',
 }
 
+const v1BasePath = '/v1'
+
+function v1Href(path = '') {
+  return `${v1BasePath}${path}`
+}
+
+function normalizeV1Pathname(pathname: string) {
+  if (!pathname.startsWith(v1BasePath)) {
+    return pathname
+  }
+
+  const normalized = pathname.slice(v1BasePath.length)
+  return normalized || '/'
+}
+
 function initials(name: string) {
   return name
     .split(/\s+/)
@@ -76,20 +91,20 @@ function initials(name: string) {
 function Header({ active }: { active: 'plan' | 'directory' | 'algorithm' | 'admin' }) {
   return (
     <header className="masthead">
-      <a className="wordmark" href="/">
+      <a className="wordmark" href={v1Href()}>
         Founder Table
       </a>
       <nav aria-label="Primary navigation">
-        <a className={active === 'plan' ? 'active' : ''} href="/plan">
+        <a className={active === 'plan' ? 'active' : ''} href={v1Href('/plan')}>
           Plan review
         </a>
-        <a className={active === 'directory' ? 'active' : ''} href="/directory">
+        <a className={active === 'directory' ? 'active' : ''} href={v1Href('/directory')}>
           Directory
         </a>
-        <a className={active === 'algorithm' ? 'active' : ''} href="/algorithm">
+        <a className={active === 'algorithm' ? 'active' : ''} href={v1Href('/algorithm')}>
           Algorithm
         </a>
-        <a className={active === 'admin' ? 'active' : ''} href="/admin">
+        <a className={active === 'admin' ? 'active' : ''} href={v1Href('/admin')}>
           Admin grouping
         </a>
       </nav>
@@ -323,7 +338,7 @@ function AlgorithmPage() {
               express the kind of room they want without presenting the result
               as a scientifically perfect match.
             </p>
-            <a className="yc-link-button" href="/admin">Try the grouping workspace</a>
+            <a className="yc-link-button" href={v1Href('/admin')}>Try the grouping workspace</a>
           </div>
         </section>
 
@@ -787,7 +802,7 @@ function Admin() {
 }
 
 export default function App() {
-  const path = window.location.pathname
+  const path = normalizeV1Pathname(window.location.pathname)
   if (path.startsWith('/admin')) return <Admin />
   if (path.startsWith('/algorithm')) return <AlgorithmPage />
   if (path.startsWith('/plan')) return <PlanReview />

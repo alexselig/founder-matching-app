@@ -10,3 +10,10 @@ export const HealthResponseSchema = z.object({
   database: DatabaseStatusSchema,
 })
 export type HealthResponse = z.infer<typeof HealthResponseSchema>
+
+export function createHealthResponse(database: DatabaseStatus): HealthResponse {
+  return HealthResponseSchema.parse({
+    version: appVersion,
+    database,
+  })
+}
