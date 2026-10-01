@@ -8,7 +8,8 @@
 
 ## Full commit hash
 - Implementation commit: `2af032fc38bae8255adbf5ea27b62f6e66025cfc`
-- - Review fixes commit: `05059812695ca5043243cd59d36346f307ea12c4`
+- Review fixes commit: `05059812695ca5043243cd59d36346f307ea12c4`
+- Final SPA fallback fix commit: pending
 
 ## Exact tests and results
 - `npm test -- src/app/AppRouter.test.tsx server/app.test.ts`
@@ -24,12 +25,13 @@
   - GREEN: exit 0.
 - `npm test && npm run build`
   - GREEN: exit 0.
-  - `vitest run`: `3` files passed, `13` tests passed.
+  - `vitest run`: `3` files passed, `14` tests passed.
   - `build:client`: `tsc -b && vite build` passed.
   - `build:server`: `tsc -p tsconfig.server.json` passed.
 - Production smoke test:
   - Started `npm start` with `HOST=127.0.0.1 PORT=43173`.
-  - Verified `200` responses for `/`, `/v1`, `/v1/admin`, `/v2`, `/healthz`, and `/api/v2/health`.
+  - Verified `200` responses for `/`, `/v1`, `/v1/admin`, `/v2`, `/v2/search/results`, `/healthz`, and `/api/v2/health`.
+  - Verified `404` JSON responses for `/api`, `/api?x=1`, `/assets/missing.js`, and `/missing.txt`.
   - Verified HTML routes returned the SPA shell and both health routes returned `{"version":"v2","database":"ready"}`.
 
 ## TDD RED/GREEN evidence
@@ -58,6 +60,17 @@
 - Normalized V1 pathname matching so legacy V1 screens render correctly under `/v1/*`.
 - Registered `@fastify/static`, added a non-API SPA fallback, and added `/healthz` using the shared health payload builder.
 - Re-ran focused tests, lint, full tests, build, and a production smoke test successfully.
+
+### RED (final re-review)
+- Expanded `server/app.test.ts` with regression coverage for `/api`, `/api?x=1`, `/assets/missing.js`, `/missing.txt`, and `/v2/search/results`.
+- Ran focused server tests and captured the expected failure:
+  - `GET /api` returned `200` HTML instead of a `404` JSON response.
+
+### GREEN (final re-review)
+- Narrowed the SPA fallback to extensionless client document routes only.
+- Preserved JSON `404` responses for `/api`, `/api/*`, `/assets/*`, and extension-looking resource misses.
+- Preserved HTML SPA fallback for `/`, `/v1`, `/v1/admin`, `/v2`, and extensionless nested client subroutes.
+- Re-ran focused server tests, lint, full tests, build, and the built-server smoke test successfully.
 
 ## Files changed
 - `package.json`
@@ -96,8 +109,8 @@
   - `/` redirects to the last selected version, defaulting to V2
 - `createServer(options: ServerOptions): FastifyInstance`
   - serves built static assets from an injectable `staticRoot`
-  - falls back to `index.html` for non-API GET routes
-  - preserves `404` JSON responses for unknown `/api/*` routes
+  - falls back to `index.html` only for extensionless client document routes
+  - preserves `404` JSON responses for unknown `/api`, `/api/*`, `/assets/*`, and extension-looking resource routes
 
 ## Requested contract changes
 - None.
@@ -114,11 +127,12 @@
 - Kept the V1 changes strictly to route rebasing and pathname normalization; copy and styling remain unchanged.
 - Made the Fastify static root injectable so server tests do not depend on a real production build.
 - Verified the built server path with an end-to-end smoke test rather than relying only on injection tests.
+- Tightened the SPA fallback predicate so API/resource misses no longer receive misleading `200` HTML responses.
 
 ## Integration notes
 - `src/main.tsx` now mounts `AppRouter`, which is the only bootstrap change needed to expose `/v1` and `/v2` in the browser.
 - `AppRouter` stores the selected version under `founder-app-version` so `/` can redirect to the last-used version while defaulting to `/v2`.
 - `server/index.ts` currently reports database status as `'ready'`; later waves can replace that callback with real readiness wiring without changing the shared health contract or either endpoint.
 - `createServer` now expects the built client to live at `dist/` relative to `process.cwd()` in production, while tests can supply their own `staticRoot`.
-- Unknown API routes keep JSON `404` behavior and do not receive the SPA fallback.
+- Unknown API routes and resource-looking misses keep JSON `404` behavior and do not receive the SPA fallback.
 - Left `docs/superpowers/execution/v2-status.md` and `design-gaps.md` untouched for the coordinator.

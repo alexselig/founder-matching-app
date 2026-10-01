@@ -76,6 +76,14 @@ describe('createServer', () => {
     expect(rootResponse.statusCode).toBe(200)
     expect(rootResponse.body).toContain('fixture spa')
 
+    const nestedRouteResponse = await server.inject({
+      method: 'GET',
+      url: '/v1/admin',
+    })
+
+    expect(nestedRouteResponse.statusCode).toBe(200)
+    expect(nestedRouteResponse.body).toContain('fixture spa')
+
     const apiNotFound = await server.inject({
       method: 'GET',
       url: '/api/unknown',
@@ -83,6 +91,56 @@ describe('createServer', () => {
 
     expect(apiNotFound.statusCode).toBe(404)
     expect(apiNotFound.headers['content-type']).toContain('application/json')
+
+    await server.close()
+  })
+
+  it('returns JSON 404s for API and resource misses while preserving SPA document fallback', async () => {
+    const server = createServer({
+      databaseStatus: () => 'ready',
+      staticRoot,
+    })
+
+    const apiRootResponse = await server.inject({
+      method: 'GET',
+      url: '/api',
+    })
+
+    expect(apiRootResponse.statusCode).toBe(404)
+    expect(apiRootResponse.headers['content-type']).toContain('application/json')
+
+    const apiQueryResponse = await server.inject({
+      method: 'GET',
+      url: '/api?x=1',
+    })
+
+    expect(apiQueryResponse.statusCode).toBe(404)
+    expect(apiQueryResponse.headers['content-type']).toContain('application/json')
+
+    const missingAssetResponse = await server.inject({
+      method: 'GET',
+      url: '/assets/missing.js',
+    })
+
+    expect(missingAssetResponse.statusCode).toBe(404)
+    expect(missingAssetResponse.headers['content-type']).toContain('application/json')
+
+    const extensionLookingResponse = await server.inject({
+      method: 'GET',
+      url: '/missing.txt',
+    })
+
+    expect(extensionLookingResponse.statusCode).toBe(404)
+    expect(extensionLookingResponse.headers['content-type']).toContain('application/json')
+
+    const extensionlessClientResponse = await server.inject({
+      method: 'GET',
+      url: '/v2/search/results',
+    })
+
+    expect(extensionlessClientResponse.statusCode).toBe(200)
+    expect(extensionlessClientResponse.headers['content-type']).toContain('text/html')
+    expect(extensionlessClientResponse.body).toContain('fixture spa')
 
     await server.close()
   })

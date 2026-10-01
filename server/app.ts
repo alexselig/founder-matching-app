@@ -14,6 +14,26 @@ export interface ServerOptions {
   staticRoot?: string
 }
 
+function isClientDocumentRoute(method: string, rawUrl: string | undefined) {
+  if (method !== 'GET') {
+    return false
+  }
+
+  const requestUrl = new URL(rawUrl ?? '/', 'http://127.0.0.1')
+  const { pathname } = requestUrl
+
+  if (pathname === '/api' || pathname.startsWith('/api/')) {
+    return false
+  }
+
+  if (pathname === '/assets' || pathname.startsWith('/assets/')) {
+    return false
+  }
+
+  const lastSegment = pathname.split('/').filter(Boolean).at(-1) ?? ''
+  return !lastSegment.includes('.')
+}
+
 export function createServer(options: ServerOptions): FastifyInstance {
   const server = Fastify()
   const staticRoot = options.staticRoot ?? path.resolve(process.cwd(), 'dist')
@@ -35,7 +55,7 @@ export function createServer(options: ServerOptions): FastifyInstance {
   })
 
   server.setNotFoundHandler((request, reply) => {
-    if (request.method !== 'GET' || request.url.startsWith('/api/')) {
+    if (!isClientDocumentRoute(request.method, request.raw.url)) {
       return reply.code(404).send({
         message: `Route ${request.method}:${request.url} not found`,
       })
