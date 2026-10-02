@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Founder App V2 — AI Provider Configuration Review</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=League+Spartan:wght@700;800&display=swap");
+    :root {
+      --surface: #fff;
+      --surface-alt: #f5f3ee;
+      --line: #e3e5e9;
+      --line-strong: #7d828b;
+      --ink: #141414;
+      --ink-muted: #5b5f66;
+      --orange: #f26522;
+      --orange-soft: #fff3ed;
+      --blue: #2f5bea;
+      --blue-soft: #eef2ff;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-width: 980px;
+      min-height: 100%;
+      color: var(--ink);
+      background: var(--surface);
+      font-family: Figtree, "Avenir Next", system-ui, sans-serif;
+    }
+    button, input, select { color: inherit; font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      position: relative;
+      z-index: 3;
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+    [hidden] { display: none !important; }
+    .app { min-height: 100vh; padding-bottom: 65px; }
+    .topbar {
+      height: 64px;
+      display: grid;
+      grid-template-columns: 240px 172px 178px 162px 1fr 318px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 24px;
+      border-right: 1px solid var(--line);
+      font: 800 23px/.88 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .brand span:first-child { max-width: 105px; }
+    .brand .version { color: var(--orange); font-size: 24px; }
+    .nav-item {
+      position: relative;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      font-weight: 700;
+    }
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5px;
+      background: var(--blue);
+    }
+    .profile {
+      grid-column: 6;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 0 24px 0 18px;
+      border-left: 1px solid var(--line);
+    }
+    .profile-avatar {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 36px;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--ink);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .profile small { display: block; margin-bottom: 2px; color: var(--ink-muted); font-size: 12px; }
+    .profile strong { font-size: 14px; }
+    .page-head {
+      min-height: 174px;
+      display: grid;
+      grid-template-columns: minmax(300px, 27%) 1fr;
+      border-bottom: 1px solid var(--line);
+    }
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 28px 32px;
+      color: #fff;
+      background: var(--blue);
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    .title-block h1 {
+      max-width: 390px;
+      margin: 13px 0 8px;
+      font: 800 38px/.92 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      letter-spacing: -.02em;
+      text-transform: uppercase;
+    }
+    .title-block p { max-width: 410px; margin: 0; font-size: 13px; line-height: 1.45; }
+    .head-detail {
+      display: grid;
+      grid-template-columns: minmax(340px, 1fr) minmax(360px, .9fr);
+      align-items: stretch;
+    }
+    .head-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 28px 32px;
+      border-right: 1px solid var(--line);
+    }
+    .head-copy h2 {
+      margin: 7px 0 7px;
+      font: 800 24px/1 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .head-copy p { max-width: 580px; margin: 0; color: var(--ink-muted); font-size: 13px; line-height: 1.5; }
+    .review-switcher {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24px 28px;
+      background: var(--surface-alt);
+    }
+    .review-switcher .label { margin-bottom: 9px; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .state-buttons { display: grid; grid-template-columns: repeat(4, 1fr); }
+    .state-buttons button {
+      min-height: 40px;
+      padding: 0 10px;
+      border: 1px solid var(--ink);
+      border-right: 0;
+      background: #fff;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .state-buttons button:last-child { border-right: 1px solid var(--ink); }
+    .state-buttons button[aria-pressed="true"] { color: #fff; background: var(--ink); }
+    .review-switcher p { margin: 9px 0 0; color: var(--ink-muted); font-size: 11px; line-height: 1.35; }
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(620px, 1.38fr) minmax(350px, .72fr);
+      min-height: calc(100vh - 303px);
+    }
+    .config { padding: 28px 32px 40px; border-right: 1px solid var(--line); }
+    .section-kicker { color: var(--blue); font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .config h2, .security h2 {
+      margin: 7px 0 18px;
+      font: 800 24px/1 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .provider-grid { display: grid; grid-template-columns: repeat(3, 1fr); margin-bottom: 22px; }
+    .provider-card {
+      min-height: 112px;
+      padding: 17px;
+      border: 1px solid var(--ink);
+      border-right: 0;
+      background: #fff;
+      text-align: left;
+    }
+    .provider-card:last-child { border-right: 1px solid var(--ink); }
+    .provider-card[aria-pressed="true"] { color: #fff; background: var(--blue); }
+    .provider-card span { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .provider-card strong {
+      font: 800 20px/1 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .provider-card i {
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+      font-size: 11px;
+      font-style: normal;
+    }
+    .provider-card small { display: block; margin-top: 13px; font-size: 11px; line-height: 1.35; }
+    .form-row { display: grid; grid-template-columns: minmax(260px, .72fr) minmax(360px, 1fr); gap: 18px; }
+    .field { min-width: 0; }
+    .field label {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 21px;
+      color: var(--ink-muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .field label span { color: var(--blue); font-size: 9px; letter-spacing: .04em; }
+    .field select, .secret-control {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: #fff;
+    }
+    .field select { padding: 0 13px; font-size: 13px; font-weight: 700; }
+    .secret-control { display: grid; grid-template-columns: 1fr 50px; }
+    .secret-control input {
+      min-width: 0;
+      padding: 0 13px;
+      border: 0;
+      outline: 0;
+      background: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+    }
+    .secret-control button { border: 0; border-left: 1px solid var(--line); background: #fff; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+    .field-note { margin: 7px 0 0; color: var(--ink-muted); font-size: 11px; line-height: 1.4; }
+    .field-note strong { color: var(--ink); }
+    .validation {
+      margin-top: 24px;
+      border: 1px solid var(--ink);
+      border-left: 5px solid var(--blue);
+      background: #fff;
+    }
+    .validation.invalid { border-left-color: var(--orange); }
+    .validation-head {
+      min-height: 83px;
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      align-items: center;
+      gap: 14px;
+      padding: 15px 18px;
+    }
+    .status-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--blue);
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .invalid .status-icon { background: var(--orange); }
+    .status-copy strong { display: block; margin-bottom: 4px; font-size: 14px; }
+    .status-copy p { margin: 0; color: var(--ink-muted); font-size: 12px; line-height: 1.35; }
+    .validate-button {
+      min-width: 152px;
+      height: 44px;
+      padding: 0 18px;
+      border: 1px solid var(--blue);
+      color: #fff;
+      background: var(--blue);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .validate-button.secondary { color: var(--ink); border-color: var(--ink); background: #fff; }
+    .validate-button:disabled { cursor: wait; opacity: 1; color: var(--ink); border-color: var(--line-strong); background: var(--surface-alt); }
+    .spinner {
+      width: 17px;
+      height: 17px;
+      border: 2px solid var(--line-strong);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    .valid-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line);
+      background: var(--blue-soft);
+    }
+    .valid-meta div { min-height: 55px; padding: 11px 15px; border-right: 1px solid var(--line); }
+    .valid-meta div:last-child { border-right: 0; }
+    .valid-meta small { display: block; margin-bottom: 3px; color: var(--ink-muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .valid-meta strong { font-size: 12px; }
+    .security { padding: 28px 30px 40px; background: var(--surface-alt); }
+    .boundary {
+      margin-bottom: 20px;
+      border: 1px solid var(--ink);
+      background: #fff;
+    }
+    .boundary-step {
+      min-height: 71px;
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      align-items: center;
+      gap: 13px;
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--line);
+    }
+    .boundary-step:last-child { border-bottom: 0; }
+    .step-number {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--ink);
+      font: 800 16px/1 "League Spartan", "Avenir Next", system-ui, sans-serif;
+    }
+    .boundary-step strong { display: block; margin-bottom: 3px; font-size: 12px; }
+    .boundary-step p { margin: 0; color: var(--ink-muted); font-size: 11px; line-height: 1.35; }
+    .never-panel { padding: 17px 18px; border-left: 5px solid var(--orange); background: var(--orange-soft); }
+    .never-panel strong { display: block; margin-bottom: 8px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .never-panel ul { margin: 0; padding-left: 17px; color: var(--ink-muted); font-size: 11px; line-height: 1.55; }
+    .master-key { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line-strong); }
+    .master-key strong { display: block; margin-bottom: 5px; font-size: 12px; }
+    .master-key p { margin: 0; color: var(--ink-muted); font-size: 11px; line-height: 1.45; }
+    .footer {
+      position: fixed;
+      z-index: 10;
+      inset: auto 0 0;
+      height: 65px;
+      display: grid;
+      grid-template-columns: 48px 48px 184px 1fr 148px 235px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+    .footer button, .footer div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      font-weight: 800;
+    }
+    .footer > button:nth-child(-n+2) { position: relative; color: var(--ink-muted); font-size: 12px; font-weight: 700; }
+    .footer > button.active-version { color: var(--blue); background: var(--surface-alt); }
+    .footer .active-version::after { content: ""; position: absolute; right: 0; bottom: 0; left: 0; height: 3px; background: var(--blue); }
+    .footer .ai { justify-content: flex-start; padding: 0 16px; color: var(--ink); font-size: 12px; font-weight: 700; }
+    .footer .primary { color: #fff; background: var(--blue); }
+    .footer .export { grid-column: 5; }
+    .footer .create { grid-column: 6; }
+    .live-region { position: fixed; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation: none; border-top-color: var(--line-strong); } }
+    @media (max-width: 1180px) {
+      .topbar { grid-template-columns: 210px 155px 165px 145px 1fr 260px; }
+      .head-detail { grid-template-columns: 1fr 410px; }
+      .workspace { grid-template-columns: minmax(600px, 1.25fr) minmax(340px, .75fr); }
+      .form-row { grid-template-columns: 250px 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span>Founder<br>Table</span><span class="version">V2</span></div>
+      <button class="nav-item">Founder Search</button>
+      <button class="nav-item active">Table Config</button>
+      <button class="nav-item">Saved Dinners</button>
+      <div></div>
+      <div class="profile">
+        <div class="profile-avatar">YC</div>
+        <div><small>Current organizer</small><strong>YC Admin</strong></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-head">
+        <div class="title-block">
+          <span class="eyebrow">Table Config / AI</span>
+          <h1>AI Provider</h1>
+          <p>Connect one provider for AI-assisted search, dinner criteria, reranking, and cited web evidence.</p>
+        </div>
+        <div class="head-detail">
+          <div class="head-copy">
+            <span class="eyebrow">Admin-only configuration</span>
+            <h2>Bring your own credential</h2>
+            <p>Choose a provider and model, then validate its credential. Basic Search and deterministic dinner matching remain available when AI is disabled.</p>
+          </div>
+          <aside class="review-switcher" aria-label="Review state controls">
+            <span class="label">Review-only state</span>
+            <div class="state-buttons">
+              <button data-state="setup" aria-pressed="true">Setup</button>
+              <button data-state="validating" aria-pressed="false">Validating</button>
+              <button data-state="valid" aria-pressed="false">Valid</button>
+              <button data-state="invalid" aria-pressed="false">Invalid</button>
+            </div>
+            <p>Switch states to review validation feedback. The Validate button also runs a short simulated check.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="config">
+          <span class="section-kicker">1 · Provider</span>
+          <h2>Select a provider</h2>
+          <div class="provider-grid" role="group" aria-label="AI provider">
+            <button class="provider-card" data-provider="OpenAI" aria-pressed="false">
+              <span><strong>OpenAI</strong><i></i></span>
+              <small>Intent parsing, reranking, and web search with citations.</small>
+            </button>
+            <button class="provider-card" data-provider="Anthropic" aria-pressed="true">
+              <span><strong>Anthropic</strong><i>✓</i></span>
+              <small>Intent parsing, dinner criteria, and cited web search.</small>
+            </button>
+            <button class="provider-card" data-provider="xAI" aria-pressed="false">
+              <span><strong>xAI</strong><i></i></span>
+              <small>Intent parsing, reranking, and web search with citations.</small>
+            </button>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label for="model">Model <span id="provider-label">Anthropic</span></label>
+              <select id="model">
+                <option>Claude Sonnet</option>
+                <option>Claude Haiku</option>
+              </select>
+              <p class="field-note">Used for new AI-assisted requests. Existing saved results keep their provider metadata.</p>
+            </div>
+            <div class="field">
+              <label for="credential">API credential <span>Required to enable AI</span></label>
+              <div class="secret-control">
+                <input id="credential" type="password" value="sk-ant-••••••••••••••••" autocomplete="new-password" spellcheck="false" aria-describedby="credential-note">
+                <button id="reveal" type="button" aria-label="Show masked example credential">Show</button>
+              </div>
+              <p class="field-note" id="credential-note"><strong>Masked example only.</strong> This review artifact contains no real secret and does not submit or store the value.</p>
+            </div>
+          </div>
+
+          <div class="validation" id="validation-panel" aria-live="polite">
+            <div class="validation-head">
+              <div class="status-icon" id="status-icon">+</div>
+              <div class="status-copy">
+                <strong id="status-title">Ready to validate</strong>
+                <p id="status-message">The credential has not been sent. Validate it before enabling AI features.</p>
+              </div>
+              <button class="validate-button" id="validate">Validate credential</button>
+            </div>
+            <div class="valid-meta" id="valid-meta" hidden>
+              <div><small>Provider</small><strong id="meta-provider">Anthropic</strong></div>
+              <div><small>Credential</small><strong>Ending in •••• 7K2M</strong></div>
+              <div><small>Validated</small><strong>Just now</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="security">
+          <span class="section-kicker">2 · Security boundary</span>
+          <h2>Local and protected</h2>
+          <div class="boundary">
+            <div class="boundary-step">
+              <div class="step-number">1</div>
+              <div><strong>Submitted directly to the server</strong><p>The credential travels over HTTPS from this form to the Founder App server.</p></div>
+            </div>
+            <div class="boundary-step">
+              <div class="step-number">2</div>
+              <div><strong>Validated with the selected provider</strong><p>The server uses it only to verify access and perform approved AI requests.</p></div>
+            </div>
+            <div class="boundary-step">
+              <div class="step-number">3</div>
+              <div><strong>Encrypted before local storage</strong><p>AES-256-GCM ciphertext is stored in SQLite. The browser receives status and last four only.</p></div>
+            </div>
+          </div>
+          <div class="never-panel">
+            <strong>The raw credential never enters</strong>
+            <ul>
+              <li>Browser storage or URLs</li>
+              <li>Application logs or analytics</li>
+              <li>API responses or exported files</li>
+            </ul>
+          </div>
+          <div class="master-key">
+            <strong>Server-side encryption boundary</strong>
+            <p>Decryption requires the separate <code>FOUNDER_APP_MASTER_KEY</code> environment secret. Stored credential ciphertext is not usable on its own.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <button>V1</button>
+      <button class="active-version">V2</button>
+      <div class="ai" id="footer-ai">+ AI Disabled</div>
+      <div></div>
+      <button class="export">Export Results</button>
+      <button class="primary create">Create Dinner Matching →</button>
+    </footer>
+    <div class="live-region" id="live-region" aria-live="polite"></div>
+  </div>
+
+  <script>
+    const providerModels = {
+      OpenAI: ["GPT-5", "GPT-5 mini"],
+      Anthropic: ["Claude Sonnet", "Claude Haiku"],
+      xAI: ["Grok 4", "Grok 4 Fast"]
+    };
+
+    const states = {
+      setup: {
+        icon: "+",
+        title: "Ready to validate",
+        message: "The credential has not been sent. Validate it before enabling AI features.",
+        button: "Validate credential",
+        footer: "+ AI Disabled",
+        disabled: false,
+        secondary: false
+      },
+      validating: {
+        icon: "spinner",
+        title: "Validating credential",
+        message: "Checking provider access and model availability. No raw credential is written to storage yet.",
+        button: "Validating…",
+        footer: "AI Connecting / Validating",
+        disabled: true,
+        secondary: false
+      },
+      valid: {
+        icon: "✓",
+        title: "Credential is valid",
+        message: "AI features are enabled. Only encrypted credential data and redacted metadata are retained.",
+        button: "Validate again",
+        footer: "✓ AI Enabled · Anthropic",
+        disabled: false,
+        secondary: true
+      },
+      invalid: {
+        icon: "!",
+        title: "Credential could not be validated",
+        message: "Provider authentication failed. Check the credential and model access, then try again.",
+        button: "Try again",
+        footer: "⚠ AI Connection Issue",
+        disabled: false,
+        secondary: false
+      }
+    };
+
+    let currentProvider = "Anthropic";
+    let validationTimer;
+    const panel = document.getElementById("validation-panel");
+    const icon = document.getElementById("status-icon");
+    const title = document.getElementById("status-title");
+    const message = document.getElementById("status-message");
+    const validateButton = document.getElementById("validate");
+    const validMeta = document.getElementById("valid-meta");
+    const footerAi = document.getElementById("footer-ai");
+    const liveRegion = document.getElementById("live-region");
+
+    function setState(stateName) {
+      clearTimeout(validationTimer);
+      const state = states[stateName];
+      document.querySelectorAll(".state-buttons button").forEach(button => {
+        button.setAttribute("aria-pressed", String(button.dataset.state === stateName));
+      });
+      panel.classList.toggle("invalid", stateName === "invalid");
+      icon.innerHTML = state.icon === "spinner" ? '<span class="spinner" aria-hidden="true"></span>' : state.icon;
+      title.textContent = state.title;
+      message.textContent = state.message;
+      validateButton.textContent = state.button;
+      validateButton.disabled = state.disabled;
+      validateButton.classList.toggle("secondary", state.secondary);
+      validMeta.hidden = stateName !== "valid";
+      document.getElementById("meta-provider").textContent = currentProvider;
+      footerAi.textContent = stateName === "valid" ? `✓ AI Enabled · ${currentProvider}` : state.footer;
+      liveRegion.textContent = `${state.title}. ${state.message}`;
+    }
+
+    function selectProvider(provider) {
+      currentProvider = provider;
+      document.querySelectorAll(".provider-card").forEach(card => {
+        const selected = card.dataset.provider === provider;
+        card.setAttribute("aria-pressed", String(selected));
+        card.querySelector("i").textContent = selected ? "✓" : "";
+      });
+      document.getElementById("provider-label").textContent = provider;
+      const model = document.getElementById("model");
+      model.replaceChildren(...providerModels[provider].map(name => {
+        const option = document.createElement("option");
+        option.textContent = name;
+        return option;
+      }));
+      setState("setup");
+    }
+
+    document.querySelectorAll(".provider-card").forEach(card => {
+      card.addEventListener("click", () => selectProvider(card.dataset.provider));
+    });
+
+    document.querySelectorAll(".state-buttons button").forEach(button => {
+      button.addEventListener("click", () => setState(button.dataset.state));
+    });
+
+    validateButton.addEventListener("click", () => {
+      setState("validating");
+      validationTimer = setTimeout(() => setState("valid"), 1200);
+    });
+
+    document.getElementById("reveal").addEventListener("click", event => {
+      const input = document.getElementById("credential");
+      const showing = input.type === "text";
+      input.type = showing ? "password" : "text";
+      event.currentTarget.textContent = showing ? "Show" : "Hide";
+      event.currentTarget.setAttribute("aria-label", showing ? "Show masked example credential" : "Hide masked example credential");
+    });
+
+    setState("setup");
+  </script>
+</body>
+</html>

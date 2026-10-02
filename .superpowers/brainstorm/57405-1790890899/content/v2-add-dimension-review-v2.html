@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Founder App V2 — Add dimension picker</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=League+Spartan:wght@700;800&display=swap");
+    :root {
+      --surface: #fff;
+      --surface-alt: #f5f3ee;
+      --line: #e3e5e9;
+      --line-strong: #7d828b;
+      --ink: #141414;
+      --ink-muted: #5b5f66;
+      --orange: #f26522;
+      --orange-soft: #fff3ed;
+      --blue: #2f5bea;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-width: 980px; min-height: 100%; color: var(--ink); background: var(--surface); font-family: Figtree, "Avenir Next", system-ui, sans-serif; }
+    button, input, select { color: inherit; font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+      z-index: 3;
+    }
+    .app { min-height: 100vh; padding-bottom: 65px; }
+    .topbar {
+      height: 88px;
+      display: grid;
+      grid-template-columns: 240px 172px 178px 162px 1fr 318px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      padding: 0 28px;
+      border-right: 1px solid var(--line);
+      font: 800 23px/.88 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .brand span:first-child { max-width: 105px; }
+    .brand .version { color: var(--orange); font-size: 24px; }
+    .nav-item {
+      position: relative;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      font-weight: 700;
+    }
+    .nav-item.active::after { content: ""; position: absolute; inset: auto 0 0; height: 5px; background: var(--blue); }
+    .profile {
+      grid-column: 6;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 0 28px 0 22px;
+      border-left: 1px solid var(--line);
+    }
+    .profile-avatar {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 44px;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--blue);
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .profile small { display: block; margin-bottom: 2px; color: var(--ink-muted); font-size: 12px; }
+    .profile strong { font-size: 14px; }
+    .profile .chevron { margin-left: auto; font-size: 18px; }
+    .hero {
+      height: 227px;
+      display: grid;
+      grid-template-columns: 20% 80%;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-title { padding: 28px 32px; color: #fff; background: var(--blue); }
+    .eyebrow { font-size: 12px; line-height: 1.2; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .hero-title h1 {
+      max-width: 205px;
+      margin: 14px 0 0;
+      font: 800 39px/.88 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .search-area { padding: 68px 43px 38px; }
+    .search-area label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .query {
+      width: calc(100% - 212px);
+      min-width: 640px;
+      height: 62px;
+      display: grid;
+      grid-template-columns: 1fr 132px;
+      border: 2px solid var(--ink);
+    }
+    .query input { min-width: 0; padding: 0 18px; border: 0; outline: 0; font-size: 18px; }
+    .query button { border: 0; border-left: 1px solid var(--ink); background: var(--orange); font-weight: 800; text-transform: uppercase; }
+    .toolbar {
+      position: relative;
+      z-index: 5;
+      height: 116px;
+      display: grid;
+      grid-template-columns: 158px 1fr 234px 222px 116px;
+      border-bottom: 1px solid var(--line);
+    }
+    .result-count { padding: 21px 29px; border-right: 1px solid var(--line); }
+    .result-count strong { display: block; font: 800 37px/.9 "League Spartan", "Avenir Next", system-ui, sans-serif; }
+    .result-count span {
+      display: block;
+      margin-top: 10px;
+      color: var(--ink-muted);
+      font-size: 11px;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .dimensions {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 22px;
+      border-right: 1px solid var(--line);
+    }
+    .toolbar-label { margin-bottom: 7px; color: var(--ink-muted); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .dimension-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .dimension {
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 8px 0 10px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .dimension b { color: var(--blue); }
+    .chip-remove {
+      width: 20px;
+      height: 24px;
+      padding: 0;
+      border: 0;
+      color: var(--ink-muted);
+      background: transparent;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .add-dimension {
+      height: 30px;
+      padding: 0 10px;
+      border: 1px dashed var(--line-strong);
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .add-dimension[aria-expanded="true"] { border-style: solid; border-color: var(--blue); box-shadow: inset 0 -4px var(--blue); }
+    .select-cell { padding: 25px 16px; border-right: 1px solid var(--line); }
+    .select-cell select { width: 100%; height: 46px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 0; background: #fff; font-weight: 700; }
+    .view-switch { display: flex; align-items: center; justify-content: center; padding: 0 13px; }
+    .view-switch button { width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line-strong); background: #fff; }
+    .view-switch button + button { border-left: 0; }
+    .view-switch .active { color: #fff; background: var(--ink); }
+    .view-switch svg { width: 21px; height: 21px; }
+    .group-heading { height: 46px; display: flex; align-items: center; padding: 0 28px; border-bottom: 1px solid var(--line); font-weight: 800; }
+    .table-head, .founder-row {
+      display: grid;
+      grid-template-columns: 270px 300px 110px 58px 130px 80px 1fr 76px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+    .table-head { height: 42px; padding: 0 28px; background: var(--surface-alt); color: var(--ink-muted); font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+    .founder-row { height: 73px; padding: 0 28px; font-size: 13px; font-weight: 700; }
+    .identity { display: flex; align-items: center; gap: 12px; }
+    .avatar { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--ink); font-size: 10px; font-weight: 800; }
+    .identity h2 { margin: 0; font: 800 20px/.95 "League Spartan", "Avenir Next", system-ui, sans-serif; text-transform: uppercase; }
+    .identity p { margin: 4px 0 0; color: var(--ink-muted); font-size: 13px; font-weight: 500; }
+    .matched { margin-right: 18px; padding: 11px 12px; border-left: 4px solid var(--orange); background: var(--orange-soft); white-space: nowrap; }
+    .muted { color: var(--ink-muted); }
+    .more { justify-self: end; border: 0; background: #fff; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .footer {
+      position: fixed;
+      z-index: 10;
+      inset: auto 0 0;
+      height: 65px;
+      display: grid;
+      grid-template-columns: 60px 60px 225px 1fr 148px 235px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+    .footer button, .footer div { display: flex; align-items: center; justify-content: center; border: 0; border-right: 1px solid var(--line); background: #fff; font-weight: 800; }
+    .footer .active-version { color: #fff; background: var(--ink); }
+    .footer .ai { justify-content: flex-start; padding: 0 22px; color: #17745b; }
+    .footer .primary { color: #fff; background: var(--blue); }
+
+    .picker {
+      position: absolute;
+      top: 101px;
+      left: 22px;
+      width: min(674px, calc(100vw - 210px));
+      border: 1px solid var(--ink);
+      background: var(--surface);
+    }
+    .picker[hidden] { display: none; }
+    .picker::before {
+      content: "";
+      position: absolute;
+      top: -9px;
+      left: 34px;
+      width: 15px;
+      height: 15px;
+      border-top: 1px solid var(--ink);
+      border-left: 1px solid var(--ink);
+      background: #fff;
+      transform: rotate(45deg);
+    }
+    .picker-head {
+      position: relative;
+      z-index: 1;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+    .picker-head strong { font-size: 15px; }
+    .picker-head span { margin-left: 10px; color: var(--ink-muted); font-size: 12px; }
+    .picker-close { width: 34px; height: 34px; margin-left: auto; border: 1px solid var(--line-strong); background: #fff; font-size: 20px; line-height: 1; }
+    .picker-body { display: grid; grid-template-columns: 282px 1fr; height: 184px; }
+    .field-panel { padding: 10px 14px; border-right: 1px solid var(--line); }
+    .field-search { width: 100%; height: 36px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 0; background: #fff; font-size: 13px; }
+    .field-list { max-height: 116px; margin: 8px 0 0; padding: 0; overflow: auto; border: 1px solid var(--line); list-style: none; }
+    .field-row { min-height: 38px; border-bottom: 1px solid var(--line); }
+    .field-row:last-child { border-bottom: 0; }
+    .field-button {
+      width: 100%;
+      min-height: 37px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border: 0;
+      background: #fff;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .field-button:hover, .field-button[aria-selected="true"] { background: var(--surface-alt); box-shadow: inset 4px 0 var(--blue); }
+    .field-state { color: var(--blue); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .field-state.remove { color: var(--ink-muted); text-decoration: underline; text-underline-offset: 2px; }
+    .config-panel { padding: 11px 18px; }
+    .config-eyebrow { color: var(--ink-muted); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .config-panel h3 { margin: 4px 0 2px; font-size: 18px; }
+    .config-help { margin: 0 0 9px; color: var(--ink-muted); font-size: 12px; }
+    .config-grid { display: grid; grid-template-columns: 126px 1fr; gap: 10px; }
+    .form-label { display: block; margin-bottom: 6px; color: var(--ink-muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .config-grid select, .config-grid input { width: 100%; height: 36px; padding: 0 11px; border: 1px solid var(--line-strong); border-radius: 0; background: #fff; font-size: 13px; font-weight: 600; }
+    .picker-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+    .picker-actions button { height: 34px; padding: 0 14px; border: 1px solid var(--ink); background: #fff; font-size: 12px; font-weight: 800; }
+    .picker-actions .apply { color: #fff; border-color: var(--blue); background: var(--blue); }
+    .empty-state { padding: 22px 10px; color: var(--ink-muted); text-align: center; font-size: 12px; }
+    .live-region { position: fixed; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    @media (max-width: 1100px) {
+      .topbar { grid-template-columns: 210px 155px 165px 145px 1fr 260px; }
+      .toolbar { grid-template-columns: 140px 1fr 190px 190px 100px; }
+      .table-head, .founder-row { grid-template-columns: 250px 280px 95px 55px 120px 70px 1fr 70px; }
+      .picker { width: 640px; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .picker { animation: open-picker 160ms ease-out; transform-origin: 44px 0; }
+      @keyframes open-picker { from { opacity: 0; transform: translateY(-4px) scale(.99); } to { opacity: 1; transform: none; } }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="brand"><span>Founder<br>Table</span><span class="version">V2</span></div>
+      <button class="nav-item active">Founder Search</button>
+      <button class="nav-item">Dinner Matching</button>
+      <button class="nav-item">Saved Dinners</button>
+      <div></div>
+      <div class="profile">
+        <div class="profile-avatar">DQ</div>
+        <div><small>Current founder</small><strong>Di Qi · Lantern</strong></div>
+        <span class="chevron">⌄</span>
+      </div>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="hero-title">
+          <div class="eyebrow">Schema-wide founder<br>search</div>
+          <h1>Find the right founders.</h1>
+        </div>
+        <div class="search-area">
+          <label for="query">Describe the founders you want to meet</label>
+          <div class="query">
+            <input id="query" value="Engineering founders in B2B software, age 25–33">
+            <button>Search</button>
+          </div>
+        </div>
+      </section>
+      <section class="toolbar">
+        <div class="result-count"><strong>48</strong><span>Founders<br>matched</span></div>
+        <div class="dimensions">
+          <div class="toolbar-label">Search dimensions used</div>
+          <div class="dimension-row" id="dimension-row">
+            <span class="dimension" data-field="role"><b>Role</b> Engineering <button class="chip-remove" aria-label="Remove Role dimension" title="Remove Role">×</button></span>
+            <span class="dimension" data-field="company_vertical"><b>Company vertical</b> B2B Software <button class="chip-remove" aria-label="Remove Company vertical dimension" title="Remove Company vertical">×</button></span>
+            <span class="dimension" data-field="age"><b>Age</b> 25–33 <button class="chip-remove" aria-label="Remove Age dimension" title="Remove Age">×</button></span>
+            <button class="add-dimension" id="add-dimension" aria-haspopup="dialog" aria-expanded="true" aria-controls="dimension-picker">+ Add dimension</button>
+          </div>
+          <section class="picker" id="dimension-picker" role="dialog" aria-modal="false" aria-labelledby="picker-title">
+            <div class="picker-head">
+              <strong id="picker-title">Add search dimension</strong>
+              <span>Choose a field, operator, and value</span>
+              <button class="picker-close" id="picker-close" aria-label="Close add dimension picker">×</button>
+            </div>
+            <div class="picker-body">
+              <div class="field-panel">
+                <label class="form-label" for="field-search">Search fields</label>
+                <input class="field-search" id="field-search" type="search" placeholder="Type a field name" autocomplete="off">
+                <ul class="field-list" id="field-list" role="listbox" aria-label="Searchable and filterable founder fields"></ul>
+              </div>
+              <div class="config-panel" id="config-panel">
+                <div class="config-eyebrow">Configure dimension</div>
+                <h3 id="config-title">Company</h3>
+                <p class="config-help" id="config-help">Match founders by company name.</p>
+                <div class="config-grid">
+                  <label><span class="form-label">Operator</span><select id="operator"><option>is</option><option>contains</option><option>starts with</option></select></label>
+                  <label><span class="form-label">Value</span><input id="dimension-value" value="Lantern" aria-describedby="config-help"></label>
+                </div>
+                <div class="picker-actions">
+                  <button id="cancel-picker">Cancel</button>
+                  <button class="apply" id="apply-dimension">Add dimension</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="select-cell"><div class="toolbar-label">Group by</div><select><option>Company vertical</option></select></div>
+        <div class="select-cell"><div class="toolbar-label">Sort by</div><select><option>Relevance</option></select></div>
+        <div class="view-switch">
+          <button aria-label="Grid view" title="Grid view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+          <button class="active" aria-label="List view" title="List view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>
+        </div>
+      </section>
+      <div class="group-heading">B2B Software and Services</div>
+      <div class="table-head"><span>Founder</span><span>Matched dimensions</span><span>Role</span><span>Age</span><span>Education</span><span>Cohort</span><span></span><span></span></div>
+      <section aria-label="Founder results">
+        <article class="founder-row">
+          <div class="identity"><div class="avatar">DQ</div><div><h2>Di Qi</h2><p>Lantern</p></div></div>
+          <div class="matched">Engineering · Age 33 · B2B Software</div><span>Engineering</span><span>33</span><span class="muted">Computer Science</span><span class="muted">3 · 3I</span><span></span><button class="more">More ❯</button>
+        </article>
+        <article class="founder-row">
+          <div class="identity"><div class="avatar">NG</div><div><h2>Narek Galstyan</h2><p>Lantern</p></div></div>
+          <div class="matched">Engineering · Age 31 · B2B Software</div><span>Engineering</span><span>31</span><span class="muted">Business</span><span class="muted">3 · 3I</span><span></span><button class="more">More ❯</button>
+        </article>
+        <article class="founder-row">
+          <div class="identity"><div class="avatar">DH</div><div><h2>Daniel Hensley</h2><p>Driver AI</p></div></div>
+          <div class="matched">Engineering · Age 25 · B2B Software</div><span>Engineering</span><span>25</span><span class="muted">Biology</span><span class="muted">2 · 2F</span><span></span><button class="more">More ❯</button>
+        </article>
+      </section>
+    </main>
+    <footer class="footer">
+      <button>V1</button><button class="active-version">V2</button><div class="ai">✓ AI Enabled · Anthropic</div><div></div><button>Export Results</button><button class="primary">Create Dinner Matching →</button>
+    </footer>
+    <div class="live-region" id="live-region" aria-live="polite"></div>
+  </div>
+  <script>
+    const fields = [
+      { id: "role", label: "Role", help: "Match founders by their operating role.", active: true, value: "Engineering" },
+      { id: "company_vertical", label: "Company vertical", help: "Match the full company-vertical hierarchy.", active: true, value: "B2B Software" },
+      { id: "age", label: "Age", help: "Match an exact age or numeric range.", active: true, value: "25–33" },
+      { id: "company", label: "Company", help: "Match founders by company name.", active: false, value: "Lantern" },
+      { id: "education", label: "Education", help: "Match founders by education.", active: false, value: "Computer Science" },
+      { id: "cohort_group", label: "Cohort group", help: "Match founders by cohort group.", active: false, value: "3" },
+      { id: "cohort_section", label: "Cohort section", help: "Match founders by cohort section.", active: false, value: "3I" }
+    ];
+    const picker = document.getElementById("dimension-picker");
+    const addButton = document.getElementById("add-dimension");
+    const searchInput = document.getElementById("field-search");
+    const fieldList = document.getElementById("field-list");
+    const configTitle = document.getElementById("config-title");
+    const configHelp = document.getElementById("config-help");
+    const valueInput = document.getElementById("dimension-value");
+    const operator = document.getElementById("operator");
+    const liveRegion = document.getElementById("live-region");
+    let selectedId = "company";
+    let returnFocus = addButton;
+
+    function announce(message) {
+      liveRegion.textContent = "";
+      requestAnimationFrame(() => { liveRegion.textContent = message; });
+    }
+
+    function openPicker() {
+      returnFocus = document.activeElement === document.body ? addButton : document.activeElement;
+      picker.hidden = false;
+      addButton.setAttribute("aria-expanded", "true");
+      renderFields();
+      requestAnimationFrame(() => searchInput.focus());
+    }
+
+    function closePicker() {
+      picker.hidden = true;
+      addButton.setAttribute("aria-expanded", "false");
+      (returnFocus && document.contains(returnFocus) ? returnFocus : addButton).focus();
+    }
+
+    function filteredFields() {
+      const query = searchInput.value.trim().toLowerCase();
+      return fields
+        .filter(field => field.label.toLowerCase().includes(query))
+        .sort((a, b) => Number(a.active) - Number(b.active));
+    }
+
+    function renderFields() {
+      const visible = filteredFields();
+      fieldList.innerHTML = "";
+      if (!visible.length) {
+        fieldList.innerHTML = '<li class="empty-state">No matching fields</li>';
+        return;
+      }
+      visible.forEach(field => {
+        const li = document.createElement("li");
+        li.className = "field-row";
+        li.setAttribute("role", "option");
+        li.setAttribute("aria-selected", String(field.id === selectedId));
+        const button = document.createElement("button");
+        button.className = "field-button";
+        button.dataset.field = field.id;
+        button.setAttribute("aria-selected", String(field.id === selectedId));
+        button.innerHTML = `<span>${field.label}</span><span class="field-state ${field.active ? "remove" : ""}">${field.active ? "Remove" : "+ Add"}</span>`;
+        button.addEventListener("click", event => {
+          event.stopPropagation();
+          field.active ? removeDimension(field.id) : selectField(field.id);
+        });
+        li.appendChild(button);
+        fieldList.appendChild(li);
+      });
+    }
+
+    function selectField(id) {
+      const field = fields.find(item => item.id === id);
+      selectedId = id;
+      configTitle.textContent = field.label;
+      configHelp.textContent = field.help;
+      valueInput.value = field.value;
+      operator.innerHTML = id === "age"
+        ? "<option>is between</option><option>is</option><option>is at least</option><option>is at most</option>"
+        : "<option>is</option><option>contains</option><option>starts with</option>";
+      renderFields();
+      valueInput.focus();
+    }
+
+    function removeDimension(id) {
+      const field = fields.find(item => item.id === id);
+      field.active = false;
+      const chip = document.querySelector(`.dimension[data-field="${id}"]`);
+      if (chip) chip.remove();
+      if (selectedId === id) selectedId = fields.find(item => !item.active)?.id || "company";
+      renderFields();
+      announce(`${field.label} dimension removed`);
+    }
+
+    function addDimension() {
+      const field = fields.find(item => item.id === selectedId);
+      const value = valueInput.value.trim();
+      if (!field || !value) {
+        valueInput.focus();
+        announce("Enter a value before adding the dimension");
+        return;
+      }
+      field.active = true;
+      field.value = value;
+      if (!document.querySelector(`.dimension[data-field="${field.id}"]`)) {
+        const chip = document.createElement("span");
+        chip.className = "dimension";
+        chip.dataset.field = field.id;
+        chip.innerHTML = `<b>${field.label}</b> ${value} <button class="chip-remove" aria-label="Remove ${field.label} dimension" title="Remove ${field.label}">×</button>`;
+        document.getElementById("dimension-row").insertBefore(chip, addButton);
+      }
+      announce(`${field.label} dimension added`);
+      closePicker();
+    }
+
+    addButton.addEventListener("click", () => picker.hidden ? openPicker() : closePicker());
+    document.getElementById("picker-close").addEventListener("click", closePicker);
+    document.getElementById("cancel-picker").addEventListener("click", closePicker);
+    document.getElementById("apply-dimension").addEventListener("click", addDimension);
+    searchInput.addEventListener("input", renderFields);
+    searchInput.addEventListener("keydown", event => {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        fieldList.querySelector(".field-button")?.focus();
+      }
+    });
+    fieldList.addEventListener("keydown", event => {
+      if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+      const buttons = [...fieldList.querySelectorAll(".field-button")];
+      const current = buttons.indexOf(document.activeElement);
+      let next = current;
+      if (event.key === "ArrowDown") next = Math.min(buttons.length - 1, current + 1);
+      if (event.key === "ArrowUp") next = Math.max(0, current - 1);
+      if (event.key === "Home") next = 0;
+      if (event.key === "End") next = buttons.length - 1;
+      event.preventDefault();
+      buttons[next]?.focus();
+    });
+    document.addEventListener("click", event => {
+      const removeButton = event.target.closest(".chip-remove");
+      if (removeButton) removeDimension(removeButton.closest(".dimension").dataset.field);
+      if (!picker.hidden && !picker.contains(event.target) && event.target !== addButton) closePicker();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !picker.hidden) {
+        event.preventDefault();
+        closePicker();
+      }
+    });
+    renderFields();
+    selectField("company");
+    requestAnimationFrame(() => searchInput.focus());
+  </script>
+</body>
+</html>

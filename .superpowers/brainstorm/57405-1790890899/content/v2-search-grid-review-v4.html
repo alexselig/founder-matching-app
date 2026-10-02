@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Founder Search Grid Review</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=League+Spartan:wght@700;800&display=swap');
+    :root {
+      --surface: #fff;
+      --surface-alt: #f5f3ee;
+      --line: #e3e5e9;
+      --line-strong: #7d828b;
+      --ink: #141414;
+      --ink-muted: #5b5f66;
+      --orange: #f26522;
+      --orange-soft: #fff3ed;
+      --blue: #2f5bea;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--surface); color: var(--ink); font-family: Figtree, system-ui, sans-serif; }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    .app { min-height: 100vh; padding-bottom: 65px; }
+    .topbar {
+      height: 88px;
+      display: grid;
+      grid-template-columns: 240px 172px 178px 162px 1fr 318px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      padding: 0 28px;
+      border-right: 1px solid var(--line);
+      font: 800 23px/.88 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .brand span:first-child { max-width: 105px; }
+    .brand .version { color: var(--orange); font-size: 24px; }
+    .nav-item {
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      font-weight: 700;
+      position: relative;
+    }
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 5px;
+      background: var(--blue);
+    }
+    .profile {
+      grid-column: 6;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 0 22px;
+      border-left: 1px solid var(--line);
+    }
+    .profile-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--blue);
+      color: white;
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .profile small { display: block; color: var(--ink-muted); font-size: 12px; margin-bottom: 2px; }
+    .profile strong { font-size: 14px; }
+    .profile .chevron { margin-left: auto; font-weight: 800; }
+    .hero {
+      min-height: 227px;
+      display: grid;
+      grid-template-columns: 20% 80%;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-title {
+      padding: 28px 32px;
+      background: var(--blue);
+      color: white;
+    }
+    .eyebrow {
+      font-size: 12px;
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .hero-title h1 {
+      max-width: 200px;
+      margin: 14px 0 0;
+      font: 800 39px/.88 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .search-area { padding: 68px 43px 38px; }
+    .search-area label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .query {
+      width: calc(100% - 212px);
+      min-width: 640px;
+      height: 62px;
+      display: grid;
+      grid-template-columns: 1fr 132px;
+      border: 2px solid var(--ink);
+    }
+    .query input { min-width: 0; border: 0; padding: 0 18px; font-size: 18px; outline: none; }
+    .query button { border: 0; border-left: 1px solid var(--ink); background: var(--orange); font-weight: 800; text-transform: uppercase; }
+    .toolbar {
+      min-height: 116px;
+      display: grid;
+      grid-template-columns: 158px 1fr 234px 222px 116px;
+      border-bottom: 1px solid var(--line);
+    }
+    .result-count {
+      padding: 21px 29px;
+      border-right: 1px solid var(--line);
+    }
+    .result-count strong { display: block; font: 800 37px/.9 "League Spartan", sans-serif; }
+    .result-count span {
+      display: block;
+      margin-top: 10px;
+      color: var(--ink-muted);
+      font-size: 11px;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .dimensions { padding: 17px 22px; border-right: 1px solid var(--line); }
+    .toolbar-label {
+      margin-bottom: 8px;
+      color: var(--ink-muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .dimension-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .dimension {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 10px;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .dimension b { color: var(--blue); }
+    .dimension .remove { color: var(--ink-muted); font-size: 14px; }
+    .add-dimension {
+      height: 30px;
+      padding: 0 10px;
+      border: 1px dashed var(--line-strong);
+      background: #fff;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .select-cell { padding: 25px 16px; border-right: 1px solid var(--line); }
+    .select-cell select {
+      width: 100%;
+      height: 46px;
+      padding: 0 14px;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: #fff;
+      font-weight: 700;
+    }
+    .view-switch {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 13px;
+    }
+    .view-switch button {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      display: grid;
+      place-items: center;
+    }
+    .view-switch button + button { border-left: 0; }
+    .view-switch svg { width: 21px; height: 21px; }
+    .view-switch .active { background: var(--ink); color: white; }
+    .group-heading {
+      height: 46px;
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 800;
+    }
+    .founder-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+    .founder-card {
+      min-height: 164px;
+      display: grid;
+      grid-template-rows: auto auto;
+      padding: 22px 24px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+    .founder-card:nth-child(3n) { border-right: 0; }
+    .identity { display: flex; align-items: center; gap: 12px; }
+    .avatar {
+      width: 56px;
+      height: 56px;
+      flex: 0 0 56px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--ink);
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .identity h2 {
+      margin: 0 0 3px;
+      font: 800 20px/.95 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .identity p { margin: 0; color: var(--ink-muted); font-size: 14px; }
+    .match-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: stretch;
+      margin: 12px 0 0 68px;
+    }
+    .matched {
+      padding: 11px 12px;
+      border-left: 4px solid var(--orange);
+      background: var(--orange-soft);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .matched small {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink-muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .more {
+      min-width: 78px;
+      padding: 0 0 0 16px;
+      border: 0;
+      background: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .details {
+      display: none;
+      grid-column: 1 / -1;
+      margin: 14px -24px -22px 44px;
+      padding: 14px 24px;
+      border-top: 1px solid var(--line);
+      background: var(--surface-alt);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    .founder-card.open .details { display: block; }
+    .footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 65px;
+      display: grid;
+      grid-template-columns: 60px 60px 225px 1fr 148px 235px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+      z-index: 10;
+    }
+    .footer button, .footer div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      font-weight: 800;
+    }
+    .footer .active-version { background: var(--ink); color: white; }
+    .footer .ai { justify-content: flex-start; padding: 0 22px; color: #17745b; }
+    .footer .spacer { border-right: 1px solid var(--line); }
+    .footer .primary { background: var(--blue); color: white; }
+    .review-marker {
+      position: fixed;
+      right: 16px;
+      top: 100px;
+      z-index: 20;
+      padding: 7px 10px;
+      border: 1px solid var(--ink);
+      background: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    @media (max-width: 950px) {
+      .topbar { grid-template-columns: 190px 1fr 220px; }
+      .nav-item { display: none; }
+      .profile { grid-column: 3; }
+      .hero { grid-template-columns: 1fr; }
+      .hero-title { min-height: 180px; }
+      .query { width: 100%; min-width: 0; }
+      .toolbar { grid-template-columns: 120px 1fr 100px; }
+      .select-cell { display: none; }
+      .founder-grid { grid-template-columns: 1fr; }
+      .founder-card { border-right: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="review-marker">Design gap 1 of 11 · Grid results</div>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span>Founder<br>Table</span><span class="version">V2</span></div>
+      <button class="nav-item active">Founder Search</button>
+      <button class="nav-item">Dinner Matching</button>
+      <button class="nav-item">Saved Dinners</button>
+      <div></div>
+      <div class="profile">
+        <div class="profile-avatar">DQ</div>
+        <div><small>Current founder</small><strong>Di Qi · Lantern</strong></div>
+        <span class="chevron">⌄</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-title">
+          <div class="eyebrow">Schema-wide founder search</div>
+          <h1>Find the right founders.</h1>
+        </div>
+        <div class="search-area">
+          <label for="query">Describe the founders you want to meet</label>
+          <div class="query">
+            <input id="query" value="Engineering founders in B2B software, age 25–33">
+            <button>Search</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="toolbar">
+        <div class="result-count"><strong>48</strong><span>Founders<br>matched</span></div>
+        <div class="dimensions">
+          <div class="toolbar-label">Search dimensions used</div>
+          <div class="dimension-row">
+            <span class="dimension"><b>Role</b> Engineering <span class="remove">×</span></span>
+            <span class="dimension"><b>Company vertical</b> B2B Software <span class="remove">×</span></span>
+            <span class="dimension"><b>Age</b> 25–33 <span class="remove">×</span></span>
+            <button class="add-dimension">+ Add dimension</button>
+          </div>
+        </div>
+        <div class="select-cell">
+          <div class="toolbar-label">Group by</div>
+          <select><option>Company vertical</option></select>
+        </div>
+        <div class="select-cell">
+          <div class="toolbar-label">Sort by</div>
+          <select><option>Relevance</option></select>
+        </div>
+        <div class="view-switch">
+          <button class="active" aria-label="Grid view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg>
+          </button>
+          <button aria-label="List view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><circle cx="4" cy="6" r="1"></circle><circle cx="4" cy="12" r="1"></circle><circle cx="4" cy="18" r="1"></circle></svg>
+          </button>
+        </div>
+      </section>
+
+      <div class="group-heading">B2B Software and Services</div>
+      <section class="founder-grid">
+        <article class="founder-card">
+          <div class="identity"><div class="avatar">DQ</div><div><h2>Di Qi</h2><p>Lantern</p></div></div>
+          <div class="match-row"><div class="matched"><small>Matched dimensions</small>Engineering · Age 33 · B2B Software</div><button class="more" onclick="toggleDetails(this)">More ❯</button></div>
+          <div class="details"><b>Company description:</b> AI support for sales teams<br><b>Interests:</b> Infrastructure, design systems, community<br><b>Location:</b> San Francisco, CA</div>
+        </article>
+        <article class="founder-card">
+          <div class="identity"><div class="avatar">NG</div><div><h2>Narek Galstyan</h2><p>Lantern</p></div></div>
+          <div class="match-row"><div class="matched"><small>Matched dimensions</small>Engineering · Age 31 · B2B Software</div><button class="more" onclick="toggleDetails(this)">More ❯</button></div>
+          <div class="details"><b>Company description:</b> AI support for sales teams<br><b>Interests:</b> Enterprise software, growth, hiring<br><b>Location:</b> New York, NY</div>
+        </article>
+        <article class="founder-card">
+          <div class="identity"><div class="avatar">DH</div><div><h2>Daniel Hensley</h2><p>Driver AI</p></div></div>
+          <div class="match-row"><div class="matched"><small>Matched dimensions</small>Engineering · Age 25 · B2B Software</div><button class="more" onclick="toggleDetails(this)">More ❯</button></div>
+          <div class="details"><b>Company description:</b> AI documentation for software teams<br><b>Interests:</b> Developer tools, research, endurance sports<br><b>Location:</b> Austin, TX</div>
+        </article>
+        <article class="founder-card">
+          <div class="identity"><div class="avatar">AT</div><div><h2>Adam Tilton</h2><p>Driver AI</p></div></div>
+          <div class="match-row"><div class="matched"><small>Matched dimensions</small>Engineering · Age 29 · B2B Software</div><button class="more" onclick="toggleDetails(this)">More ❯</button></div>
+          <div class="details"><b>Company description:</b> AI documentation for software teams<br><b>Interests:</b> Systems, product craft, cycling<br><b>Location:</b> Seattle, WA</div>
+        </article>
+        <article class="founder-card">
+          <div class="identity"><div class="avatar">AS</div><div><h2>Alaz Sengul</h2><p>June</p></div></div>
+          <div class="match-row"><div class="matched"><small>Matched dimensions</small>Engineering · Age 30 · B2B Software</div><button class="more" onclick="toggleDetails(this)">More ❯</button></div>
+          <div class="details"><b>Company description:</b> Product analytics for B2B teams<br><b>Interests:</b> Analytics, marketplaces, cooking<br><b>Location:</b> London, UK</div>
+        </article>
+        <article class="founder-card">
+          <div class="identity"><div class="avatar">JW</div><div><h2>Justin Wu</h2><p>Arc</p></div></div>
+          <div class="match-row"><div class="matched"><small>Matched dimensions</small>Engineering · Age 28 · B2B Software</div><button class="more" onclick="toggleDetails(this)">More ❯</button></div>
+          <div class="details"><b>Company description:</b> Workflow software for finance teams<br><b>Interests:</b> Fintech, applied AI, climbing<br><b>Location:</b> San Francisco, CA</div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <button>V1</button>
+      <button class="active-version">V2</button>
+      <div class="ai">✓ AI Enabled · Anthropic</div>
+      <div class="spacer"></div>
+      <button>Export Results</button>
+      <button class="primary">Create Dinner Matching →</button>
+    </footer>
+  </div>
+  <script>
+    function toggleDetails(button) {
+      const card = button.closest('.founder-card');
+      const isOpen = card.classList.toggle('open');
+      button.textContent = isOpen ? 'Less ⌄' : 'More ❯';
+    }
+  </script>
+</body>
+</html>

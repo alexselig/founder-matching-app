@@ -1,0 +1,59 @@
+{
+  "title": "Founder App V2 — Screen Review",
+  "subtitle": "Review each unresolved screen before it enters production. The interactive mock is open in the companion tab.",
+  "groups": [
+    {
+      "key": "search",
+      "name": "Founder Search",
+      "dek": "Unapproved result and evidence surfaces."
+    },
+    {
+      "key": "dinner",
+      "name": "Dinner Matching",
+      "dek": "Unapproved setup, comparison, saved-state, export, and scale surfaces."
+    },
+    {
+      "key": "system",
+      "name": "System States",
+      "dek": "Configuration and recovery experiences."
+    }
+  ],
+  "items": [
+    {
+      "id": "SCREEN-01",
+      "group": "search",
+      "title": "Search Grid result layout",
+      "prompt": "Interactive candidate: v2-search-grid-review-v6. This restores the approved compact grid card and expanded state: 56px avatar; founder, company, matched dimensions, and every source attribute on one text axis; borderless More disclosure; and compact grid/list icons.",
+      "chips": ["1 of 11", "Interactive mock"],
+      "meta": {
+        "Status": "Awaiting review",
+        "Baseline": "Approved Search list view",
+        "Design system": "YC"
+      },
+      "tags": {
+        "Preserves": [
+          "Approved search shell",
+          "Search dimensions",
+          "Group and sort",
+          "Result actions"
+        ]
+      },
+      "lists": {
+        "Approve when": [
+          "The card makes identity and company immediately scannable.",
+          "Matched dimensions are prominent without overwhelming the founder.",
+          "The visible facts are enough to compare founders before opening More.",
+          "Three columns feel useful rather than cramped at desktop width."
+        ],
+        "Needs changes when": {
+          "style": "fail",
+          "items": [
+            "The grid hides essential comparison data.",
+            "Cards feel substantially slower to scan than the approved list.",
+            "The More disclosure or footer actions are unclear."
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>V2 Search Layout Revision</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=League+Spartan:wght@700;800&display=swap');
+    :root{--ink:#141414;--muted:#5b5f66;--line:#e3e5e9;--strong:#7d828b;--alt:#f5f3ee;--orange:#f26522;--blue:#2f5bea}
+    *{box-sizing:border-box}body{margin:0;color:var(--ink);font-family:Figtree,system-ui;background:#fff}button,select,input{font:inherit}
+    .app{min-height:100vh;display:grid;grid-template-rows:80px 1fr 64px}
+    header{display:grid;grid-template-columns:240px 1fr 260px;border-bottom:1px solid var(--line)}
+    .brand{padding:24px 28px;border-right:1px solid var(--line);font:800 24px/1 League Spartan;text-transform:uppercase}
+    nav{display:flex}nav button{border:0;border-right:1px solid var(--line);background:#fff;padding:0 28px;font-weight:700}nav .active{box-shadow:inset 0 -5px var(--blue)}
+    .profile{display:flex;align-items:center;gap:11px;padding:14px 22px;border-left:1px solid var(--line);background:var(--alt)}
+    .avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--blue);color:#fff;font-weight:800}.profile small{display:block;color:var(--muted)}
+    main{padding-bottom:0}.hero{display:grid;grid-template-columns:1.38fr .62fr;border-bottom:1px solid var(--line)}
+    .hero-main{padding:42px;border-right:1px solid var(--line)}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+    h1{font:800 50px/.94 League Spartan;text-transform:uppercase;margin:14px 0 25px;max-width:780px}
+    .query{display:grid;grid-template-columns:1fr 130px;border:2px solid var(--ink)}.query input{border:0;padding:18px;font-size:18px;outline:0}.query button{border:0;background:var(--orange);font-weight:800;text-transform:uppercase}
+    aside{padding:34px;background:var(--alt)}aside h3{font:800 22px/1 League Spartan;text-transform:uppercase;margin:12px 0 18px}
+    .chip{display:inline-block;border:1px solid var(--strong);background:#fff;padding:8px 10px;margin:0 5px 7px 0;font-size:13px}.chip b{color:var(--blue)}
+    .summary{display:flex;justify-content:space-between;align-items:center;padding:18px 30px;border-bottom:1px solid var(--line)}.summary strong{font-size:19px}.summary span{color:var(--muted)}
+    .results-controls{display:grid;grid-template-columns:1fr auto auto auto;min-height:72px;border-bottom:1px solid var(--line);align-items:stretch}
+    .matched{padding:23px 30px;font-size:13px;color:var(--muted)}.matched b{color:var(--ink)}
+    .control{display:flex;align-items:center;gap:10px;padding:0 16px;border-left:1px solid var(--line)}.control label{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+    select{border:1px solid var(--strong);border-radius:0;background:#fff;padding:10px 34px 10px 11px;font-weight:700;color:var(--ink)}
+    .icons{display:flex;border-left:1px solid var(--line)}.icon{width:58px;border:0;border-right:1px solid var(--line);background:#fff;display:grid;place-items:center}.icon.active{background:var(--ink);color:#fff}.icon svg{width:21px;height:21px}
+    .group{padding:15px 30px;background:var(--alt);border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr)}article{padding:27px;min-height:250px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}article:last-child{border-right:0}
+    article h2{font:800 28px/1 League Spartan;text-transform:uppercase;margin:26px 0 5px}.company{font-size:18px;font-weight:700}.match{margin-top:21px;padding:11px;border-left:4px solid var(--orange);background:#fff7f1}.match small{display:block;color:var(--muted)}
+    footer{position:sticky;bottom:0;display:flex;justify-content:space-between;border-top:1px solid var(--line);background:#fff;z-index:4}
+    .footer-left,.footer-right{display:flex}.footer-btn{height:64px;border:0;border-right:1px solid var(--line);background:#fff;padding:0 20px;font-weight:800}.footer-left{border-right:1px solid var(--line)}.footer-right{border-left:1px solid var(--line)}
+    .version{display:flex}.version button{width:62px;padding:0}.version .active{background:var(--ink);color:#fff}.ai{color:#17634d}.footer-right .primary{background:var(--blue);color:#fff;border-right:0;padding:0 26px}
+    @media(max-width:1000px){header{grid-template-columns:1fr auto}nav{display:none}.hero{grid-template-columns:1fr}.hero-main{border-right:0}.results-controls{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.footer-btn{padding:0 11px;font-size:12px}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">Founder Table <span style="color:#f26522">V2</span></div>
+    <nav><button class="active">Founder Search</button><button>Dinner Matching</button><button>Saved Dinners</button></nav>
+    <div class="profile"><div class="avatar">DQ</div><div><small>Current founder</small><strong>Di Qi · Lantern</strong></div></div>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="hero-main"><div class="eyebrow">Schema-wide founder search</div><h1>Find the right people, not just the right names.</h1><div class="query"><input value="Engineering founders in B2B software, age 25–33"><button>Search</button></div></div>
+      <aside><div class="eyebrow">Interpreted criteria</div><h3>Searching 3 dimensions</h3><span class="chip"><b>Role</b> Engineering</span><span class="chip"><b>Company vertical</b> B2B Software</span><span class="chip"><b>Age</b> 25–33</span></aside>
+    </section>
+    <div class="summary"><div><strong>48 founders</strong> <span>from 574 records</span></div><span>AI interpretation validated against database fields</span></div>
+    <section class="results-controls">
+      <div class="matched"><b>Matched dimensions</b> · Role, Company vertical, Age</div>
+      <div class="control"><label for="group">Group by</label><select id="group"><option>Company vertical</option><option>Role</option><option>Age band</option><option>Education</option><option>Company</option><option>Cohort group</option><option>No grouping</option></select></div>
+      <div class="control"><label for="sort">Sort by</label><select id="sort"><option>Relevance</option><option>Name A–Z</option><option>Age low–high</option><option>Age high–low</option><option>Company</option></select></div>
+      <div class="icons" aria-label="Result view">
+        <button class="icon active" aria-label="Grid view" title="Grid view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+        <button class="icon" aria-label="List view" title="List view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>
+      </div>
+    </section>
+    <div class="group"><strong>B2B Software and Services</strong><span>48 matches</span></div>
+    <div class="grid">
+      <article><h2>Di Qi</h2><div class="company">Lantern</div><div class="match"><small>Matched on 3 fields</small><strong>Engineering · Age 33 · B2B Software</strong></div></article>
+      <article><h2>Narek Galstyan</h2><div class="company">Lantern</div><div class="match"><small>Matched on 3 fields</small><strong>Engineering · Age 31 · B2B Software</strong></div></article>
+      <article><h2>Daniel Hensley</h2><div class="company">Driver AI</div><div class="match"><small>Matched on 3 fields</small><strong>Engineering · Age 25 · B2B Software</strong></div></article>
+    </div>
+  </main>
+  <footer>
+    <div class="footer-left">
+      <div class="version"><button class="footer-btn">V1</button><button class="footer-btn active">V2</button></div>
+      <button class="footer-btn ai">✓ AI Enabled · Anthropic</button>
+    </div>
+    <div class="footer-right">
+      <button class="footer-btn">Export Results</button>
+      <button class="footer-btn primary">Create Dinner Matching →</button>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

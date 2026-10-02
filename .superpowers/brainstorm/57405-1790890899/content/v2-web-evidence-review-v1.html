@@ -1,0 +1,1146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Founder App V2 — Web Search evidence review</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=League+Spartan:wght@700;800&display=swap");
+
+    :root {
+      --surface: #ffffff;
+      --surface-alt: #f5f3ee;
+      --line: #e3e5e9;
+      --line-strong: #7d828b;
+      --ink: #141414;
+      --ink-muted: #5b5f66;
+      --orange: #f26522;
+      --orange-soft: #fff3ed;
+      --blue: #2f5bea;
+      --blue-soft: #eef2ff;
+      --green: #317565;
+      --green-soft: #edf8f4;
+      --warning: #8c3e17;
+      --warning-soft: #fff1e8;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      min-width: 980px;
+      min-height: 100%;
+      margin: 0;
+      color: var(--ink);
+      background: var(--surface);
+      font-family: Figtree, "Avenir Next", system-ui, sans-serif;
+    }
+
+    button,
+    a { color: inherit; font: inherit; }
+    button { cursor: pointer; }
+    a { text-underline-offset: 3px; }
+
+    button:focus-visible,
+    a:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+      z-index: 3;
+    }
+
+    [hidden] { display: none !important; }
+    .app { min-height: 100vh; padding-bottom: 65px; }
+
+    .topbar {
+      height: 64px;
+      display: grid;
+      grid-template-columns: 240px 172px 178px 162px 1fr 318px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 24px;
+      border-right: 1px solid var(--line);
+      font: 800 23px/.88 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+
+    .brand span:first-child { max-width: 105px; }
+    .brand .version { color: var(--orange); font-size: 24px; }
+
+    .nav-item {
+      position: relative;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      font-weight: 700;
+    }
+
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5px;
+      background: var(--blue);
+    }
+
+    .profile {
+      grid-column: 6;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 0 24px 0 18px;
+      border-left: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .profile-avatar,
+    .founder-avatar {
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .profile-avatar {
+      width: 36px;
+      height: 36px;
+      flex: 0 0 36px;
+      background: var(--ink);
+      font-size: 11px;
+    }
+
+    .profile small {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--ink-muted);
+      font-size: 12px;
+    }
+
+    .profile strong { font-size: 14px; }
+    .profile .chevron { margin-left: auto; font-size: 18px; }
+
+    .review-bar {
+      min-height: 62px;
+      display: grid;
+      grid-template-columns: minmax(330px, 1fr) auto;
+      align-items: stretch;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-alt);
+    }
+
+    .review-intro {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+    }
+
+    .review-intro strong {
+      font: 800 18px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+
+    .review-intro span {
+      color: var(--ink-muted);
+      font-size: 12px;
+    }
+
+    .fixture-label {
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 0 8px;
+      border: 1px solid var(--ink);
+      background: #fff;
+      color: var(--ink);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .state-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 138px);
+      border-left: 1px solid var(--line);
+    }
+
+    .state-tab {
+      position: relative;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .state-tab:last-child { border-right: 0; }
+    .state-tab:hover { background: var(--blue-soft); }
+
+    .state-tab[aria-selected="true"] {
+      color: var(--blue);
+      background: #fff;
+    }
+
+    .state-tab[aria-selected="true"]::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: var(--blue);
+    }
+
+    .page-heading {
+      min-height: 118px;
+      display: grid;
+      grid-template-columns: minmax(300px, 34%) 1fr;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .heading-block {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24px 32px;
+      color: #fff;
+      background: var(--blue);
+    }
+
+    .eyebrow {
+      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .heading-block h1 {
+      max-width: 520px;
+      margin: 0;
+      font: 800 35px/.96 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+
+    .heading-copy {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+      padding: 22px 32px;
+    }
+
+    .heading-copy p {
+      max-width: 680px;
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .refresh-button {
+      min-width: 152px;
+      height: 42px;
+      padding: 0 18px;
+      border: 1px solid var(--blue);
+      color: #fff;
+      background: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .refresh-button:hover { background: #244bc8; }
+
+    .content {
+      display: grid;
+      grid-template-columns: minmax(320px, 34%) minmax(0, 1fr);
+      min-height: calc(100vh - 309px);
+    }
+
+    .founder-panel {
+      border-right: 1px solid var(--line);
+      background: var(--surface-alt);
+    }
+
+    .founder-identity {
+      min-height: 118px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .founder-avatar {
+      width: 58px;
+      height: 58px;
+      flex: 0 0 58px;
+      background: var(--ink);
+      font-size: 12px;
+    }
+
+    .founder-identity h2 {
+      margin: 0 0 4px;
+      font: 800 24px/.95 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+
+    .founder-identity p {
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .source-separation {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--line);
+      border-left: 5px solid var(--orange);
+      background: var(--orange-soft);
+    }
+
+    .source-separation strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+
+    .source-separation p {
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .data-section {
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .section-label {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink-muted);
+      background: var(--surface-alt);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .fact {
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .fact:last-child { border-bottom: 0; }
+
+    .fact span {
+      color: var(--ink-muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .fact strong {
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .review-note {
+      padding: 18px 24px;
+      color: var(--ink-muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .review-note strong { color: var(--ink); }
+
+    .evidence-panel { min-width: 0; background: #fff; }
+
+    .status-summary {
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .status-icon {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+      font-weight: 800;
+    }
+
+    .status-copy strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 14px;
+    }
+
+    .status-copy span {
+      color: var(--ink-muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .status-count {
+      min-width: 112px;
+      padding-left: 18px;
+      border-left: 1px solid var(--line);
+      text-align: right;
+    }
+
+    .status-count strong {
+      display: block;
+      font: 800 25px/1 "League Spartan", sans-serif;
+    }
+
+    .status-count span {
+      color: var(--ink-muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .state-supported .status-summary {
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .state-stale .status-summary {
+      color: var(--warning);
+      background: var(--warning-soft);
+    }
+
+    .state-unsupported .status-summary {
+      color: var(--ink);
+      background: var(--surface-alt);
+    }
+
+    .stale-warning {
+      display: grid;
+      grid-template-columns: 5px 1fr auto;
+      min-height: 72px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .stale-warning::before { content: ""; background: var(--orange); }
+
+    .stale-warning div {
+      align-self: center;
+      padding: 12px 18px;
+    }
+
+    .stale-warning strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+
+    .stale-warning p {
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .stale-warning button {
+      align-self: stretch;
+      min-width: 136px;
+      border: 0;
+      border-left: 1px solid var(--line);
+      background: #fff;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .stale-warning button:hover { color: var(--blue); background: var(--blue-soft); }
+
+    .evidence-list { margin: 0; padding: 0; list-style: none; }
+
+    .evidence-item {
+      display: grid;
+      grid-template-columns: 64px minmax(0, 1fr);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .rank {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 20px;
+      border-right: 1px solid var(--line);
+      color: var(--ink-muted);
+      background: var(--surface-alt);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .rank strong {
+      margin-top: 5px;
+      color: var(--ink);
+      font: 800 24px/1 "League Spartan", sans-serif;
+      letter-spacing: 0;
+    }
+
+    .evidence-body { min-width: 0; padding: 18px 24px 20px; }
+
+    .evidence-kicker {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 9px;
+    }
+
+    .classification,
+    .stale-pill {
+      display: inline-flex;
+      min-height: 23px;
+      align-items: center;
+      padding: 0 8px;
+      border: 1px solid var(--line-strong);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .classification {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: var(--blue-soft);
+    }
+
+    .stale-pill {
+      border-color: var(--orange);
+      color: var(--warning);
+      background: var(--warning-soft);
+    }
+
+    .evidence-body h3 {
+      margin: 0 0 6px;
+      font: 800 20px/1.05 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+
+    .source-link {
+      display: inline-block;
+      max-width: 100%;
+      margin-bottom: 12px;
+      overflow-wrap: anywhere;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .snippet {
+      max-width: 790px;
+      margin: 0 0 14px;
+      color: #34373c;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .claim-support {
+      display: grid;
+      grid-template-columns: 124px minmax(0, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+      padding: 11px 13px;
+      border-left: 4px solid var(--orange);
+      background: var(--orange-soft);
+    }
+
+    .claim-support span {
+      color: var(--warning);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .claim-support strong {
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .metadata {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(90px, 1fr));
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+    }
+
+    .meta {
+      min-height: 52px;
+      padding: 9px 10px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .meta small {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink-muted);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .meta strong {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .unsupported-empty {
+      display: grid;
+      grid-template-columns: minmax(240px, .8fr) minmax(340px, 1.2fr);
+      min-height: 430px;
+    }
+
+    .empty-message {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 48px;
+      border-right: 1px solid var(--line);
+      background: var(--surface-alt);
+    }
+
+    .empty-mark {
+      width: 66px;
+      height: 66px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 22px;
+      border: 1px solid var(--ink);
+      font: 800 30px/1 "League Spartan", sans-serif;
+    }
+
+    .empty-message h3 {
+      max-width: 360px;
+      margin: 0 0 11px;
+      font: 800 30px/.98 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+
+    .empty-message p {
+      max-width: 410px;
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .unsupported-detail { padding: 34px 36px; }
+
+    .unsupported-detail h3 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+
+    .unsupported-detail > p {
+      margin: 0 0 22px;
+      color: var(--ink-muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .claim-check {
+      display: grid;
+      grid-template-columns: 1fr 118px;
+      align-items: center;
+      gap: 18px;
+      min-height: 68px;
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .claim-check:last-of-type { border-bottom: 1px solid var(--line); }
+
+    .claim-check strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+
+    .claim-check span {
+      color: var(--ink-muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .no-source {
+      min-height: 28px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line-strong);
+      color: var(--ink-muted);
+      background: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .unsupported-warning {
+      margin-top: 22px;
+      padding: 14px 16px;
+      border-left: 5px solid var(--orange);
+      background: var(--orange-soft);
+      color: var(--warning);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .footer {
+      position: fixed;
+      z-index: 20;
+      inset: auto 0 0;
+      height: 65px;
+      display: grid;
+      grid-template-columns: 48px 48px 184px 1fr 148px 235px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .footer button,
+    .footer div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      font-weight: 800;
+    }
+
+    .footer > button:nth-child(-n+2) {
+      position: relative;
+      color: var(--ink-muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .footer > button.active-version {
+      color: var(--blue);
+      background: var(--surface-alt);
+    }
+
+    .footer .active-version::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: var(--blue);
+    }
+
+    .footer .ai {
+      justify-content: flex-start;
+      padding: 0 16px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .footer .export { grid-column: 5; }
+    .footer .primary { color: #fff; background: var(--blue); }
+
+    .live-region {
+      position: fixed;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1180px) {
+      .topbar { grid-template-columns: 210px 150px 155px 145px 1fr 270px; }
+      .state-tabs { grid-template-columns: repeat(3, 122px); }
+      .metadata { grid-template-columns: repeat(3, minmax(90px, 1fr)); }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .state-panel.active {
+        animation: reveal 160ms ease-out;
+      }
+
+      @keyframes reveal {
+        from { opacity: 0; transform: translateY(3px); }
+        to { opacity: 1; transform: none; }
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span>Founder<br>Table</span><span class="version">V2</span></div>
+      <button class="nav-item active">Founder Search</button>
+      <button class="nav-item">Table Config</button>
+      <button class="nav-item">Saved Dinners</button>
+      <div></div>
+      <div class="profile">
+        <div class="profile-avatar">YC</div>
+        <div><small>Current organizer</small><strong>YC Admin</strong></div>
+        <span class="chevron">⌄</span>
+      </div>
+    </header>
+
+    <section class="review-bar" aria-label="Review controls">
+      <div class="review-intro">
+        <span class="fixture-label">Review fixture</span>
+        <strong>Web Search evidence states</strong>
+        <span>Source records below are illustrative UI fixtures, not live search results.</span>
+      </div>
+      <div class="state-tabs" role="tablist" aria-label="Evidence review state">
+        <button class="state-tab" id="tab-supported" role="tab" aria-selected="true" aria-controls="panel-supported" data-state="supported">Supported</button>
+        <button class="state-tab" id="tab-stale" role="tab" aria-selected="false" aria-controls="panel-stale" data-state="stale">Stale</button>
+        <button class="state-tab" id="tab-unsupported" role="tab" aria-selected="false" aria-controls="panel-unsupported" data-state="unsupported">Unsupported</button>
+      </div>
+    </section>
+
+    <main>
+      <section class="page-heading">
+        <div class="heading-block">
+          <div class="eyebrow">Founder detail · Web Search</div>
+          <h1>Review the evidence, not just the summary.</h1>
+        </div>
+        <div class="heading-copy">
+          <p>Web Search stays separate from the founder record. Every supported claim points to a source, retrieval date, provider, and entity match.</p>
+          <button class="refresh-button" id="refresh-evidence">Refresh evidence</button>
+        </div>
+      </section>
+
+      <div class="content">
+        <aside class="founder-panel" aria-label="Authoritative founder details">
+          <div class="founder-identity">
+            <div class="founder-avatar">DQ</div>
+            <div>
+              <h2>Di Qi</h2>
+              <p>Lantern</p>
+            </div>
+          </div>
+
+          <div class="source-separation">
+            <strong>Authoritative founder data</strong>
+            <p>These values come from the loaded founder dataset. Web Search cannot replace or edit them.</p>
+          </div>
+
+          <section class="data-section">
+            <div class="section-label">Source fields</div>
+            <div class="fact"><span>Founder ID</span><strong>343105</strong></div>
+            <div class="fact"><span>Company</span><strong>Lantern</strong></div>
+            <div class="fact"><span>Role</span><strong>Engineering</strong></div>
+            <div class="fact"><span>Market</span><strong>B2B Software and Services</strong></div>
+            <div class="fact"><span>Cohort</span><strong>Group 3 · Section 3I</strong></div>
+          </section>
+
+          <div class="review-note">
+            <strong>Fixture boundary:</strong> the founder, company, role, and market values match the approved V2 review data. Evidence URLs use reserved example domains so this artifact does not present invented web research as fact.
+          </div>
+        </aside>
+
+        <section class="evidence-panel" aria-live="polite">
+          <div class="state-panel state-supported active" id="panel-supported" role="tabpanel" aria-labelledby="tab-supported">
+            <div class="status-summary">
+              <div class="status-icon">✓</div>
+              <div class="status-copy">
+                <strong>Supported by cited Web Search evidence</strong>
+                <span>Three source records support the company, role, and market claims shown in this review fixture.</span>
+              </div>
+              <div class="status-count"><strong>3</strong><span>Evidence items</span></div>
+            </div>
+
+            <ol class="evidence-list">
+              <li class="evidence-item">
+                <div class="rank">Rank<strong>1</strong></div>
+                <article class="evidence-body">
+                  <div class="evidence-kicker">
+                    <span class="classification">Founder + company</span>
+                  </div>
+                  <h3>Lantern team directory</h3>
+                  <a class="source-link" href="https://lantern.example/team/di-qi" target="_blank" rel="noreferrer">https://lantern.example/team/di-qi ↗</a>
+                  <p class="snippet">Fixture excerpt: “Di Qi — Engineering, Lantern.” This sample demonstrates an official company source that jointly matches the founder and company.</p>
+                  <div class="claim-support">
+                    <span>Supports claim</span>
+                    <strong>Di Qi has an Engineering role at Lantern.</strong>
+                  </div>
+                  <div class="metadata">
+                    <div class="meta"><small>Domain</small><strong>lantern.example</strong></div>
+                    <div class="meta"><small>Retrieved</small><strong>Oct 1, 2026</strong></div>
+                    <div class="meta"><small>Provider</small><strong>Fixture / Anthropic shape</strong></div>
+                    <div class="meta"><small>Entity match</small><strong>Founder + company</strong></div>
+                    <div class="meta"><small>Confidence</small><strong>0.96 · High</strong></div>
+                  </div>
+                </article>
+              </li>
+
+              <li class="evidence-item">
+                <div class="rank">Rank<strong>2</strong></div>
+                <article class="evidence-body">
+                  <div class="evidence-kicker">
+                    <span class="classification">Company</span>
+                  </div>
+                  <h3>Lantern product overview</h3>
+                  <a class="source-link" href="https://lantern.example/product" target="_blank" rel="noreferrer">https://lantern.example/product ↗</a>
+                  <p class="snippet">Fixture excerpt: “Lantern provides workflow software for business teams.” The sample shows company-level evidence without extending the claim to unsupported founder biography.</p>
+                  <div class="claim-support">
+                    <span>Supports claim</span>
+                    <strong>Lantern operates in a business software market.</strong>
+                  </div>
+                  <div class="metadata">
+                    <div class="meta"><small>Domain</small><strong>lantern.example</strong></div>
+                    <div class="meta"><small>Retrieved</small><strong>Oct 1, 2026</strong></div>
+                    <div class="meta"><small>Provider</small><strong>Fixture / Anthropic shape</strong></div>
+                    <div class="meta"><small>Entity match</small><strong>Company only</strong></div>
+                    <div class="meta"><small>Confidence</small><strong>0.91 · High</strong></div>
+                  </div>
+                </article>
+              </li>
+
+              <li class="evidence-item">
+                <div class="rank">Rank<strong>3</strong></div>
+                <article class="evidence-body">
+                  <div class="evidence-kicker">
+                    <span class="classification">Market context</span>
+                  </div>
+                  <h3>B2B software company index</h3>
+                  <a class="source-link" href="https://market-index.example/companies/lantern" target="_blank" rel="noreferrer">https://market-index.example/companies/lantern ↗</a>
+                  <p class="snippet">Fixture excerpt: “Lantern · B2B Software and Services.” This sample demonstrates a secondary source used only for company-market classification.</p>
+                  <div class="claim-support">
+                    <span>Supports claim</span>
+                    <strong>Lantern is classified in B2B Software and Services.</strong>
+                  </div>
+                  <div class="metadata">
+                    <div class="meta"><small>Domain</small><strong>market-index.example</strong></div>
+                    <div class="meta"><small>Retrieved</small><strong>Sep 29, 2026</strong></div>
+                    <div class="meta"><small>Provider</small><strong>Fixture / Anthropic shape</strong></div>
+                    <div class="meta"><small>Entity match</small><strong>Company + market</strong></div>
+                    <div class="meta"><small>Confidence</small><strong>0.84 · Medium</strong></div>
+                  </div>
+                </article>
+              </li>
+            </ol>
+          </div>
+
+          <div class="state-panel state-stale" id="panel-stale" role="tabpanel" aria-labelledby="tab-stale" hidden>
+            <div class="status-summary">
+              <div class="status-icon">!</div>
+              <div class="status-copy">
+                <strong>Evidence is available, but it is stale</strong>
+                <span>The latest successful run is older than its stale-after date. Keep the history visible, but do not treat it as current.</span>
+              </div>
+              <div class="status-count"><strong>2</strong><span>Stale items</span></div>
+            </div>
+
+            <div class="stale-warning">
+              <div>
+                <strong>Refresh recommended before using these claims</strong>
+                <p>Retrieved May 12, 2026 · Marked stale August 10, 2026 · Prior evidence remains available for auditability.</p>
+              </div>
+              <button data-refresh>Refresh now</button>
+            </div>
+
+            <ol class="evidence-list">
+              <li class="evidence-item">
+                <div class="rank">Rank<strong>1</strong></div>
+                <article class="evidence-body">
+                  <div class="evidence-kicker">
+                    <span class="classification">Founder + company</span>
+                    <span class="stale-pill">Stale by 52 days</span>
+                  </div>
+                  <h3>Lantern team directory</h3>
+                  <a class="source-link" href="https://lantern.example/team/di-qi" target="_blank" rel="noreferrer">https://lantern.example/team/di-qi ↗</a>
+                  <p class="snippet">Fixture excerpt from the prior successful run: “Di Qi — Engineering, Lantern.” The source remains inspectable while the UI warns that recency is no longer guaranteed.</p>
+                  <div class="claim-support">
+                    <span>Previously supported</span>
+                    <strong>Di Qi has an Engineering role at Lantern.</strong>
+                  </div>
+                  <div class="metadata">
+                    <div class="meta"><small>Domain</small><strong>lantern.example</strong></div>
+                    <div class="meta"><small>Retrieved</small><strong>May 12, 2026</strong></div>
+                    <div class="meta"><small>Stale after</small><strong>Aug 10, 2026</strong></div>
+                    <div class="meta"><small>Provider</small><strong>Fixture / Anthropic shape</strong></div>
+                    <div class="meta"><small>Confidence then</small><strong>0.94 · High</strong></div>
+                  </div>
+                </article>
+              </li>
+
+              <li class="evidence-item">
+                <div class="rank">Rank<strong>2</strong></div>
+                <article class="evidence-body">
+                  <div class="evidence-kicker">
+                    <span class="classification">Company</span>
+                    <span class="stale-pill">Stale by 52 days</span>
+                  </div>
+                  <h3>Lantern product overview</h3>
+                  <a class="source-link" href="https://lantern.example/product" target="_blank" rel="noreferrer">https://lantern.example/product ↗</a>
+                  <p class="snippet">Fixture excerpt from the prior successful run: “Lantern provides workflow software for business teams.” Refresh to confirm that this market description is still current.</p>
+                  <div class="claim-support">
+                    <span>Previously supported</span>
+                    <strong>Lantern operates in a business software market.</strong>
+                  </div>
+                  <div class="metadata">
+                    <div class="meta"><small>Domain</small><strong>lantern.example</strong></div>
+                    <div class="meta"><small>Retrieved</small><strong>May 12, 2026</strong></div>
+                    <div class="meta"><small>Stale after</small><strong>Aug 10, 2026</strong></div>
+                    <div class="meta"><small>Provider</small><strong>Fixture / Anthropic shape</strong></div>
+                    <div class="meta"><small>Confidence then</small><strong>0.89 · High</strong></div>
+                  </div>
+                </article>
+              </li>
+            </ol>
+          </div>
+
+          <div class="state-panel state-unsupported" id="panel-unsupported" role="tabpanel" aria-labelledby="tab-unsupported" hidden>
+            <div class="status-summary">
+              <div class="status-icon">—</div>
+              <div class="status-copy">
+                <strong>No citable evidence returned</strong>
+                <span>The provider returned no usable source URLs or citation metadata. Authoritative founder fields remain unchanged.</span>
+              </div>
+              <div class="status-count"><strong>0</strong><span>Evidence items</span></div>
+            </div>
+
+            <div class="unsupported-empty">
+              <div class="empty-message">
+                <div class="empty-mark">?</div>
+                <h3>Nothing here can support a claim yet.</h3>
+                <p>Without a source URL and retrievable citation, the system does not promote provider text into evidence. Refresh the search or use the founder dataset fields shown at left.</p>
+              </div>
+              <div class="unsupported-detail">
+                <h3>Claims checked in this run</h3>
+                <p>The system searched using known identity and company context only. It did not create new founder facts.</p>
+
+                <div class="claim-check">
+                  <div><strong>Role at company</strong><span>“Di Qi has an Engineering role at Lantern.”</span></div>
+                  <div class="no-source">No source</div>
+                </div>
+                <div class="claim-check">
+                  <div><strong>Company market</strong><span>“Lantern operates in B2B Software and Services.”</span></div>
+                  <div class="no-source">No source</div>
+                </div>
+                <div class="claim-check">
+                  <div><strong>Company description</strong><span>No source-backed summary was available.</span></div>
+                  <div class="no-source">No source</div>
+                </div>
+
+                <div class="unsupported-warning">
+                  Provider summaries without usable provenance are unsupported. Do not show them as facts, merge them into founder data, or include them in evidence exports.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <button>V1</button>
+      <button class="active-version">V2</button>
+      <div class="ai">✓ AI Enabled · Anthropic</div>
+      <div></div>
+      <button class="export">Export Results</button>
+      <button class="primary">Create Dinner Matching →</button>
+    </footer>
+
+    <div class="live-region" id="live-region" aria-live="polite"></div>
+  </div>
+
+  <script>
+    const stateNames = {
+      supported: "Supported evidence state shown",
+      stale: "Stale evidence state shown",
+      unsupported: "Unsupported evidence state shown"
+    };
+
+    const tabs = [...document.querySelectorAll(".state-tab")];
+    const panels = [...document.querySelectorAll(".state-panel")];
+    const liveRegion = document.getElementById("live-region");
+
+    function setState(state, focusTab = false) {
+      tabs.forEach(tab => {
+        const selected = tab.dataset.state === state;
+        tab.setAttribute("aria-selected", String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+        if (selected && focusTab) tab.focus();
+      });
+
+      panels.forEach(panel => {
+        const active = panel.id === `panel-${state}`;
+        panel.hidden = !active;
+        panel.classList.toggle("active", active);
+      });
+
+      liveRegion.textContent = stateNames[state];
+    }
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener("click", () => setState(tab.dataset.state));
+      tab.addEventListener("keydown", event => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        let nextIndex = index;
+        if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+        if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+        if (event.key === "Home") nextIndex = 0;
+        if (event.key === "End") nextIndex = tabs.length - 1;
+        setState(tabs[nextIndex].dataset.state, true);
+      });
+    });
+
+    function announceRefresh(button) {
+      const original = button.textContent;
+      button.disabled = true;
+      button.textContent = "Refresh queued";
+      liveRegion.textContent = "Evidence refresh queued for Di Qi at Lantern";
+      window.setTimeout(() => {
+        button.disabled = false;
+        button.textContent = original;
+      }, 1200);
+    }
+
+    document.getElementById("refresh-evidence").addEventListener("click", event => announceRefresh(event.currentTarget));
+    document.querySelectorAll("[data-refresh]").forEach(button => {
+      button.addEventListener("click", event => announceRefresh(event.currentTarget));
+    });
+
+    setState("supported");
+  </script>
+</body>
+</html>

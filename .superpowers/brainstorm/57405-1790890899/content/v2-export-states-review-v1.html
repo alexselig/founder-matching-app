@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Founder App V2 — Export experience review</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=League+Spartan:wght@700;800&display=swap");
+
+    :root {
+      --surface: #ffffff;
+      --surface-alt: #f5f3ee;
+      --line: #e3e5e9;
+      --line-strong: #7d828b;
+      --ink: #141414;
+      --ink-muted: #5b5f66;
+      --orange: #f26522;
+      --orange-soft: #fff3ed;
+      --blue: #2f5bea;
+      --blue-soft: #eef2ff;
+      --success: #17634d;
+      --danger: #b43a2f;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-width: 980px;
+      min-height: 100%;
+      color: var(--ink);
+      background: var(--surface);
+      font-family: "Figtree", "Avenir Next", system-ui, sans-serif;
+    }
+    button, input { color: inherit; font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+    [hidden] { display: none !important; }
+
+    .app {
+      min-height: 100vh;
+      padding-bottom: 65px;
+    }
+
+    .topbar {
+      position: relative;
+      z-index: 20;
+      height: 64px;
+      display: grid;
+      grid-template-columns: 240px 172px 178px 162px 1fr 318px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 24px;
+      border-right: 1px solid var(--line);
+      font: 800 23px/.88 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .brand span:first-child { max-width: 105px; }
+    .brand .version { color: var(--orange); font-size: 24px; }
+    .nav-item {
+      position: relative;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      font-weight: 700;
+    }
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5px;
+      background: var(--blue);
+    }
+    .profile {
+      grid-column: 6;
+      display: grid;
+      grid-template-columns: 36px 1fr 18px;
+      align-items: center;
+      gap: 13px;
+      padding: 0 22px 0 18px;
+      border-left: 1px solid var(--line);
+    }
+    .profile-avatar {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--ink);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .profile small, .profile strong { display: block; }
+    .profile small { margin-bottom: 2px; color: var(--ink-muted); font-size: 12px; }
+    .profile strong { font-size: 14px; }
+    .profile .chevron { font-size: 18px; }
+
+    .review-strip {
+      position: relative;
+      z-index: 18;
+      height: 48px;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--ink);
+      background: var(--ink);
+      color: #fff;
+    }
+    .review-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 18px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .review-label b { color: #ff8a52; }
+    .state-switch { display: flex; }
+    .state-switch button {
+      min-width: 126px;
+      padding: 0 18px;
+      border: 0;
+      border-left: 1px solid #404044;
+      background: var(--ink);
+      color: #c8c9cc;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+    .state-switch button[aria-pressed="true"] {
+      color: var(--ink);
+      background: var(--surface);
+      border-bottom: 4px solid var(--blue);
+    }
+
+    main {
+      min-height: calc(100vh - 177px);
+      display: grid;
+      grid-template-columns: minmax(420px, 42%) minmax(560px, 58%);
+      background: var(--surface-alt);
+    }
+    .context {
+      min-width: 0;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .context-title {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--line);
+      color: #fff;
+      background: var(--blue);
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .context-title h1 {
+      max-width: 390px;
+      margin: 8px 0 0;
+      font: 800 36px/.94 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .context-body { padding: 27px 32px 32px; }
+    .context-body > p {
+      max-width: 540px;
+      margin: 0 0 24px;
+      color: var(--ink-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .context-card {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .context-card + .context-card { margin-top: 12px; }
+    .context-card.selected { border-left: 5px solid var(--blue); }
+    .context-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 48px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .context-card-head strong { font-size: 13px; }
+    .context-card-head span {
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .context-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .context-stats div {
+      min-height: 72px;
+      padding: 14px 16px;
+      border-right: 1px solid var(--line);
+    }
+    .context-stats div:last-child { border-right: 0; }
+    .context-stats small, .context-stats strong { display: block; }
+    .context-stats small {
+      margin-bottom: 7px;
+      color: var(--ink-muted);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .context-stats strong { font-size: 12px; line-height: 1.25; }
+    .context-note {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-left: 4px solid var(--orange);
+      background: var(--orange-soft);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .stage {
+      min-width: 0;
+      display: grid;
+      place-items: center;
+      padding: 34px 40px;
+      background: var(--surface-alt);
+    }
+    .export-panel {
+      width: min(660px, 100%);
+      border: 1px solid var(--ink);
+      background: var(--surface);
+    }
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 23px 24px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .panel-head h2 {
+      margin: 6px 0 5px;
+      font: 800 29px/.95 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .panel-head p {
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .close {
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      padding: 0;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      font-size: 21px;
+      line-height: 1;
+    }
+    .panel-body { padding: 20px 24px 24px; }
+    .section-heading {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .section-heading strong {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .section-heading span { color: var(--ink-muted); font-size: 10px; }
+
+    .scope-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .scope-option {
+      position: relative;
+      min-height: 106px;
+      display: block;
+      padding: 15px 16px 13px 42px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      cursor: pointer;
+    }
+    .scope-option:has(input:checked) {
+      border-color: var(--blue);
+      border-bottom-width: 4px;
+      background: var(--blue-soft);
+    }
+    .scope-option input {
+      position: absolute;
+      top: 17px;
+      left: 16px;
+      width: 15px;
+      height: 15px;
+      accent-color: var(--blue);
+    }
+    .scope-option strong, .scope-option span, .scope-option small { display: block; }
+    .scope-option strong { font-size: 13px; }
+    .scope-option span { margin-top: 7px; color: var(--ink-muted); font-size: 11px; line-height: 1.35; }
+    .scope-option small {
+      margin-top: 8px;
+      color: var(--blue);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .option-row {
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      border: 1px solid var(--line-strong);
+    }
+    .detail-option {
+      position: relative;
+      min-height: 74px;
+      display: block;
+      padding: 14px 18px 12px 46px;
+      cursor: pointer;
+    }
+    .detail-option input {
+      position: absolute;
+      top: 16px;
+      left: 17px;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--blue);
+    }
+    .detail-option strong, .detail-option span { display: block; }
+    .detail-option strong { font-size: 12px; }
+    .detail-option span { margin-top: 5px; color: var(--ink-muted); font-size: 10px; line-height: 1.35; }
+    .format {
+      padding: 14px 16px;
+      border-left: 1px solid var(--line);
+      background: var(--surface-alt);
+    }
+    .format small, .format strong { display: block; }
+    .format small {
+      margin-bottom: 7px;
+      color: var(--ink-muted);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .format strong { font-size: 13px; }
+    .privacy-note {
+      margin-top: 12px;
+      padding: 11px 13px;
+      border-left: 4px solid var(--orange);
+      background: var(--orange-soft);
+      font-size: 10px;
+      line-height: 1.45;
+    }
+    .privacy-note strong { display: block; margin-bottom: 3px; font-size: 10px; }
+
+    .panel-actions {
+      min-height: 58px;
+      display: flex;
+      align-items: stretch;
+      justify-content: flex-end;
+      border-top: 1px solid var(--line);
+    }
+    .panel-actions button {
+      min-width: 124px;
+      padding: 0 20px;
+      border: 0;
+      border-left: 1px solid var(--line);
+      background: var(--surface);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .panel-actions .primary { color: #fff; background: var(--blue); }
+
+    .state-body {
+      min-height: 390px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 42px 46px;
+    }
+    .state-mark {
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 22px;
+      border: 1px solid var(--ink);
+      color: #fff;
+      background: var(--blue);
+      font: 800 25px/1 "League Spartan", sans-serif;
+    }
+    .state-mark.success { background: var(--success); }
+    .state-mark.failure { background: var(--danger); }
+    .state-body h2 {
+      margin: 0 0 9px;
+      font: 800 31px/.96 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .state-body > p {
+      max-width: 500px;
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .progress-track {
+      height: 10px;
+      margin: 28px 0 12px;
+      border: 1px solid var(--ink);
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .progress-track span {
+      display: block;
+      width: 34%;
+      height: 100%;
+      background: var(--blue);
+      animation: pending 1.5s ease-in-out infinite alternate;
+    }
+    @keyframes pending {
+      from { transform: translateX(-20%); }
+      to { transform: translateX(215%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .progress-track span { width: 46%; animation: none; }
+    }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--ink-muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .progress-meta strong { color: var(--ink); }
+    .file-card {
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      align-items: center;
+      gap: 13px;
+      margin-top: 27px;
+      padding: 14px 16px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface-alt);
+    }
+    .file-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--orange);
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .file-card strong, .file-card small { display: block; }
+    .file-card strong { font-size: 12px; }
+    .file-card small { margin-top: 4px; color: var(--ink-muted); font-size: 10px; }
+    .file-card > span:last-child {
+      color: var(--success);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .error-detail {
+      margin-top: 24px;
+      padding: 13px 15px;
+      border-left: 4px solid var(--danger);
+      background: #fff2f0;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .preserved {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      margin-top: 12px;
+      padding: 12px 15px;
+      border: 1px solid var(--line-strong);
+      font-size: 10px;
+    }
+    .preserved strong { display: block; margin-bottom: 3px; font-size: 11px; }
+    .preserved span:last-child {
+      align-self: center;
+      color: var(--blue);
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .footer {
+      position: fixed;
+      z-index: 30;
+      inset: auto 0 0;
+      height: 65px;
+      display: grid;
+      grid-template-columns: 48px 48px 184px 1fr 148px 235px;
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .footer button, .footer div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      font-weight: 800;
+    }
+    .footer > button:nth-child(-n+2) {
+      position: relative;
+      color: var(--ink-muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .footer .active-version { color: var(--blue); background: var(--surface-alt); }
+    .footer .active-version::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: var(--blue);
+    }
+    .footer .ai {
+      justify-content: flex-start;
+      padding: 0 16px;
+      color: #317565;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .footer .export { grid-column: 5; background: var(--surface-alt); }
+    .footer .create { grid-column: 6; color: #fff; background: var(--blue); }
+    .live-region {
+      position: fixed;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1120px) {
+      .topbar { grid-template-columns: 210px 150px 156px 145px 1fr 280px; }
+      main { grid-template-columns: 400px minmax(580px, 1fr); }
+      .context-body { padding-inline: 24px; }
+      .stage { padding-inline: 28px; }
+      .state-switch button { min-width: 112px; padding-inline: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span>Founder<br>Table</span><span class="version">V2</span></div>
+      <button class="nav-item active">Founder Search</button>
+      <button class="nav-item">Table Config</button>
+      <button class="nav-item">Saved Dinners</button>
+      <div></div>
+      <div class="profile">
+        <span class="profile-avatar">YC</span>
+        <span><small>Organizer account</small><strong>YC Admin</strong></span>
+        <span class="chevron" aria-hidden="true">⌄</span>
+      </div>
+    </header>
+
+    <section class="review-strip" aria-label="Export review states">
+      <div class="review-label"><b>EXPORT</b> Review candidate · full flow</div>
+      <div class="state-switch" role="tablist" aria-label="Review-only export states">
+        <button id="tab-options" role="tab" aria-selected="true" aria-pressed="true" onclick="setState('options')">Options</button>
+        <button id="tab-progress" role="tab" aria-selected="false" aria-pressed="false" onclick="setState('progress')">Progress</button>
+        <button id="tab-success" role="tab" aria-selected="false" aria-pressed="false" onclick="setState('success')">Success</button>
+        <button id="tab-failure" role="tab" aria-selected="false" aria-pressed="false" onclick="setState('failure')">Failure</button>
+      </div>
+    </section>
+
+    <main>
+      <section class="context" aria-labelledby="context-title">
+        <div class="context-title">
+          <span class="eyebrow">Export results</span>
+          <h1 id="context-title">Take the current work with you.</h1>
+        </div>
+        <div class="context-body">
+          <p>Export exactly the cohort you are reviewing. Search order, dinner assignments, and founder source fields remain explicit rather than being combined silently.</p>
+
+          <article class="context-card selected" id="search-context">
+            <div class="context-card-head"><strong>Current Search results</strong><span id="search-context-state">Selected scope</span></div>
+            <div class="context-stats">
+              <div><small>Founders</small><strong>48 matched</strong></div>
+              <div><small>Order</small><strong>Current relevance order</strong></div>
+              <div><small>Dimensions</small><strong>Role · Vertical · Age</strong></div>
+            </div>
+          </article>
+
+          <article class="context-card" id="dinner-context">
+            <div class="context-card-head"><strong>Dinner seating plan</strong><span id="dinner-context-state">Available</span></div>
+            <div class="context-stats">
+              <div><small>Plan</small><strong>Founder Dinner · v3</strong></div>
+              <div><small>Tables</small><strong>5 tables</strong></div>
+              <div><small>Founders</small><strong>40 assigned</strong></div>
+            </div>
+          </article>
+
+          <div class="context-note"><strong>Scope matters.</strong> Search exports preserve the current ordered result set. Dinner exports preserve table assignments and include table-level matching fields.</div>
+        </div>
+      </section>
+
+      <section class="stage">
+        <section class="export-panel state-panel" id="state-options" role="tabpanel" aria-labelledby="tab-options">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Export options</span>
+              <h2>Choose what leaves the app.</h2>
+              <p>The export is generated locally from the selected scope.</p>
+            </div>
+            <button class="close" aria-label="Close export options">×</button>
+          </div>
+          <div class="panel-body">
+            <div class="section-heading"><strong>Export scope</strong><span>Choose one</span></div>
+            <div class="scope-options">
+              <label class="scope-option">
+                <input type="radio" name="scope" value="search" checked>
+                <strong>Current Search results</strong>
+                <span>48 founders in the order currently shown.</span>
+                <small>Founder Search · active result set</small>
+              </label>
+              <label class="scope-option">
+                <input type="radio" name="scope" value="dinner">
+                <strong>Dinner seating plan</strong>
+                <span>40 founders across 5 assigned tables.</span>
+                <small>Founder Dinner · saved version 3</small>
+              </label>
+            </div>
+
+            <div class="section-heading"><strong>File contents</strong><span>CSV only</span></div>
+            <div class="option-row">
+              <label class="detail-option">
+                <input type="checkbox" id="founder-details" checked>
+                <strong>Include founder details</strong>
+                <span id="details-description">Adds company, role, age, education, cohort group, and cohort section.</span>
+              </label>
+              <div class="format"><small>Format</small><strong>CSV</strong></div>
+            </div>
+
+            <div class="privacy-note">
+              <strong>Privacy check</strong>
+              This file contains founder information intended for event planning. Share only with people who are permitted to use the source dataset. Web Search evidence and provider credentials are not included.
+            </div>
+          </div>
+          <div class="panel-actions">
+            <button>Cancel</button>
+            <button class="primary" onclick="startExport()">Export CSV →</button>
+          </div>
+        </section>
+
+        <section class="export-panel state-panel" id="state-progress" role="tabpanel" aria-labelledby="tab-progress" hidden>
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Export in progress</span>
+              <h2>Preparing your CSV.</h2>
+              <p id="progress-scope">Current Search results · 48 founders</p>
+            </div>
+            <button class="close" aria-label="Close export progress">×</button>
+          </div>
+          <div class="state-body" aria-live="polite">
+            <div class="state-mark" aria-hidden="true">↗</div>
+            <h2>Building the export.</h2>
+            <p>The selected scope and founder details are being assembled. You can leave this panel open while the server responds.</p>
+            <div class="progress-track" role="progressbar" aria-label="Export generation in progress"><span></span></div>
+            <div class="progress-meta"><strong>Generating file…</strong><span>No percentage available yet</span></div>
+          </div>
+          <div class="panel-actions">
+            <button onclick="setState('options')">Cancel export</button>
+          </div>
+        </section>
+
+        <section class="export-panel state-panel" id="state-success" role="tabpanel" aria-labelledby="tab-success" hidden>
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Export complete</span>
+              <h2>Your file is ready.</h2>
+              <p>The export completed without changing the current Search or dinner plan.</p>
+            </div>
+            <button class="close" aria-label="Close export success">×</button>
+          </div>
+          <div class="state-body" aria-live="polite">
+            <div class="state-mark success" aria-hidden="true">✓</div>
+            <h2>Export complete.</h2>
+            <p>Download the CSV now. You can return to the app and keep working with the same selections.</p>
+            <div class="file-card">
+              <span class="file-icon">CSV</span>
+              <span><strong id="success-filename">founder-search-results-2026-10-01.csv</strong><small id="success-summary">48 founders · founder details included</small></span>
+              <span>Ready</span>
+            </div>
+          </div>
+          <div class="panel-actions">
+            <button onclick="setState('options')">Export another</button>
+            <button class="primary" onclick="downloadDemo()">Download CSV ↓</button>
+          </div>
+        </section>
+
+        <section class="export-panel state-panel" id="state-failure" role="tabpanel" aria-labelledby="tab-failure" hidden>
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Export failed</span>
+              <h2>We couldn't create the file.</h2>
+              <p>Your scope and file-content selections are still intact.</p>
+            </div>
+            <button class="close" aria-label="Close export failure">×</button>
+          </div>
+          <div class="state-body" aria-live="polite">
+            <div class="state-mark failure" aria-hidden="true">!</div>
+            <h2>Nothing was downloaded.</h2>
+            <p>The export service did not respond. No partial file was created and your current work was not changed.</p>
+            <div class="error-detail"><strong>Export service unavailable.</strong><br>Check your connection, then retry with the same selections.</div>
+            <div class="preserved">
+              <span><strong id="preserved-scope">Current Search results · CSV</strong><span id="preserved-details">48 founders · founder details included</span></span>
+              <span>Selections preserved</span>
+            </div>
+          </div>
+          <div class="panel-actions">
+            <button onclick="setState('options')">Review options</button>
+            <button class="primary" onclick="retryExport()">Retry export →</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <button>V1</button>
+      <button class="active-version">V2</button>
+      <div class="ai">✓ AI Enabled · Anthropic</div>
+      <div></div>
+      <button class="export" onclick="setState('options')">Export Results</button>
+      <button class="create">Create Dinner Matching →</button>
+    </footer>
+    <div class="live-region" id="live-region" aria-live="polite"></div>
+  </div>
+
+  <script>
+    const stateNames = ["options", "progress", "success", "failure"];
+    const scopeInputs = [...document.querySelectorAll('input[name="scope"]')];
+    const detailsInput = document.getElementById("founder-details");
+    const liveRegion = document.getElementById("live-region");
+
+    function getSelection() {
+      const scope = document.querySelector('input[name="scope"]:checked').value;
+      const details = detailsInput.checked;
+      return {
+        scope,
+        details,
+        count: scope === "search" ? 48 : 40,
+        label: scope === "search" ? "Current Search results" : "Dinner seating plan",
+        filename: scope === "search"
+          ? "founder-search-results-2026-10-01.csv"
+          : "founder-dinner-seating-plan-v3-2026-10-01.csv"
+      };
+    }
+
+    function syncSelectionCopy() {
+      const selection = getSelection();
+      document.getElementById("search-context").classList.toggle("selected", selection.scope === "search");
+      document.getElementById("dinner-context").classList.toggle("selected", selection.scope === "dinner");
+      document.getElementById("search-context-state").textContent = selection.scope === "search" ? "Selected scope" : "Available";
+      document.getElementById("dinner-context-state").textContent = selection.scope === "dinner" ? "Selected scope" : "Available";
+      document.getElementById("progress-scope").textContent = `${selection.label} · ${selection.count} founders`;
+      document.getElementById("success-filename").textContent = selection.filename;
+      document.getElementById("success-summary").textContent = `${selection.count} founders · ${selection.details ? "founder details included" : "core identity fields only"}`;
+      document.getElementById("preserved-scope").textContent = `${selection.label} · CSV`;
+      document.getElementById("preserved-details").textContent = `${selection.count} founders · ${selection.details ? "founder details included" : "core identity fields only"}`;
+    }
+
+    function setState(state) {
+      if (!stateNames.includes(state)) return;
+      syncSelectionCopy();
+      stateNames.forEach(name => {
+        const active = name === state;
+        document.getElementById(`state-${name}`).hidden = !active;
+        const tab = document.getElementById(`tab-${name}`);
+        tab.setAttribute("aria-selected", String(active));
+        tab.setAttribute("aria-pressed", String(active));
+        tab.tabIndex = active ? 0 : -1;
+      });
+      liveRegion.textContent = `Export review state: ${state}.`;
+    }
+
+    function startExport() {
+      setState("progress");
+      liveRegion.textContent = "Export started. Waiting for the server; no completion percentage is available.";
+    }
+
+    function retryExport() {
+      setState("progress");
+      liveRegion.textContent = "Retrying export with the same preserved selections.";
+    }
+
+    function downloadDemo() {
+      const selection = getSelection();
+      const header = selection.scope === "search"
+        ? "rank,founder,company,role"
+        : "table,founder,company,role,fit";
+      const example = selection.scope === "search"
+        ? '1,"Di Qi","Lantern","Engineering"'
+        : '1,"Di Qi","Lantern","Engineering",91';
+      const blob = new Blob([`${header}\n${example}\n`], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = selection.filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      liveRegion.textContent = `${selection.filename} downloaded.`;
+    }
+
+    scopeInputs.forEach(input => input.addEventListener("change", syncSelectionCopy));
+    detailsInput.addEventListener("change", syncSelectionCopy);
+
+    document.querySelector(".state-switch").addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const current = stateNames.findIndex(name => document.getElementById(`tab-${name}`).getAttribute("aria-selected") === "true");
+      let next = current;
+      if (event.key === "ArrowRight") next = (current + 1) % stateNames.length;
+      if (event.key === "ArrowLeft") next = (current - 1 + stateNames.length) % stateNames.length;
+      if (event.key === "Home") next = 0;
+      if (event.key === "End") next = stateNames.length - 1;
+      setState(stateNames[next]);
+      document.getElementById(`tab-${stateNames[next]}`).focus();
+    });
+
+    syncSelectionCopy();
+    setState("options");
+  </script>
+</body>
+</html>

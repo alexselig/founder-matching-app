@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Founder App V2 — SCREEN-03 Selector Overlays</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=League+Spartan:wght@700;800&display=swap");
+
+    :root {
+      --surface: #ffffff;
+      --surface-alt: #f5f3ee;
+      --line: #e3e5e9;
+      --line-strong: #7d828b;
+      --ink: #141414;
+      --ink-muted: #5b5f66;
+      --orange: #f26522;
+      --blue: #2f5bea;
+      --blue-soft: #eef2ff;
+      --success: #17634d;
+      --disabled: #efeee9;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      color: var(--ink);
+      background: var(--surface);
+      font-family: "Figtree", "Avenir Next", system-ui, sans-serif;
+    }
+    button, input, textarea { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 64px minmax(0, 1fr) 65px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 240px 1fr 320px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      position: relative;
+      z-index: 20;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 24px;
+      border-right: 1px solid var(--line);
+      font: 800 23px/.88 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .brand .version { color: var(--orange); font-size: 24px; }
+    nav { display: flex; align-items: stretch; }
+    nav button {
+      padding: 0 28px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      font-weight: 700;
+    }
+    nav button { position: relative; }
+    nav .active::after { content: ""; position: absolute; inset: 0 0 auto; height: 5px; background: var(--blue); }
+    .founder {
+      display: grid;
+      grid-template-columns: 36px 1fr 18px;
+      align-items: center;
+      gap: 12px;
+      padding: 0 22px;
+      border-left: 1px solid var(--line);
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--blue);
+      color: white;
+      font-weight: 800;
+    }
+    .founder small, .founder strong { display: block; }
+    .founder small { margin-bottom: 3px; color: var(--ink-muted); font-size: 12px; }
+    .founder strong { font-size: 15px; }
+
+    .review-strip {
+      display: none;
+      align-items: stretch;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      background: var(--ink);
+      color: white;
+      position: relative;
+      z-index: 18;
+    }
+    .review-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 18px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .review-label b { color: #ff8a52; }
+    .state-switch { display: flex; }
+    .state-switch button {
+      min-width: 148px;
+      border: 0;
+      border-left: 1px solid #404044;
+      background: var(--ink);
+      color: #c8c9cc;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+    .state-switch button[aria-pressed="true"] {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: inset 0 -4px var(--blue);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 600px minmax(0, 1fr);
+      min-height: 0;
+    }
+    .setup {
+      min-height: 0;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      position: relative;
+      z-index: 5;
+    }
+    .setup-title {
+      padding: 22px 32px;
+      border-bottom: 1px solid var(--line);
+      background: var(--orange);
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .setup-title h1 {
+      margin: 7px 0 0;
+      font: 800 34px/.95 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .brief {
+      padding: 22px 32px 0;
+    }
+    .brief h2 {
+      margin: 7px 0 7px;
+      font: 800 30px/.98 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .brief p {
+      max-width: 520px;
+      margin: 0 0 18px;
+      color: var(--ink-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .field-label small { color: var(--ink-muted); font-weight: 600; }
+    textarea {
+      width: 100%;
+      min-height: 78px;
+      padding: 12px 14px;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      resize: none;
+      color: var(--ink);
+      background: var(--surface);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .starters {
+      display: flex;
+      gap: 7px;
+      margin-top: 8px;
+    }
+    .starters button {
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .scope {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      margin-top: 16px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .scope-card {
+      min-height: 112px;
+      padding: 16px 20px 16px 0;
+      position: relative;
+    }
+    .scope-card + .scope-card {
+      padding-left: 20px;
+      border-left: 1px solid var(--line);
+    }
+    .scope-card.disabled {
+      background: var(--disabled);
+      color: #a0a3aa;
+    }
+    .step {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink-muted);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .disabled .step, .disabled .scope-hint { color: #a0a3aa; }
+    .scope-value {
+      display: block;
+      margin-right: 54px;
+      font: 800 19px/1.05 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .scope-hint {
+      display: block;
+      margin-top: 5px;
+      color: var(--ink-muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .select-link {
+      position: absolute;
+      top: 42px;
+      right: 16px;
+      padding: 3px 0;
+      border: 0;
+      background: transparent;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .select-link:disabled { color: #a0a3aa; cursor: not-allowed; }
+
+    .advanced {
+      padding: 10px 32px 4px;
+      border-bottom: 1px solid var(--line);
+    }
+    .advanced button {
+      padding: 7px 0;
+      border: 0;
+      background: var(--surface);
+      color: var(--ink-muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .rules {
+      padding: 15px 32px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .rules h3 {
+      margin: 0 0 4px;
+      font: 800 14px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .rules p {
+      margin: 0 0 10px;
+      color: var(--ink-muted);
+      font-size: 10px;
+    }
+    .rule-button {
+      width: 100%;
+      padding: 8px;
+      border: 1px dashed var(--line-strong);
+      background: var(--surface-alt);
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .summary {
+      min-height: 66px;
+      display: grid;
+      grid-template-columns: 1fr 182px;
+      padding-left: 32px;
+      background: var(--surface-alt);
+    }
+    .summary-copy {
+      align-self: center;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .summary-copy span { color: var(--ink-muted); font-weight: 600; }
+    .generate {
+      border: 0;
+      background: #aeb9dd;
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .generate.ready { background: var(--blue); }
+
+    .workspace {
+      min-width: 0;
+      background:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px),
+        var(--surface-alt);
+      background-size: 96px 96px;
+      position: relative;
+      overflow: hidden;
+    }
+    .workspace::after { content: none; }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+      position: relative;
+      z-index: 30;
+    }
+    .foot-group { display: flex; }
+    footer button {
+      position: relative;
+      padding: 0 16px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink-muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    footer .active { color: var(--blue); background: var(--surface-alt); }
+    footer .active::after { content: ""; position: absolute; right: 0; bottom: 0; left: 0; height: 3px; background: var(--blue); }
+    footer .ai { color: #317565; }
+    footer .right { border-left: 1px solid var(--line); border-right: 0; }
+    footer .foot-group button:nth-child(-n+2) { width: 48px; padding: 0; }
+    footer .foot-group .ai { width: 184px; justify-content: flex-start; }
+
+    .scrim {
+      position: fixed;
+      inset: 64px 0 65px;
+      z-index: 10;
+      background: rgba(20, 20, 20, .28);
+    }
+    .scrim[hidden], .overlay[hidden] { display: none; }
+    .overlay {
+      position: fixed;
+      z-index: 15;
+      width: 440px;
+      max-height: calc(100vh - 174px);
+      overflow: auto;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .overlay.cohort { left: 50px; top: 128px; }
+    .overlay.tables { left: 304px; top: 128px; }
+    .overlay-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      padding: 18px 20px 15px;
+      border-bottom: 1px solid var(--line);
+    }
+    .overlay-head h2 {
+      margin: 5px 0 3px;
+      font: 800 23px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .overlay-head p {
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .close {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      font-size: 20px;
+      line-height: 1;
+    }
+    .search {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-alt);
+    }
+    .search input {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: var(--surface);
+      font-size: 12px;
+    }
+    .section-label {
+      padding: 11px 20px 8px;
+      color: var(--ink-muted);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .option-list { border-top: 1px solid var(--line); }
+    .option {
+      width: 100%;
+      min-height: 60px;
+      display: grid;
+      grid-template-columns: 36px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      text-align: left;
+    }
+    .option:hover { background: var(--blue-soft); }
+    .option-icon {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .option.primary .option-icon {
+      border-radius: 0;
+      background: var(--orange);
+      border-color: var(--orange);
+    }
+    .option strong, .option small { display: block; }
+    .option strong { font-size: 12px; }
+    .option small { margin-top: 3px; color: var(--ink-muted); font-size: 10px; }
+    .option-meta {
+      color: var(--ink-muted);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .table-body { padding: 16px 20px 0; }
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .preset {
+      min-height: 76px;
+      padding: 10px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      text-align: left;
+    }
+    .preset:hover, .preset.selected {
+      border-color: var(--blue);
+      box-shadow: inset 0 -4px var(--blue);
+      background: var(--blue-soft);
+    }
+    .preset strong, .preset span { display: block; }
+    .preset strong {
+      font: 800 21px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .preset span {
+      margin-top: 6px;
+      color: var(--ink-muted);
+      font-size: 10px;
+      line-height: 1.3;
+    }
+    .custom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+    .number-field label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink-muted);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .stepper {
+      display: grid;
+      grid-template-columns: 34px 1fr 34px;
+      border: 1px solid var(--line-strong);
+    }
+    .stepper button {
+      height: 38px;
+      border: 0;
+      background: var(--surface);
+      font-weight: 800;
+    }
+    .stepper button:first-child { border-right: 1px solid var(--line); }
+    .stepper button:last-child { border-left: 1px solid var(--line); }
+    .stepper output {
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+    }
+    .capacity-note {
+      margin: 14px 0 0;
+      padding: 10px 12px;
+      border-left: 4px solid var(--orange);
+      background: #fff7f1;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+    .overlay-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      border-top: 1px solid var(--line);
+      background: var(--surface-alt);
+    }
+    .overlay-actions span {
+      padding-left: 20px;
+      color: var(--ink-muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .overlay-actions button {
+      min-height: 52px;
+      padding: 0 20px;
+      border: 0;
+      background: var(--blue);
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .handoff-badge {
+      display: none;
+      margin: 12px 32px 0;
+      padding: 9px 11px;
+      border-left: 4px solid var(--blue);
+      background: var(--blue-soft);
+      color: #213d9c;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    body.search-state .handoff-badge { display: block; }
+
+    @media (max-width: 820px) {
+      .app { grid-template-rows: 64px 1fr 50px; }
+      header { grid-template-columns: 1fr auto; }
+      .brand { border-right: 0; }
+      nav { display: none; }
+      .founder { grid-template-columns: 38px 1fr; border-left: 1px solid var(--line); }
+      .founder .avatar { width: 38px; height: 38px; }
+      .founder svg { display: none; }
+      main { display: block; }
+      .setup { border-right: 0; }
+      .workspace { display: none; }
+      .scope { grid-template-columns: 1fr; }
+      .scope-card + .scope-card { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+      .scope-card.disabled { margin-inline: -32px; padding-inline: 32px; }
+      .overlay, .overlay.cohort, .overlay.tables {
+        left: 16px;
+        right: 16px;
+        top: 156px;
+        width: auto;
+        max-height: calc(100vh - 222px);
+      }
+      .scrim { inset: 64px 0 50px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body class="direct-state">
+  <div class="app">
+    <header>
+      <div class="brand"><span>Founder<br>Table</span><span class="version">V2</span></div>
+      <nav aria-label="Primary">
+        <button>Founder Search</button>
+        <button class="active">Dinner Matching</button>
+        <button>Saved Dinners</button>
+      </nav>
+      <div class="founder">
+        <span class="avatar">DQ</span>
+        <span><small>Current founder</small><strong>Di Qi · Lantern</strong></span>
+        <span aria-hidden="true">⌄</span>
+      </div>
+    </header>
+
+    <section class="review-strip" aria-label="Candidate state controls">
+      <div class="review-label"><b>SCREEN-03</b> Review candidate · selector overlays</div>
+      <div class="state-switch">
+        <button id="directState" aria-pressed="true" onclick="setEntryState('direct')">Direct entry · unselected</button>
+        <button id="searchState" aria-pressed="false" onclick="setEntryState('search')">Search handoff · 48 founders</button>
+      </div>
+    </section>
+
+    <main>
+      <aside class="setup">
+        <div class="setup-title">
+          <span class="eyebrow">Dinner matching</span>
+          <h1>Build the room.</h1>
+        </div>
+        <div class="handoff-badge">Search handoff · Ordered 48-founder result cohort is already attached.</div>
+        <section class="brief">
+          <span class="eyebrow">Matching brief</span>
+          <h2>How should we build the room?</h2>
+          <p>Describe the conversations and mix you want at each table. We’ll translate the brief into editable matching criteria.</p>
+          <label class="field-label" for="brief"><span>Your instructions</span><small>Use plain language</small></label>
+          <textarea id="brief">Keep founders in similar industries so they share market context. Mix roles and ages at every table.</textarea>
+          <div class="starters">
+            <button onclick="setBrief('Prioritize shared industries, but mix roles and ages at every table.')">Shared context</button>
+            <button onclick="setBrief('Create the most diverse tables possible across industry, role, age, and cohort.')">Maximum diversity</button>
+            <button onclick="setBrief('Group founders by similar company stage and industry, while mixing functional roles.')">Stage + industry</button>
+          </div>
+
+          <div class="scope">
+            <section class="scope-card" id="cohortCard">
+              <span class="step">1 · Founder cohort</span>
+              <strong class="scope-value" id="cohortValue">Select cohort</strong>
+              <span class="scope-hint" id="cohortHint">Choose founders to include</span>
+              <button class="select-link" id="cohortButton" onclick="openOverlay('cohort')">Select</button>
+            </section>
+            <section class="scope-card disabled" id="tableCard">
+              <span class="step">2 · Table setup</span>
+              <strong class="scope-value" id="tableValue">Select tables</strong>
+              <span class="scope-hint" id="tableHint">Available after cohort</span>
+              <button class="select-link" id="tableButton" onclick="openOverlay('tables')" disabled>Select</button>
+            </section>
+          </div>
+        </section>
+
+        <section class="advanced"><button>Advanced criteria ⌄</button></section>
+        <section class="rules">
+          <h3>Hard rules</h3>
+          <p>Optional constraints that generated tables must never violate.</p>
+          <button class="rule-button">+ Add custom rule</button>
+        </section>
+        <section class="summary">
+          <div class="summary-copy" id="summaryCopy">Select a cohort to continue<br><span>0 hard rules added</span></div>
+          <button class="generate" id="generateButton" disabled>Generate tables →</button>
+        </section>
+      </aside>
+      <section class="workspace" aria-label="Empty setup workspace"></section>
+    </main>
+
+    <footer>
+      <div class="foot-group">
+        <button>V1</button>
+        <button class="active">V2</button>
+        <button class="ai">✓ AI Enabled · Anthropic</button>
+      </div>
+      <button class="right">Saved version 3</button>
+    </footer>
+  </div>
+
+  <div class="scrim" id="scrim" onclick="closeOverlays()"></div>
+
+  <section class="overlay cohort" id="cohortOverlay" role="dialog" aria-modal="true" aria-labelledby="cohortTitle">
+    <div class="overlay-head">
+      <div>
+        <span class="eyebrow">Step 1 of 2</span>
+        <h2 id="cohortTitle">Select founder cohort</h2>
+        <p>Choose the ordered group that will be seated.</p>
+      </div>
+      <button class="close" aria-label="Close cohort selector" onclick="closeOverlays()">×</button>
+    </div>
+    <div class="search"><input id="cohortSearch" type="search" placeholder="Search saved cohorts" aria-label="Search saved cohorts"></div>
+    <div class="section-label">Available cohorts</div>
+    <div class="option-list">
+      <button class="option primary" onclick="selectCohort('48 founders','Founder Search · current result order')">
+        <span class="option-icon">↗</span>
+        <span><strong>Current Founder Search results</strong><small>Preserves ranking and manual selection order</small></span>
+        <span class="option-meta">48</span>
+      </button>
+      <button class="option" onclick="selectCohort('40 founders','Saved cohort · Fintech operators')">
+        <span class="option-icon">FO</span>
+        <span><strong>Fintech operators</strong><small>Saved cohort · edited Sep 29</small></span>
+        <span class="option-meta">40</span>
+      </button>
+      <button class="option" onclick="selectCohort('24 founders','Saved cohort · AI infrastructure')">
+        <span class="option-icon">AI</span>
+        <span><strong>AI infrastructure founders</strong><small>Saved cohort · edited Sep 24</small></span>
+        <span class="option-meta">24</span>
+      </button>
+      <button class="option" onclick="selectCohort('574 founders','All loaded founders')">
+        <span class="option-icon">ALL</span>
+        <span><strong>All loaded founders</strong><small>Complete reference dataset</small></span>
+        <span class="option-meta">574</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="overlay tables" id="tablesOverlay" role="dialog" aria-modal="true" aria-labelledby="tablesTitle" hidden>
+    <div class="overlay-head">
+      <div>
+        <span class="eyebrow">Step 2 of 2</span>
+        <h2 id="tablesTitle">Set tables and seats</h2>
+        <p id="tableOverlayContext">48 founders selected · choose a seating shape.</p>
+      </div>
+      <button class="close" aria-label="Close table selector" onclick="closeOverlays()">×</button>
+    </div>
+    <div class="table-body">
+      <div class="section-label" style="padding:0 0 8px">Recommended presets</div>
+      <div class="preset-grid">
+        <button class="preset" data-tables="6" data-seats="8" onclick="pickPreset(this)">
+          <strong>6 × 8</strong><span>Balanced<br>48 seats</span>
+        </button>
+        <button class="preset" data-tables="5" data-seats="10" onclick="pickPreset(this)">
+          <strong>5 × 10</strong><span>2 open seats<br>50 capacity</span>
+        </button>
+        <button class="preset" data-tables="8" data-seats="6" onclick="pickPreset(this)">
+          <strong>8 × 6</strong><span>Smaller groups<br>48 seats</span>
+        </button>
+      </div>
+      <div class="custom-grid">
+        <div class="number-field">
+          <label>Table count</label>
+          <div class="stepper"><button onclick="adjust('tables',-1)">−</button><output id="tableCount">6</output><button onclick="adjust('tables',1)">+</button></div>
+        </div>
+        <div class="number-field">
+          <label>Target seats</label>
+          <div class="stepper"><button onclick="adjust('seats',-1)">−</button><output id="seatCount">8</output><button onclick="adjust('seats',1)">+</button></div>
+        </div>
+      </div>
+      <p class="capacity-note" id="capacityNote"><strong>Exact fit.</strong> 6 tables × 8 seats gives every founder a seat.</p>
+    </div>
+    <div class="overlay-actions">
+      <span id="capacitySummary">48 founders · 48 seats</span>
+      <button onclick="applyTables()">Use this setup →</button>
+    </div>
+  </section>
+
+  <script>
+    let cohortSelected = false;
+    let cohortCount = 0;
+    let tableCount = 6;
+    let seatCount = 8;
+    let tableSelected = false;
+
+    function setBrief(text) {
+      document.getElementById("brief").value = text;
+    }
+
+    function setEntryState(state) {
+      closeOverlays();
+      const search = state === "search";
+      document.body.classList.toggle("search-state", search);
+      document.body.classList.toggle("direct-state", !search);
+      document.getElementById("directState").setAttribute("aria-pressed", String(!search));
+      document.getElementById("searchState").setAttribute("aria-pressed", String(search));
+      resetTables();
+      if (search) {
+        setCohort("48 founders", "From Founder Search · ordered results", 48);
+      } else {
+        clearCohort();
+        openOverlay("cohort");
+      }
+    }
+
+    function clearCohort() {
+      cohortSelected = false;
+      cohortCount = 0;
+      document.getElementById("cohortValue").textContent = "Select cohort";
+      document.getElementById("cohortHint").textContent = "Choose founders to include";
+      document.getElementById("cohortButton").textContent = "Select";
+      const card = document.getElementById("tableCard");
+      card.classList.add("disabled");
+      document.getElementById("tableButton").disabled = true;
+      document.getElementById("tableHint").textContent = "Available after cohort";
+      updateSummary();
+    }
+
+    function setCohort(value, hint, count) {
+      cohortSelected = true;
+      cohortCount = count;
+      document.getElementById("cohortValue").textContent = value;
+      document.getElementById("cohortHint").textContent = hint;
+      document.getElementById("cohortButton").textContent = "Change";
+      document.getElementById("tableCard").classList.remove("disabled");
+      document.getElementById("tableButton").disabled = false;
+      document.getElementById("tableHint").textContent = "Choose tables and seats";
+      document.getElementById("tableOverlayContext").textContent = value + " selected · choose a seating shape.";
+      updateSummary();
+    }
+
+    function selectCohort(value, hint) {
+      const count = Number(value.split(" ")[0]);
+      setCohort(value, hint, count);
+      openOverlay("tables");
+    }
+
+    function resetTables() {
+      tableSelected = false;
+      tableCount = 6;
+      seatCount = 8;
+      document.getElementById("tableCount").textContent = tableCount;
+      document.getElementById("seatCount").textContent = seatCount;
+      document.getElementById("tableValue").textContent = "Select tables";
+      document.getElementById("tableButton").textContent = "Select";
+      document.querySelectorAll(".preset").forEach(button => button.classList.remove("selected"));
+      updateCapacity();
+      updateSummary();
+    }
+
+    function openOverlay(type) {
+      if (type === "tables" && !cohortSelected) return;
+      document.getElementById("scrim").hidden = false;
+      document.getElementById("cohortOverlay").hidden = type !== "cohort";
+      document.getElementById("tablesOverlay").hidden = type !== "tables";
+      requestAnimationFrame(() => {
+        const target = type === "cohort" ? document.getElementById("cohortSearch") : document.querySelector(".preset");
+        target.focus();
+      });
+    }
+
+    function closeOverlays() {
+      document.getElementById("scrim").hidden = true;
+      document.getElementById("cohortOverlay").hidden = true;
+      document.getElementById("tablesOverlay").hidden = true;
+    }
+
+    function pickPreset(button) {
+      document.querySelectorAll(".preset").forEach(item => item.classList.toggle("selected", item === button));
+      tableCount = Number(button.dataset.tables);
+      seatCount = Number(button.dataset.seats);
+      document.getElementById("tableCount").textContent = tableCount;
+      document.getElementById("seatCount").textContent = seatCount;
+      updateCapacity();
+    }
+
+    function adjust(kind, delta) {
+      document.querySelectorAll(".preset").forEach(button => button.classList.remove("selected"));
+      if (kind === "tables") tableCount = Math.max(1, Math.min(20, tableCount + delta));
+      if (kind === "seats") seatCount = Math.max(2, Math.min(12, seatCount + delta));
+      document.getElementById("tableCount").textContent = tableCount;
+      document.getElementById("seatCount").textContent = seatCount;
+      updateCapacity();
+    }
+
+    function updateCapacity() {
+      const capacity = tableCount * seatCount;
+      const delta = capacity - cohortCount;
+      const note = document.getElementById("capacityNote");
+      document.getElementById("capacitySummary").textContent = cohortCount + " founders · " + capacity + " seats";
+      if (!cohortCount) {
+        note.innerHTML = "<strong>Choose a cohort first.</strong> Capacity guidance will update here.";
+      } else if (delta === 0) {
+        note.innerHTML = "<strong>Exact fit.</strong> " + tableCount + " tables × " + seatCount + " seats gives every founder a seat.";
+      } else if (delta > 0) {
+        note.innerHTML = "<strong>" + delta + " open seat" + (delta === 1 ? "" : "s") + ".</strong> The arrangement can leave capacity unfilled.";
+      } else {
+        note.innerHTML = "<strong>" + Math.abs(delta) + " founder" + (Math.abs(delta) === 1 ? "" : "s") + " over capacity.</strong> Increase tables or target seats.";
+      }
+    }
+
+    function applyTables() {
+      tableSelected = true;
+      document.getElementById("tableValue").textContent = tableCount + " × " + seatCount;
+      document.getElementById("tableHint").textContent = tableCount + " tables × " + seatCount + " target seats";
+      document.getElementById("tableButton").textContent = "Edit";
+      closeOverlays();
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const summary = document.getElementById("summaryCopy");
+      const generate = document.getElementById("generateButton");
+      if (!cohortSelected) {
+        summary.innerHTML = "Select a cohort to continue<br><span>0 hard rules added</span>";
+      } else if (!tableSelected) {
+        summary.innerHTML = cohortCount + " founders selected · Choose table setup<br><span>0 hard rules added</span>";
+      } else {
+        summary.innerHTML = cohortCount + " founders · " + tableCount + " tables · " + seatCount + " target seats<br><span>0 hard rules added</span>";
+      }
+      generate.disabled = !(cohortSelected && tableSelected);
+      generate.classList.toggle("ready", cohortSelected && tableSelected);
+    }
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") closeOverlays();
+    });
+
+    setEntryState("direct");
+  </script>
+</body>
+</html>

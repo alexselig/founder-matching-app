@@ -1,0 +1,938 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Founder App V2 — Generate 2 Alternatives Review</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=League+Spartan:wght@700;800&display=swap");
+
+    :root {
+      --surface: #ffffff;
+      --surface-alt: #f5f3ee;
+      --line: #e3e5e9;
+      --line-strong: #7d828b;
+      --ink: #141414;
+      --ink-muted: #5b5f66;
+      --orange: #f26522;
+      --orange-soft: #fff3ec;
+      --blue: #2f5bea;
+      --blue-soft: #eef2ff;
+      --success: #17634d;
+      --watch: #9a5b00;
+      --risk: #b42318;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      color: var(--ink);
+      background: var(--surface);
+      font-family: "Figtree", "Avenir Next", system-ui, sans-serif;
+    }
+    button { color: inherit; font: inherit; }
+    button:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+    [hidden] { display: none !important; }
+
+    .app {
+      height: 100vh;
+      min-height: 720px;
+      display: grid;
+      grid-template-rows: 42px minmax(0, 1fr) 65px;
+      overflow: hidden;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 240px 1fr 320px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      position: relative;
+      z-index: 5;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 24px;
+      border-right: 1px solid var(--line);
+      font: 800 23px/.88 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .brand .version { color: var(--orange); font-size: 24px; }
+    nav { display: flex; align-items: stretch; }
+    nav button {
+      position: relative;
+      padding: 0 28px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      font-weight: 700;
+    }
+    nav .active::after {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5px;
+      background: var(--blue);
+    }
+    .founder {
+      display: grid;
+      grid-template-columns: 36px 1fr 18px;
+      align-items: center;
+      gap: 12px;
+      padding: 0 22px;
+      border-left: 1px solid var(--line);
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 800;
+    }
+    .founder small, .founder strong { display: block; }
+    .founder small { margin-bottom: 3px; color: var(--ink-muted); font-size: 12px; }
+    .founder strong { font-size: 15px; }
+
+    .review-strip {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      border-bottom: 1px solid #3d3e42;
+      background: var(--ink);
+      color: #fff;
+    }
+    .review-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 18px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .review-label b { color: #ff8a52; }
+    .state-switch { display: flex; }
+    .state-switch button {
+      min-width: 156px;
+      border: 0;
+      border-left: 1px solid #404044;
+      background: var(--ink);
+      color: #c8c9cc;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+    .state-switch button[aria-pressed="true"] {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: inset 0 -4px var(--blue);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      min-height: 0;
+    }
+    .setup {
+      min-height: 0;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .setup-title {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--line);
+      background: var(--orange);
+    }
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .setup-title h1 {
+      margin: 7px 0 0;
+      font: 800 30px/.95 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .setup-section {
+      padding: 17px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .setup-section h2 {
+      margin: 0 0 12px;
+      font: 800 14px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .scope-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      padding: 8px 0;
+      border-top: 1px solid var(--line);
+    }
+    .scope-row:first-of-type { border-top: 0; padding-top: 0; }
+    .scope-row strong {
+      display: block;
+      font: 800 22px/1 "League Spartan", sans-serif;
+    }
+    .scope-row span {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink-muted);
+      font-size: 11px;
+    }
+    .criteria-list { border-top: 1px solid var(--line); }
+    .criterion {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .criterion strong, .criterion small { display: block; }
+    .criterion strong { font-size: 12px; }
+    .criterion small { margin-top: 2px; color: var(--ink-muted); font-size: 10px; }
+    .criterion b {
+      align-self: center;
+      color: var(--blue);
+      font-size: 10px;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .rule {
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr);
+      gap: 7px;
+      padding: 9px 0;
+      border-top: 1px solid var(--line);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .rule::before { content: "✓"; color: var(--success); font-weight: 800; }
+    .lock-note {
+      margin: 12px 0 0;
+      padding: 10px;
+      border-left: 4px solid var(--blue);
+      background: var(--blue-soft);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .workspace {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface-alt);
+      overflow: hidden;
+    }
+    .workspace-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .headline { padding: 16px 22px; }
+    .headline h2 {
+      margin: 5px 0 4px;
+      font: 800 27px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .headline p { margin: 0; color: var(--ink-muted); font-size: 12px; }
+    .generation-status {
+      display: grid;
+      place-items: center;
+      min-width: 210px;
+      padding: 0 20px;
+      border-left: 1px solid var(--line);
+      color: var(--success);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .comparison {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(285px, 1fr));
+      gap: 1px;
+      padding: 1px;
+      overflow: auto;
+      background: var(--line);
+    }
+    .solution {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      position: relative;
+    }
+    .solution::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 0;
+      background: var(--blue);
+      transition: height 160ms ease;
+    }
+    .solution.selected::before { height: 5px; }
+    .solution-head {
+      min-height: 118px;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .solution-kicker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .solution-kicker span {
+      color: var(--ink-muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .solution-kicker b {
+      padding: 5px 7px;
+      border: 1px solid var(--line-strong);
+      font-size: 9px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .solution.selected .solution-kicker b {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+    .solution h3 {
+      margin: 10px 0 4px;
+      font: 800 24px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .solution-head p {
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .hero-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-metric {
+      padding: 12px 10px;
+      border-right: 1px solid var(--line);
+    }
+    .hero-metric:last-child { border-right: 0; }
+    .hero-metric strong {
+      display: block;
+      font: 800 24px/1 "League Spartan", sans-serif;
+    }
+    .hero-metric span {
+      display: block;
+      margin-top: 4px;
+      color: var(--ink-muted);
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .hero-metric.watch strong { color: var(--watch); }
+    .metric-section {
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 11px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .section-title span:last-child { color: var(--ink-muted); }
+    .measure {
+      display: grid;
+      grid-template-columns: 104px minmax(70px, 1fr) 26px 35px;
+      gap: 7px;
+      align-items: center;
+      margin-top: 9px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .bar { height: 7px; background: #e7e5df; }
+    .bar i { display: block; height: 100%; background: var(--blue); }
+    .measure > b { text-align: right; font-size: 11px; }
+    .delta {
+      text-align: right;
+      color: var(--ink-muted);
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .delta.up { color: var(--success); }
+    .delta.down { color: var(--risk); }
+    .delta.neutral { color: var(--ink-muted); }
+
+    .tradeoffs {
+      min-height: 112px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-alt);
+    }
+    .tradeoffs h4 {
+      margin: 0 0 8px;
+      font: 800 13px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .tradeoffs ul { margin: 0; padding: 0; list-style: none; }
+    .tradeoffs li {
+      display: grid;
+      grid-template-columns: 13px minmax(0, 1fr);
+      gap: 6px;
+      margin-top: 5px;
+      font-size: 10px;
+      line-height: 1.35;
+    }
+    .tradeoffs li::before { content: "→"; font-weight: 800; }
+    .tradeoffs .gain::before { content: "+"; color: var(--success); }
+    .tradeoffs .cost::before { content: "−"; color: var(--risk); }
+
+    .changes {
+      padding: 13px 18px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .changes summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      list-style: none;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .changes summary::-webkit-details-marker { display: none; }
+    .changes summary::after { content: "＋"; color: var(--blue); font-size: 14px; }
+    .changes[open] summary::after { content: "−"; }
+    .change-list { margin-top: 10px; border-top: 1px solid var(--line); }
+    .change-row {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 10px;
+      line-height: 1.35;
+    }
+    .change-row b { color: var(--blue); }
+    .solution-action {
+      display: grid;
+      grid-template-columns: 1fr;
+      min-height: 46px;
+      border-bottom: 1px solid var(--line);
+    }
+    .select-solution {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+      border: 0;
+      background: var(--surface);
+      font-weight: 800;
+      text-align: left;
+    }
+    .select-solution:hover { background: var(--blue-soft); }
+    .selection-check {
+      width: 19px;
+      height: 19px;
+      flex: 0 0 19px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--line-strong);
+      background: var(--surface);
+      color: transparent;
+      font-size: 13px;
+      line-height: 1;
+    }
+    .solution.selected .select-solution { background: var(--blue-soft); }
+    .solution.selected .selection-check {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .comparison-actions {
+      min-height: 58px;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .selection-copy {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px;
+      font-size: 11px;
+    }
+    .selection-copy b {
+      font: 800 15px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .selection-copy span { color: var(--ink-muted); }
+    .action-buttons { display: flex; }
+    .action-buttons button {
+      min-width: 170px;
+      border: 0;
+      border-left: 1px solid var(--line);
+      background: var(--surface);
+      font-weight: 800;
+    }
+    .action-buttons .primary {
+      min-width: 220px;
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .confirmed {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      overflow: auto;
+    }
+    .confirmation-card {
+      width: min(720px, 100%);
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .confirmation-mark {
+      display: grid;
+      place-items: center;
+      background: var(--blue);
+      color: #fff;
+      font: 800 58px/1 "League Spartan", sans-serif;
+    }
+    .confirmation-content { padding: 30px; }
+    .confirmation-content h2 {
+      margin: 8px 0 8px;
+      font: 800 34px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .confirmation-content p {
+      max-width: 54ch;
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .confirmation-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 22px;
+      border: 1px solid var(--line);
+    }
+    .confirmation-metrics div {
+      padding: 12px;
+      border-right: 1px solid var(--line);
+    }
+    .confirmation-metrics div:last-child { border-right: 0; }
+    .confirmation-metrics strong {
+      display: block;
+      font: 800 23px/1 "League Spartan", sans-serif;
+    }
+    .confirmation-metrics span {
+      display: block;
+      margin-top: 5px;
+      color: var(--ink-muted);
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .confirmation-actions { display: flex; margin-top: 20px; }
+    .confirmation-actions button {
+      min-height: 42px;
+      padding: 0 16px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      font-weight: 800;
+    }
+    .confirmation-actions button + button {
+      border-left: 0;
+      background: var(--ink);
+      color: #fff;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+      position: relative;
+      z-index: 6;
+    }
+    .foot-left, .foot-right { display: flex; }
+    .foot-left { border-right: 1px solid var(--line); }
+    .foot-right { border-left: 1px solid var(--line); }
+    .foot {
+      height: 64px;
+      padding: 0 20px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      font-weight: 800;
+    }
+    .active-v { background: var(--ink); color: #fff; }
+    .ai { color: var(--success); }
+
+    @media (max-width: 1100px) {
+      header { grid-template-columns: 210px 1fr 270px; }
+      nav button { padding: 0 18px; }
+      main { grid-template-columns: 260px minmax(0, 1fr); }
+      .comparison { grid-template-columns: repeat(3, 310px); }
+    }
+    @media (max-width: 800px) {
+      .app { height: auto; min-height: 100vh; grid-template-rows: auto auto 65px; overflow: visible; }
+      .review-strip { flex-direction: column; }
+      .review-label { min-height: 42px; }
+      .state-switch button { min-height: 42px; flex: 1; }
+      main { grid-template-columns: 1fr; }
+      .setup { border-right: 0; }
+      .comparison { grid-template-columns: 1fr; overflow: visible; }
+      .workspace { overflow: visible; }
+      .confirmation-card { grid-template-columns: 1fr; }
+      .confirmation-mark { min-height: 100px; }
+      footer { position: sticky; bottom: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="review-strip" aria-label="Review-only state controls">
+      <div class="review-label"><b>SCREEN-05</b> Review candidate · generated alternatives</div>
+      <div class="state-switch">
+        <button id="compareState" aria-pressed="true" onclick="setReviewState('compare')">Compare solutions</button>
+        <button id="confirmedState" aria-pressed="false" onclick="setReviewState('confirmed')">Selection confirmed</button>
+      </div>
+    </section>
+
+    <main>
+      <aside class="setup">
+        <div class="setup-title">
+          <span class="eyebrow">Dinner matching</span>
+          <h1>Build the room.</h1>
+        </div>
+        <section class="setup-section">
+          <h2>Fixed inputs</h2>
+          <div class="scope-row"><div><strong>48</strong><span>founders from search</span></div><span>Same cohort</span></div>
+          <div class="scope-row"><div><strong>6 × 8</strong><span>tables × target seats</span></div><span>Same capacity</span></div>
+        </section>
+        <section class="setup-section">
+          <h2>Matching criteria</h2>
+          <div class="criteria-list">
+            <div class="criterion"><span><strong>Company vertical</strong><small>Shared market context</small></span><b>Similar · H</b></div>
+            <div class="criterion"><span><strong>Role</strong><small>Cross-functional tables</small></span><b>Diverse · H</b></div>
+            <div class="criterion"><span><strong>Age</strong><small>Broader perspectives</small></span><b>Diverse · M</b></div>
+          </div>
+        </section>
+        <section class="setup-section">
+          <h2>Hard rules</h2>
+          <div class="rule">Separate founders from the same company</div>
+          <div class="rule">Every table includes an Engineering founder</div>
+          <p class="lock-note"><b>2 locked tables preserved.</b><br>All three solutions satisfy the same rules and manual locks.</p>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <div class="workspace-head">
+          <div class="headline">
+            <span class="eyebrow">Generated alternatives</span>
+            <h2>Choose the strongest arrangement.</h2>
+            <p>Alternatives preserve the cohort, criteria, hard rules, locks, and table capacity.</p>
+          </div>
+          <div class="generation-status">✓ 2 alternatives ready</div>
+        </div>
+
+        <div id="compareView" class="comparison" aria-label="Dinner solution comparison">
+          <article class="solution selected" data-solution="current">
+            <div class="solution-action">
+              <button class="select-solution" aria-pressed="true" onclick="selectSolution('current')">
+                <span class="selection-check" aria-hidden="true">✓</span>
+                <span data-select-label>Selected</span>
+              </button>
+            </div>
+            <div class="solution-head">
+              <div class="solution-kicker"><span>Existing recommendation</span><b data-state-label>Selected</b></div>
+              <h3>Current solution</h3>
+              <p>Best overall score from the first optimization pass.</p>
+            </div>
+            <div class="hero-metrics">
+              <div class="hero-metric"><strong>84</strong><span>Overall quality</span></div>
+              <div class="hero-metric"><strong>68</strong><span>Minimum fit</span></div>
+              <div class="hero-metric watch"><strong>3</strong><span>Watch placements</span></div>
+            </div>
+            <section class="metric-section">
+              <div class="section-title"><span>Quality profile</span><span>Baseline</span></div>
+              <div class="measure"><span>Industry similarity</span><span class="bar"><i style="width:91%"></i></span><b>91</b><span class="delta neutral">—</span></div>
+              <div class="measure"><span>Role diversity</span><span class="bar"><i style="width:82%"></i></span><b>82</b><span class="delta neutral">—</span></div>
+              <div class="measure"><span>Age diversity</span><span class="bar"><i style="width:74%"></i></span><b>74</b><span class="delta neutral">—</span></div>
+              <div class="measure"><span>Table balance</span><span class="bar"><i style="width:79%"></i></span><b>79</b><span class="delta neutral">—</span></div>
+            </section>
+            <section class="tradeoffs">
+              <h4>What this favors</h4>
+              <ul>
+                <li>Highest combined score across all objectives.</li>
+                <li class="gain">Strongest industry similarity of the first two solutions.</li>
+                <li class="cost">Three founders remain at or below the watch threshold.</li>
+              </ul>
+            </section>
+            <details class="changes">
+              <summary>Table snapshot · 3 watch placements</summary>
+              <div class="change-list">
+                <div class="change-row"><b>Table 02</b><span>Jacky Lin · 69 · narrow age range</span></div>
+                <div class="change-row"><b>Table 03</b><span>Daniel Hensley · 68 · low role diversity</span></div>
+                <div class="change-row"><b>Table 01</b><span>Sherry Liu · 71 · similar engineering mix</span></div>
+              </div>
+            </details>
+          </article>
+
+          <article class="solution" data-solution="alternative1">
+            <div class="solution-action">
+              <button class="select-solution" aria-pressed="false" onclick="selectSolution('alternative1')">
+                <span class="selection-check" aria-hidden="true">✓</span>
+                <span data-select-label>Select this solution</span>
+              </button>
+            </div>
+            <div class="solution-head">
+              <div class="solution-kicker"><span>Generated alternative 1</span><b data-state-label>Available</b></div>
+              <h3>Safer floor</h3>
+              <p>Raises the weakest placements with a more even table mix.</p>
+            </div>
+            <div class="hero-metrics">
+              <div class="hero-metric"><strong>83</strong><span>Overall quality</span></div>
+              <div class="hero-metric"><strong>72</strong><span>Minimum fit</span></div>
+              <div class="hero-metric watch"><strong>1</strong><span>Watch placement</span></div>
+            </div>
+            <section class="metric-section">
+              <div class="section-title"><span>Quality profile</span><span>Vs. current</span></div>
+              <div class="measure"><span>Industry similarity</span><span class="bar"><i style="width:87%"></i></span><b>87</b><span class="delta down">−4</span></div>
+              <div class="measure"><span>Role diversity</span><span class="bar"><i style="width:89%"></i></span><b>89</b><span class="delta up">+7</span></div>
+              <div class="measure"><span>Age diversity</span><span class="bar"><i style="width:82%"></i></span><b>82</b><span class="delta up">+8</span></div>
+              <div class="measure"><span>Table balance</span><span class="bar"><i style="width:84%"></i></span><b>84</b><span class="delta up">+5</span></div>
+            </section>
+            <section class="tradeoffs">
+              <h4>Tradeoff</h4>
+              <ul>
+                <li class="gain">Minimum fit rises 4 points and two watch placements clear.</li>
+                <li class="gain">Roles and ages are more evenly distributed.</li>
+                <li class="cost">Industry similarity falls 4 points; 20 of 48 founders move.</li>
+              </ul>
+            </section>
+            <details class="changes">
+              <summary>Key table changes · 20 founders moved</summary>
+              <div class="change-list">
+                <div class="change-row"><b>02 ↔ 03</b><span>Daniel Hensley swaps with Varun Patel · fit 68 → 74</span></div>
+                <div class="change-row"><b>01 ↔ 05</b><span>Sherry Liu moves into a broader role mix · fit 71 → 79</span></div>
+                <div class="change-row"><b>04 ↔ 06</b><span>Age bands rebalance with no new watch placement</span></div>
+              </div>
+            </details>
+          </article>
+
+          <article class="solution" data-solution="alternative2">
+            <div class="solution-action">
+              <button class="select-solution" aria-pressed="false" onclick="selectSolution('alternative2')">
+                <span class="selection-check" aria-hidden="true">✓</span>
+                <span data-select-label>Select this solution</span>
+              </button>
+            </div>
+            <div class="solution-head">
+              <div class="solution-kicker"><span>Generated alternative 2</span><b data-state-label>Available</b></div>
+              <h3>Shared context</h3>
+              <p>Maximizes market overlap while widening age perspectives.</p>
+            </div>
+            <div class="hero-metrics">
+              <div class="hero-metric"><strong>82</strong><span>Overall quality</span></div>
+              <div class="hero-metric"><strong>70</strong><span>Minimum fit</span></div>
+              <div class="hero-metric watch"><strong>2</strong><span>Watch placements</span></div>
+            </div>
+            <section class="metric-section">
+              <div class="section-title"><span>Quality profile</span><span>Vs. current</span></div>
+              <div class="measure"><span>Industry similarity</span><span class="bar"><i style="width:94%"></i></span><b>94</b><span class="delta up">+3</span></div>
+              <div class="measure"><span>Role diversity</span><span class="bar"><i style="width:76%"></i></span><b>76</b><span class="delta down">−6</span></div>
+              <div class="measure"><span>Age diversity</span><span class="bar"><i style="width:86%"></i></span><b>86</b><span class="delta up">+12</span></div>
+              <div class="measure"><span>Table balance</span><span class="bar"><i style="width:81%"></i></span><b>81</b><span class="delta up">+2</span></div>
+            </section>
+            <section class="tradeoffs">
+              <h4>Tradeoff</h4>
+              <ul>
+                <li class="gain">Strongest industry similarity and age diversity.</li>
+                <li class="gain">Minimum fit reaches the 70-point threshold.</li>
+                <li class="cost">Role diversity falls 6 points; 18 of 48 founders move.</li>
+              </ul>
+            </section>
+            <details class="changes">
+              <summary>Key table changes · 18 founders moved</summary>
+              <div class="change-list">
+                <div class="change-row"><b>01 ↔ 04</b><span>Fintech founders consolidate around shared market context</span></div>
+                <div class="change-row"><b>02 ↔ 06</b><span>Jacky Lin moves into a wider age range · fit 69 → 75</span></div>
+                <div class="change-row"><b>03 ↔ 05</b><span>Two sales roles shift; engineering coverage remains valid</span></div>
+              </div>
+            </details>
+          </article>
+        </div>
+
+        <div id="comparisonActions" class="comparison-actions">
+          <div class="selection-copy">
+            <b id="selectionTitle">Current solution selected</b>
+            <span id="selectionDetail">84 overall · 68 minimum fit · 3 watch placements</span>
+          </div>
+          <div class="action-buttons">
+            <button onclick="returnToTables()">Cancel</button>
+            <button id="confirmButton" class="primary" onclick="confirmSelection()">Apply current selection</button>
+          </div>
+        </div>
+
+        <section id="confirmedView" class="confirmed" hidden>
+          <div class="confirmation-card">
+            <div class="confirmation-mark">✓</div>
+            <div class="confirmation-content">
+              <span class="eyebrow">Solution selected</span>
+              <h2 id="confirmedTitle">Current solution kept.</h2>
+              <p id="confirmedDescription">No assignments changed. The existing recommended solution remains active and ready to save or export.</p>
+              <div class="confirmation-metrics">
+                <div><strong id="confirmedOverall">84</strong><span>Overall quality</span></div>
+                <div><strong id="confirmedMinimum">68</strong><span>Minimum fit</span></div>
+                <div><strong id="confirmedWatches">3</strong><span>Watch placements</span></div>
+                <div><strong>100%</strong><span>Rule compliance</span></div>
+              </div>
+              <div class="confirmation-actions">
+                <button onclick="setReviewState('compare')">Compare again</button>
+                <button onclick="returnToTables()">Return to tables →</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <div class="foot-left">
+        <button class="foot">V1</button>
+        <button class="foot active-v">V2</button>
+        <button class="foot ai">✓ AI Enabled · Anthropic</button>
+      </div>
+      <div class="foot-right"><button class="foot">Saved version 3</button></div>
+    </footer>
+  </div>
+
+  <script>
+    const solutions = {
+      current: {
+        label: "Current solution",
+        detail: "84 overall · 68 minimum fit · 3 watch placements",
+        title: "Current solution kept.",
+        description: "No assignments changed. The existing recommended solution remains active and ready to save or export.",
+        overall: "84",
+        minimum: "68",
+        watches: "3"
+      },
+      alternative1: {
+        label: "Alternative 1",
+        detail: "83 overall · 72 minimum fit · 1 watch placement",
+        title: "Alternative 1 selected.",
+        description: "The safer-floor arrangement is now active. It raises the minimum founder fit and reduces watch placements while preserving all rules and locks.",
+        overall: "83",
+        minimum: "72",
+        watches: "1"
+      },
+      alternative2: {
+        label: "Alternative 2",
+        detail: "82 overall · 70 minimum fit · 2 watch placements",
+        title: "Alternative 2 selected.",
+        description: "The shared-context arrangement is now active. It strengthens industry similarity and age diversity while preserving all rules and locks.",
+        overall: "82",
+        minimum: "70",
+        watches: "2"
+      }
+    };
+
+    let selectedSolution = "current";
+
+    function selectSolution(id) {
+      selectedSolution = id;
+      const selected = solutions[id];
+
+      document.querySelectorAll(".solution").forEach(card => {
+        const active = card.dataset.solution === id;
+        card.classList.toggle("selected", active);
+        card.querySelector("[data-state-label]").textContent = active ? "Selected" : "Available";
+        card.querySelector(".select-solution").setAttribute("aria-pressed", String(active));
+        card.querySelector("[data-select-label]").textContent = active ? "Selected" : "Select this solution";
+      });
+
+      document.getElementById("selectionTitle").textContent = selected.label + " selected";
+      document.getElementById("selectionDetail").textContent = selected.detail;
+      document.getElementById("confirmButton").textContent = "Apply current selection";
+    }
+
+    function setReviewState(state) {
+      const confirmed = state === "confirmed";
+      document.getElementById("compareView").hidden = confirmed;
+      document.getElementById("comparisonActions").hidden = confirmed;
+      document.getElementById("confirmedView").hidden = !confirmed;
+      document.getElementById("compareState").setAttribute("aria-pressed", String(!confirmed));
+      document.getElementById("confirmedState").setAttribute("aria-pressed", String(confirmed));
+
+      if (confirmed) populateConfirmation();
+    }
+
+    function populateConfirmation() {
+      const selected = solutions[selectedSolution];
+      document.getElementById("confirmedTitle").textContent = selected.title;
+      document.getElementById("confirmedDescription").textContent = selected.description;
+      document.getElementById("confirmedOverall").textContent = selected.overall;
+      document.getElementById("confirmedMinimum").textContent = selected.minimum;
+      document.getElementById("confirmedWatches").textContent = selected.watches;
+    }
+
+    function confirmSelection() {
+      populateConfirmation();
+      setReviewState("confirmed");
+    }
+
+    function returnToTables() {
+      document.querySelector(".generation-status").textContent = "✓ Returning to active tables";
+      window.setTimeout(() => {
+        document.querySelector(".generation-status").textContent = "✓ 2 alternatives ready";
+      }, 1200);
+    }
+
+    selectSolution("current");
+  </script>
+</body>
+</html>

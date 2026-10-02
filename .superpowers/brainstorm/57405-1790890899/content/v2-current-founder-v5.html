@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>V2 Header White Surface</title>
+  <style>
+    html,body,iframe{width:100%;height:100%;margin:0;border:0;display:block;background:#fff}
+  </style>
+</head>
+<body>
+  <iframe id="mock" src="/files/v2-current-founder-v4.html" title="Founder Table V2 mockup"></iframe>
+  <script>
+    document.getElementById('mock').addEventListener('load', function () {
+      const doc = this.contentDocument
+      const button = doc && doc.querySelector('.founder-button')
+      if (!button) return
+      button.style.background = '#ffffff'
+      button.addEventListener('mouseenter', () => { button.style.background = '#f5f3ee' })
+      button.addEventListener('mouseleave', () => {
+        if (button.getAttribute('aria-expanded') !== 'true') button.style.background = '#ffffff'
+      })
+      button.addEventListener('click', () => {
+        button.style.background = button.getAttribute('aria-expanded') === 'true' ? '#f5f3ee' : '#ffffff'
+      })
+    })
+  </script>
+</body>
+</html>

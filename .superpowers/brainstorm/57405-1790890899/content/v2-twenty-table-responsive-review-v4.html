@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Founder App V2 — Twenty-table responsive review V4</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=League+Spartan:wght@700;800&display=swap");
+
+    :root {
+      --surface: #fff;
+      --surface-alt: #f5f3ee;
+      --line: #e3e5e9;
+      --line-strong: #7d828b;
+      --ink: #141414;
+      --muted: #5b5f66;
+      --orange: #f26522;
+      --blue: #2f5bea;
+      --green: #17634d;
+      --amber: #9a5b00;
+      --red: #b42318;
+      --strong-bg: #dcefe7;
+      --good-bg: #e6ebff;
+      --watch-bg: #fff1d6;
+      --risk-bg: #fde4e1;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      color: var(--ink);
+      background: #eceae5;
+      font-family: "Figtree", "Avenir Next", system-ui, sans-serif;
+    }
+    button, input { border-radius: 0; color: inherit; font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    .review-bar {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 8px 18px;
+      border-bottom: 1px solid #3d3d3d;
+      background: var(--ink);
+      color: white;
+    }
+    .review-title { display: flex; align-items: center; gap: 12px; }
+    .review-title b {
+      color: #ff8a52;
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .review-title span { color: #c8c9cc; font-size: 12px; }
+    .frame-switch { display: flex; border: 1px solid #515151; }
+    .frame-switch button {
+      min-height: 36px;
+      padding: 0 15px;
+      border: 0;
+      border-right: 1px solid #515151;
+      background: var(--ink);
+      color: #c8c9cc;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .frame-switch button:last-child { border-right: 0; }
+    .frame-switch button[aria-pressed="true"] {
+      background: white;
+      color: var(--ink);
+      box-shadow: inset 0 -4px var(--blue);
+    }
+
+    .stage {
+      min-height: calc(100vh - 54px);
+      padding: 22px;
+      overflow: auto;
+    }
+    .device {
+      width: min(1440px, 100%);
+      min-width: 320px;
+      height: calc(100vh - 98px);
+      min-height: 660px;
+      margin: 0 auto;
+      border: 1px solid var(--line-strong);
+      background: white;
+      container-type: inline-size;
+      overflow: hidden;
+      transition: width 180ms ease;
+    }
+    .device[data-frame="tablet"] { width: 768px; }
+    .device[data-frame="mobile"] { width: 375px; min-height: 720px; }
+
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 64px minmax(0, 1fr) 58px;
+      overflow: hidden;
+      background: white;
+    }
+    header {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr) 292px;
+      border-bottom: 1px solid var(--line);
+      background: white;
+      position: relative;
+      z-index: 20;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 0 24px;
+      border-right: 1px solid var(--line);
+      font: 800 23px/.88 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .brand .version { color: var(--orange); }
+    nav { display: flex; align-items: stretch; }
+    nav button {
+      padding: 0 24px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: white;
+      font-weight: 700;
+    }
+    nav .active { box-shadow: inset 0 5px var(--blue); }
+    .account {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr) 16px;
+      align-items: center;
+      gap: 11px;
+      padding: 0 20px;
+      border-left: 1px solid var(--line);
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--blue);
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .account small, .account strong { display: block; }
+    .account small { margin-bottom: 2px; color: var(--muted); font-size: 10px; }
+    .account strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+
+    main {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 272px minmax(0, 1fr);
+      overflow: hidden;
+    }
+    .setup {
+      min-height: 0;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: white;
+    }
+    .setup-title {
+      padding: 19px 22px;
+      border-bottom: 1px solid var(--line);
+      background: var(--orange);
+    }
+    .setup-title h1 {
+      margin: 6px 0 0;
+      font: 800 29px/.95 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .setup-section { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+    .setup-section h2 {
+      margin: 0 0 12px;
+      font: 800 14px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .scope-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); }
+    .scope-stat { padding: 12px; background: var(--surface-alt); }
+    .scope-stat strong { display: block; font: 800 25px/1 "League Spartan", sans-serif; }
+    .scope-stat span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .brief {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+    .criterion { padding: 10px 0; border-top: 1px solid var(--line); }
+    .criterion:first-of-type { border-top: 0; }
+    .criterion-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 800; }
+    .criterion-head b { color: var(--blue); font-size: 10px; text-transform: uppercase; }
+    .criterion small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .rule { display: flex; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.35; }
+    .rule::before { content: "✓"; color: var(--green); font-weight: 800; }
+    .setup-link {
+      width: 100%;
+      min-height: 36px;
+      margin-top: 11px;
+      border: 1px solid var(--line-strong);
+      background: white;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .workspace {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      overflow: hidden;
+      background: var(--surface-alt);
+    }
+    .work-head {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) repeat(4, minmax(82px, 112px));
+      border-bottom: 1px solid var(--line);
+      background: white;
+    }
+    .work-title { min-width: 0; padding: 16px 20px; }
+    .work-title h2 {
+      overflow: hidden;
+      margin: 5px 0 0;
+      font: 800 25px/1 "League Spartan", sans-serif;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .metric { padding: 13px 12px; border-left: 1px solid var(--line); }
+    .metric strong { display: block; font: 800 24px/1 "League Spartan", sans-serif; }
+    .metric span { display: block; margin-top: 5px; color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .metric.alert strong { color: var(--amber); }
+
+    .work-tools {
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--line);
+      background: white;
+    }
+    .tool-left, .tool-right, .segmented, .density { display: flex; align-items: center; }
+    .tool-left, .tool-right { gap: 14px; }
+    .segmented button, .density button {
+      min-height: 32px;
+      padding: 0 12px;
+      border: 1px solid var(--line-strong);
+      border-right: 0;
+      background: white;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .segmented button:last-child, .density button:last-child { border-right: 1px solid var(--line-strong); }
+    .segmented .active, .density .active { background: var(--ink); color: white; }
+    .density-label { margin-right: 7px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .legend { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 9px; font-weight: 800; }
+    .legend span { display: flex; align-items: center; gap: 4px; }
+    .legend i, .mini-dot { width: 9px; height: 9px; border: 1px solid rgba(20,20,20,.08); border-radius: 50%; }
+    .strong-bg { background: var(--strong-bg); }
+    .good-bg { background: var(--good-bg); }
+    .watch-bg { background: var(--watch-bg); }
+    .risk-bg { background: var(--risk-bg); }
+    .threshold { display: flex; align-items: center; gap: 7px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+    .threshold input { width: 86px; accent-color: var(--blue); }
+
+    .table-workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+    }
+    .table-index {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr);
+      border-bottom: 1px solid var(--line);
+      background: white;
+    }
+    .index-head {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 12px 14px;
+      border-right: 1px solid var(--line);
+      background: white;
+    }
+    .index-head strong { display: block; font: 800 15px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+    .index-head span { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
+    .index-grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); }
+    .index-button {
+      position: relative;
+      min-height: 34px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: white;
+    }
+    .index-button:nth-child(10n) { border-right: 0; }
+    .index-button:nth-child(n+11) { border-bottom: 0; }
+    .index-button:hover { background: var(--surface-alt); }
+    .index-button.active { box-shadow: inset 0 -3px var(--blue); background: #f5f7ff; color: var(--blue); }
+    .index-button strong { font: 800 12px/1 "League Spartan", sans-serif; }
+    .index-button::after {
+      position: absolute;
+      top: 5px;
+      right: 6px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      content: "";
+    }
+    .index-button.has-watch::after { background: var(--amber); }
+    .index-button.has-risk::after { background: var(--red); }
+
+    .tables-scroll {
+      min-width: 0;
+      min-height: 0;
+      overflow: auto;
+      scroll-behavior: smooth;
+    }
+    .focus-strip {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--line);
+      background: white;
+    }
+    .focus-strip button { min-height: 29px; padding: 0 10px; border: 1px solid var(--line-strong); background: white; font-size: 10px; font-weight: 800; }
+    .focus-label { text-align: center; }
+    .focus-label strong { display: block; font: 800 14px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+    .focus-label span { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+    .tables {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(250px, 1fr));
+      gap: 1px;
+      padding: 1px 1px 74px;
+      background: var(--line);
+    }
+    .table-card {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      background: white;
+      scroll-margin-top: 8px;
+    }
+    .table-card.focused { outline: 3px solid var(--blue); outline-offset: -3px; }
+    .table-head {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 13px;
+      border-bottom: 1px solid var(--line);
+    }
+    .table-head h3 { margin: 4px 0 0; font: 800 17px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+    .table-score { text-align: right; }
+    .table-score strong { display: block; color: var(--green); font: 800 20px/1 "League Spartan", sans-serif; }
+    .table-score.watch strong { color: var(--amber); }
+    .table-score.risk strong { color: var(--red); }
+    .table-score span { color: var(--muted); font-size: 8px; font-weight: 800; text-transform: uppercase; }
+    .seat {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr) 29px;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-bottom: 1px solid var(--line);
+    }
+    .seat:nth-child(even) { border-right: 1px solid var(--line); }
+    .seat-avatar {
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      font-size: 8px;
+      font-weight: 800;
+    }
+    .seat-copy { min-width: 0; }
+    .seat-copy strong, .seat-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .seat-copy strong { font-size: 10px; }
+    .seat-copy small { margin-top: 2px; color: var(--muted); font-size: 8px; }
+    .fit { font: 800 11px/1 "League Spartan", sans-serif; text-align: right; }
+    .fit.watch { color: var(--amber); }
+    .fit.risk { color: var(--red); }
+    .table-foot {
+      grid-column: 1 / -1;
+      min-height: 33px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 11px;
+      background: var(--surface-alt);
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .table-foot .warning { color: var(--amber); }
+    .table-foot .risk { color: var(--red); }
+    .lock { padding: 0; border: 0; background: transparent; font-size: 9px; font-weight: 800; }
+    .more-seats { display: none; }
+    .tables.comfortable { grid-template-columns: repeat(2, minmax(310px, 1fr)); }
+    .tables.comfortable .seat { grid-template-columns: 32px minmax(0, 1fr) 34px; padding: 9px 13px; }
+    .tables.comfortable .seat-avatar { width: 32px; height: 32px; font-size: 9px; }
+    .tables.comfortable .seat-copy strong { font-size: 11px; }
+    .tables.comfortable .seat-copy small { font-size: 9px; }
+
+    .analysis {
+      display: none;
+      min-height: 0;
+      overflow: auto;
+      padding: 1px 1px 74px;
+      background: var(--line);
+    }
+    .analysis.visible { display: block; }
+    .table-insights {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.25fr;
+      gap: 1px;
+      background: var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .insight-card { min-height: 170px; padding: 15px 18px; background: white; }
+    .insight-card h3,
+    .visual-card h3,
+    .analysis-tables h3 {
+      margin: 0 0 10px;
+      font: 800 15px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .objective-row {
+      display: grid;
+      grid-template-columns: 105px minmax(0, 1fr) 28px;
+      align-items: center;
+      gap: 10px;
+      margin: 8px 0;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .objective-bar { height: 8px; background: #e7e5df; }
+    .objective-bar i { display: block; height: 100%; background: var(--blue); }
+    .watch-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 30px;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 0;
+      border-top: 1px solid var(--line);
+    }
+    .watch-row strong { display: block; font-size: 11px; }
+    .watch-row small { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; }
+    .recommendation {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      border-top: 1px solid var(--line);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .recommendation b { display: block; }
+    .recommendation button {
+      min-height: 26px;
+      padding: 0 9px;
+      border: 1px solid var(--line-strong);
+      background: white;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .recommendation button:hover { background: var(--ink); color: white; }
+    .recommendation button:disabled { border-color: var(--green); background: var(--strong-bg); color: var(--green); }
+    .analysis-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; }
+    .analysis-stat { padding: 17px; background: white; }
+    .analysis-stat strong { display: block; font: 800 24px/1 "League Spartan", sans-serif; }
+    .analysis-stat span { display: block; margin-top: 5px; color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+    .analysis-visuals { display: grid; grid-template-columns: 1fr 2fr; gap: 1px; margin-top: 1px; background: var(--line); }
+    .visual-card { min-height: 210px; padding: 18px 20px; background: white; }
+    .distribution { height: 145px; display: flex; align-items: end; justify-content: space-around; gap: 12px; }
+    .distribution-item { flex: 1; text-align: center; font-size: 10px; font-weight: 800; }
+    .distribution-item i { display: block; width: 100%; margin-bottom: 7px; }
+    .distribution-item b { display: block; font-size: 14px; }
+    .role-legend { display: flex; flex-wrap: wrap; gap: 13px; margin-bottom: 13px; color: var(--muted); font-size: 10px; font-weight: 800; }
+    .role-legend span { display: flex; align-items: center; gap: 5px; }
+    .role-legend i { width: 9px; height: 9px; }
+    .role-makeup-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; }
+    .makeup-row { display: grid; grid-template-columns: 55px minmax(0, 1fr); align-items: center; gap: 10px; margin: 8px 0; font-size: 10px; font-weight: 800; }
+    .role-bar { display: flex; height: 14px; }
+    .role-eng { background: #3559e8; }
+    .role-sales { background: #2b7a78; }
+    .role-design { background: #c7a36b; }
+    .role-ops { background: var(--orange); }
+    .analysis-tables { padding: 18px 20px; border-top: 1px solid var(--line); background: white; }
+    .heatmap-heading { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+    .heatmap-heading h3 { margin: 0; }
+    .heat-instruction { margin-right: auto; color: var(--muted); font-size: 10px; font-weight: 700; }
+    .heat-legend { display: flex; gap: 12px; color: var(--muted); font-size: 10px; font-weight: 800; }
+    .heat-legend span { display: flex; align-items: center; gap: 5px; }
+    .heat-legend i { width: 10px; height: 10px; border: 1px solid rgba(0,0,0,.08); border-radius: 50%; }
+    .heatmap-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; border: 1px solid var(--line); background: var(--line); }
+    .heat-column { min-width: 0; background: white; }
+    .heat-column-head {
+      display: flex;
+      justify-content: space-between;
+      padding: 9px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-alt);
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .heat-column-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 5px; padding: 11px 7px; }
+    .heat-person {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      border: 0;
+      background: transparent;
+      font-size: 9px;
+      text-align: center;
+      cursor: grab;
+    }
+    .heat-person:active { cursor: grabbing; }
+    .heat-person.dragging { opacity: .35; }
+    .heat-person.drop-target .heat-dot { outline: 3px solid var(--blue); outline-offset: 2px; }
+    .heat-person > span:last-child { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+    .heat-dot {
+      width: 43px;
+      height: 43px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(17,17,17,.12);
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    footer {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+      background: white;
+    }
+    .foot-group { display: flex; }
+    footer button {
+      min-width: 48px;
+      padding: 0 16px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: white;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    footer > .foot-group:first-child button:nth-child(-n+2) {
+      position: relative;
+      color: var(--muted);
+      background: white;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    footer > .foot-group:first-child .active {
+      color: var(--blue);
+      background: var(--surface-alt);
+    }
+    footer > .foot-group:first-child .active::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: var(--blue);
+    }
+    footer .ai { color: var(--green); }
+    footer .actions button { border-right: 0; border-left: 1px solid var(--line); }
+    footer .actions .secondary-dark { background: var(--ink); color: white; }
+    footer .actions .primary { min-width: 86px; background: var(--blue); color: white; }
+
+    @container (max-width: 900px) {
+      .app { grid-template-rows: 58px minmax(0, 1fr) 54px; }
+      header { grid-template-columns: 190px 1fr 190px; }
+      .brand { padding: 0 18px; font-size: 20px; }
+      nav button { padding: 0 13px; font-size: 11px; }
+      .account { padding: 0 13px; }
+      main { grid-template-columns: 1fr; }
+      .setup {
+        display: grid;
+        grid-template-columns: 180px 1fr auto;
+        overflow: visible;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .setup-title { padding: 15px 17px; border-right: 1px solid var(--line); border-bottom: 0; }
+      .setup-title h1 { font-size: 22px; }
+      .setup-section { display: none; }
+      .setup-section:first-of-type { display: flex; align-items: center; padding: 10px 14px; border-bottom: 0; }
+      .scope-pair { min-width: 250px; }
+      .setup-link { width: 110px; min-height: 100%; margin: 0; border-width: 0 0 0 1px; }
+      .workspace { grid-template-rows: auto auto minmax(0, 1fr); }
+      .work-head { grid-template-columns: minmax(190px, 1fr) repeat(4, 76px); }
+      .work-title { padding: 13px 15px; }
+      .work-title h2 { font-size: 20px; }
+      .metric { padding: 11px 9px; }
+      .metric strong { font-size: 20px; }
+      .work-tools { padding: 7px 10px; }
+      .legend { display: none; }
+      .table-workspace { grid-template-rows: 78px minmax(0, 1fr); }
+      .table-index { display: block; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid var(--line); }
+      .index-head { display: none; }
+      .index-grid { width: 620px; height: 77px; grid-template-columns: repeat(10, 62px); }
+      .index-button {
+        min-height: 38px;
+        border-right: 1px solid var(--line);
+      }
+      .focus-strip { display: flex; }
+      .tables { grid-template-columns: repeat(2, minmax(250px, 1fr)); }
+      .tables.comfortable { grid-template-columns: repeat(2, minmax(280px, 1fr)); }
+      .table-card { display: block; }
+      .seat:nth-child(even) { border-right: 0; }
+      .table-insights { grid-template-columns: 1fr 1fr; }
+      .insight-card:last-child { grid-column: 1 / -1; }
+      .analysis-visuals { grid-template-columns: 1fr; }
+      .heatmap-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      footer .ai { display: none; }
+      footer button { padding: 0 12px; }
+    }
+
+    @container (max-width: 560px) {
+      .app { grid-template-rows: 56px minmax(0, 1fr) 52px; }
+      header { grid-template-columns: 1fr 116px; }
+      .brand { gap: 10px; border-right: 0; font-size: 18px; }
+      nav { display: none; }
+      .account { grid-template-columns: 30px 1fr; gap: 8px; padding: 0 10px; }
+      .account .avatar { width: 30px; height: 30px; }
+      .account small, .account > span:last-child { display: none; }
+      .account strong { font-size: 11px; }
+      main { overflow: hidden; }
+      .setup { display: none; }
+      .work-head { grid-template-columns: minmax(0, 1fr) 64px 64px; }
+      .work-title { padding: 11px 12px; }
+      .work-title .eyebrow { display: none; }
+      .work-title h2 { margin: 0; font-size: 17px; white-space: normal; }
+      .metric { display: none; }
+      .metric:first-of-type, .metric.alert { display: block; padding: 10px 7px; }
+      .metric strong { font-size: 19px; }
+      .metric span { font-size: 7px; }
+      .work-tools { min-height: 47px; gap: 6px; padding: 6px 8px; }
+      .tool-left, .tool-right { gap: 6px; }
+      .density, .threshold { display: none; }
+      .segmented button { min-height: 30px; padding: 0 10px; }
+      .table-workspace { grid-template-rows: 48px minmax(0, 1fr); }
+      .index-grid { width: max-content; height: 47px; display: flex; }
+      .index-button {
+        width: 48px;
+        min-height: 47px;
+        border-bottom: 0;
+      }
+      .index-button:nth-child(10n) { border-right: 1px solid var(--line); }
+      .focus-strip { min-height: 42px; }
+      .tables, .tables.comfortable {
+        display: block;
+        padding-bottom: 62px;
+        background: white;
+      }
+      .table-card { display: none; }
+      .table-card.focused { display: block; outline: 0; }
+      .table-head { padding: 13px 14px; }
+      .table-head h3 { font-size: 19px; }
+      .seat, .tables.comfortable .seat {
+        grid-template-columns: 34px minmax(0, 1fr) 36px;
+        padding: 9px 14px;
+      }
+      .seat-avatar, .tables.comfortable .seat-avatar { width: 34px; height: 34px; font-size: 9px; }
+      .seat-copy strong, .tables.comfortable .seat-copy strong { font-size: 12px; }
+      .seat-copy small, .tables.comfortable .seat-copy small { font-size: 9px; }
+      .fit { font-size: 13px; }
+      .table-foot { min-height: 38px; padding: 8px 14px; font-size: 10px; }
+      .analysis-summary { grid-template-columns: repeat(2, 1fr); }
+      .analysis-stat { padding: 13px; }
+      .table-insights { grid-template-columns: 1fr; }
+      .insight-card:last-child { grid-column: auto; }
+      .role-makeup-grid { grid-template-columns: 1fr; }
+      .heatmap-heading { align-items: flex-start; flex-direction: column; gap: 7px; }
+      .heatmap-grid { grid-template-columns: 1fr; }
+      footer .foot-group button:first-child, footer .actions button:nth-child(-n+2) { display: none; }
+      footer button { padding: 0 10px; font-size: 9px; }
+      footer .actions .primary { min-width: 72px; }
+    }
+
+    @media (max-width: 720px) {
+      .review-bar { align-items: stretch; flex-direction: column; gap: 8px; }
+      .review-title { justify-content: space-between; }
+      .review-title span { display: none; }
+      .frame-switch button { flex: 1; }
+      .stage { min-height: calc(100vh - 106px); padding: 10px; }
+      .device { height: calc(100vh - 126px); min-height: 640px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <section class="review-bar" aria-label="Responsive review controls">
+    <div class="review-title">
+      <b>SCREEN-11</b>
+      <span>Twenty-table responsive treatment · generated dinner workspace</span>
+    </div>
+    <div class="frame-switch" aria-label="Preview width">
+      <button data-frame-button="desktop" aria-pressed="true">Desktop · 1440</button>
+      <button data-frame-button="tablet" aria-pressed="false">Tablet · 768</button>
+      <button data-frame-button="mobile" aria-pressed="false">Mobile · 375</button>
+    </div>
+  </section>
+
+  <div class="stage">
+    <div class="device" id="device" data-frame="desktop">
+      <div class="app">
+        <header>
+          <div class="brand">Founder Index <span class="version">V2</span></div>
+          <nav aria-label="Primary">
+            <button>Founder Index</button>
+            <button class="active">Seating Plans</button>
+          </nav>
+          <div class="account">
+            <span class="avatar">YC</span>
+            <span><small>Current account</small><strong>YC Admin</strong></span>
+            <span aria-hidden="true">⌄</span>
+          </div>
+        </header>
+
+        <main>
+          <aside class="setup">
+            <div class="setup-title">
+              <span class="eyebrow">Dinner matching</span>
+              <h1>Build the room.</h1>
+            </div>
+            <section class="setup-section">
+              <div class="scope-pair">
+                <div class="scope-stat"><strong>160</strong><span>founders</span></div>
+                <div class="scope-stat"><strong>20 × 8</strong><span>tables × seats</span></div>
+              </div>
+            </section>
+            <section class="setup-section">
+              <h2>Matching brief</h2>
+              <p class="brief">Keep founders in similar industries so they share market context. Mix roles and ages at every table.</p>
+            </section>
+            <section class="setup-section">
+              <h2>Matching criteria</h2>
+              <div class="criterion"><div class="criterion-head"><span>Company vertical</span><b>Similar · H</b></div><small>Shared market context</small></div>
+              <div class="criterion"><div class="criterion-head"><span>Role</span><b>Diverse · H</b></div><small>Cross-functional tables</small></div>
+              <div class="criterion"><div class="criterion-head"><span>Age</span><b>Diverse · M</b></div><small>Broader perspectives</small></div>
+              <button class="setup-link" id="editSetup">Edit setup</button>
+            </section>
+            <section class="setup-section">
+              <h2>Hard rules</h2>
+              <div class="rule">Separate founders from the same company</div>
+              <div class="rule">Every table includes an Engineering founder</div>
+            </section>
+          </aside>
+
+          <section class="workspace">
+            <div class="work-head">
+              <div class="work-title"><span class="eyebrow">Recommended solution</span><h2>Founders Dinner · Oct 16</h2></div>
+              <div class="metric"><strong>84</strong><span>Overall quality</span></div>
+              <div class="metric"><strong id="minimumFit">64</strong><span>Minimum fit</span></div>
+              <div class="metric"><strong>20</strong><span>Tables</span></div>
+              <div class="metric alert"><strong id="watchTotal">11</strong><span>Watch placements</span></div>
+            </div>
+
+            <div class="work-tools">
+              <div class="tool-left">
+                <div class="segmented" aria-label="Workspace view">
+                  <button class="active" data-view="tables">Tables</button>
+                  <button data-view="analysis">Analysis</button>
+                </div>
+                <div class="density">
+                  <span class="density-label">Density</span>
+                  <button class="active" data-density="compact">Compact</button>
+                  <button data-density="comfortable">Comfortable</button>
+                </div>
+              </div>
+              <div class="tool-right">
+                <div class="legend" aria-label="Fit score legend">
+                  <span><i class="strong-bg"></i>90+</span>
+                  <span><i class="good-bg"></i>80–89</span>
+                  <span><i class="watch-bg"></i>70–79</span>
+                  <span><i class="risk-bg"></i>&lt;70</span>
+                </div>
+                <label class="threshold">Threshold <output id="thresholdOutput">70</output><input id="threshold" type="range" min="60" max="85" value="70"></label>
+              </div>
+            </div>
+
+            <div class="table-workspace" id="tablesView">
+              <aside class="table-index" aria-label="Table index">
+                <div class="index-head"><strong>Jump to table</strong><span>Amber and red dots flag tables to review.</span></div>
+                <div class="index-grid" id="tableIndex"></div>
+              </aside>
+              <section class="tables-scroll" id="tablesScroll">
+                <div class="focus-strip">
+                  <button id="previousTable">← Prev</button>
+                  <div class="focus-label"><strong id="focusName">Table 01</strong><span id="focusStatus">88 quality · 0 watch</span></div>
+                  <button id="nextTable">Next →</button>
+                </div>
+                <div class="tables" id="tables"></div>
+              </section>
+            </div>
+
+            <section class="analysis" id="analysisView">
+              <div class="table-insights">
+                <section class="insight-card">
+                  <h3>Objective performance</h3>
+                  <div class="objective-row"><span>Industry similarity</span><span class="objective-bar"><i style="width:91%"></i></span><b>91</b></div>
+                  <div class="objective-row"><span>Role diversity</span><span class="objective-bar"><i style="width:82%"></i></span><b>82</b></div>
+                  <div class="objective-row"><span>Age diversity</span><span class="objective-bar"><i style="width:74%"></i></span><b>74</b></div>
+                  <div class="objective-row"><span>Table balance</span><span class="objective-bar"><i style="width:79%"></i></span><b>79</b></div>
+                </section>
+                <section class="insight-card">
+                  <h3>Weakest placements</h3>
+                  <div id="weakestPlacements"></div>
+                </section>
+                <section class="insight-card">
+                  <h3>Recommended improvements</h3>
+                  <div id="recommendedImprovements"></div>
+                </section>
+              </div>
+              <div class="analysis-summary">
+                <div class="analysis-stat"><strong>100%</strong><span>Hard-rule compliance</span></div>
+                <div class="analysis-stat"><strong id="aboveThreshold">149 / 160</strong><span>Above match threshold</span></div>
+                <div class="analysis-stat"><strong id="strongMatches">39</strong><span>Founder matches at 90+</span></div>
+                <div class="analysis-stat"><strong>4</strong><span>Roles represented</span></div>
+              </div>
+              <div class="analysis-visuals">
+                <section class="visual-card">
+                  <h3>Match-score distribution</h3>
+                  <div class="distribution" id="distribution"></div>
+                </section>
+                <section class="visual-card">
+                  <h3>Role makeup by table</h3>
+                  <div class="role-legend">
+                    <span><i class="role-eng"></i>Engineering</span>
+                    <span><i class="role-sales"></i>Sales</span>
+                    <span><i class="role-design"></i>Design</span>
+                    <span><i class="role-ops"></i>Operations</span>
+                  </div>
+                  <div class="role-makeup-grid" id="roleMakeup"></div>
+                </section>
+              </div>
+              <div class="analysis-tables">
+                <div class="heatmap-heading">
+                  <h3>Founder match by table</h3>
+                  <span class="heat-instruction">Drag one founder onto another to swap tables</span>
+                  <div class="heat-legend">
+                    <span><i class="strong-bg"></i>90+</span>
+                    <span><i class="good-bg"></i>80–89</span>
+                    <span><i class="watch-bg"></i>70–79</span>
+                    <span><i class="risk-bg"></i>&lt;70</span>
+                  </div>
+                </div>
+                <div class="heatmap-grid" id="heatmap"></div>
+              </div>
+            </section>
+          </section>
+        </main>
+
+        <footer>
+          <div class="foot-group"><button>V1</button><button class="active">V2</button><button class="ai">✓ AI Enabled · Anthropic</button></div>
+          <div class="foot-group actions"><button class="secondary-dark">Re-optimize Remaining</button><button>Generate 2 Alternatives</button><button>Export</button><button class="primary">Save</button></div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firstNames = ["Di", "Alex", "Raj", "Sherry", "Edward", "Varun", "Daniel", "Jacky", "Amogh", "Justin", "Ashish", "Narek", "Maya", "Sofia", "Marcus", "Elena", "Theo", "Priya", "Noah", "Avery", "Mina", "Leo", "Anika", "Owen"];
+    const lastNames = ["Qi", "Confer", "Dosanjh", "Liu", "Frazer", "Patel", "Vlasits", "Lin", "Arora", "Wu", "Bajaj", "Galstyan", "Chen", "Reyes", "Cole", "Park", "Brooks", "Shah", "Kim", "Stone", "Rao", "Martinez", "Singh", "Grant"];
+    const companies = ["Lantern", "Risotto", "Stitch", "Tamarind Bio", "DryMerge", "Artos", "Yoneda Labs", "Trellis", "Amarsha", "ProSights", "Dime", "Driver AI", "Northstar", "Conduit"];
+    const roles = ["Engineering", "Sales", "Design", "Operations"];
+    const tableNames = ["Market Builders", "Product Operators", "Cross-Pollinators", "Systems Thinkers", "Growth Loops", "Frontier Makers", "Category Creators", "Technical Storytellers", "Platform Shapers", "Design Partners", "Capital Efficient", "Workflow Reinventors", "Deep Tech Exchange", "Trust Builders", "Global Operators", "Founder Led Sales", "Data Advantage", "Customer Obsessed", "Applied Intelligence", "New Market Makers"];
+    const tableScores = [88, 87, 86, 86, 85, 85, 84, 84, 84, 83, 83, 82, 82, 81, 80, 79, 78, 77, 75, 72];
+    const forcedLowScores = { 31: 69, 47: 68, 58: 67, 75: 66, 91: 69, 103: 64, 119: 68, 128: 69, 143: 67, 151: 65, 158: 68 };
+    let threshold = 70;
+    let focusedTable = 0;
+
+    const founders = Array.from({ length: 160 }, (_, index) => {
+      const first = firstNames[index % firstNames.length];
+      const last = lastNames[(index * 5 + Math.floor(index / firstNames.length)) % lastNames.length];
+      const score = forcedLowScores[index] ?? (74 + ((index * 13 + Math.floor(index / 8) * 7) % 23));
+      return {
+        name: `${first} ${last}`,
+        initials: `${first[0]}${last[0]}`,
+        company: companies[(index * 3) % companies.length],
+        role: roles[(index + Math.floor(index / 8)) % roles.length],
+        score
+      };
+    });
+
+    const tables = tableScores.map((score, index) => ({
+      index,
+      number: String(index + 1).padStart(2, "0"),
+      name: tableNames[index],
+      quality: score,
+      founders: founders.slice(index * 8, index * 8 + 8)
+    }));
+
+    function scoreClass(score) {
+      if (score >= 90) return "strong-bg";
+      if (score >= 80) return "good-bg";
+      if (score >= 70) return "watch-bg";
+      return "risk-bg";
+    }
+
+    function fitClass(score) {
+      if (score < 70) return "risk";
+      if (score < 80) return "watch";
+      return "";
+    }
+
+    function statusFor(table) {
+      const below = table.founders.filter(founder => founder.score < threshold);
+      const risks = table.founders.filter(founder => founder.score < 70);
+      return {
+        below: below.length,
+        risks: risks.length,
+        label: below.length ? `${below.length} below ${threshold}` : `All above ${threshold}`
+      };
+    }
+
+    function render() {
+      const indexRoot = document.getElementById("tableIndex");
+      const tablesRoot = document.getElementById("tables");
+
+      indexRoot.innerHTML = tables.map(table => {
+        const status = statusFor(table);
+        const stateClass = status.risks ? "has-risk" : status.below ? "has-watch" : "";
+        return `<button class="index-button ${stateClass} ${table.index === focusedTable ? "active" : ""}" data-table="${table.index}" aria-label="Table ${table.number}, ${table.quality} quality, ${status.label}">
+          <strong>${table.number}</strong>
+        </button>`;
+      }).join("");
+
+      tablesRoot.innerHTML = tables.map(table => {
+        const status = statusFor(table);
+        const qualityClass = table.quality < 75 ? "risk" : table.quality < 80 ? "watch" : "";
+        const statusClass = status.risks ? "risk" : status.below ? "warning" : "";
+        return `<article class="table-card ${table.index === focusedTable ? "focused" : ""}" id="table-${table.index}">
+          <div class="table-head">
+            <div><span class="eyebrow">Table ${table.number}</span><h3>${table.name}</h3></div>
+            <div class="table-score ${qualityClass}"><strong>${table.quality}</strong><span>Table quality</span></div>
+          </div>
+          ${table.founders.map(founder => `<div class="seat">
+            <span class="seat-avatar ${scoreClass(founder.score)}">${founder.initials}</span>
+            <span class="seat-copy"><strong>${founder.name}</strong><small>${founder.company} · ${founder.role}</small></span>
+            <span class="fit ${fitClass(founder.score)}">${founder.score}</span>
+          </div>`).join("")}
+          <div class="table-foot"><span class="${statusClass}">${status.label}</span><button class="lock">Lock table</button></div>
+        </article>`;
+      }).join("");
+
+      const allScores = founders.map(founder => founder.score);
+      const belowCount = allScores.filter(score => score < threshold).length;
+      document.getElementById("watchTotal").textContent = belowCount;
+      document.getElementById("minimumFit").textContent = Math.min(...allScores);
+      document.getElementById("aboveThreshold").textContent = `${160 - belowCount} / 160`;
+      document.getElementById("strongMatches").textContent = allScores.filter(score => score >= 90).length;
+      document.getElementById("thresholdOutput").textContent = threshold;
+      renderAnalysis();
+      updateFocusLabel();
+    }
+
+    function renderAnalysis() {
+      const weakest = [...founders].sort((a, b) => a.score - b.score).slice(0, 3);
+      document.getElementById("weakestPlacements").innerHTML = weakest.map(founder => {
+        const table = tables.find(item => item.founders.includes(founder));
+        return `<div class="watch-row">
+          <span><strong>${founder.name}</strong><small>Table ${table.number} · ${founder.role} mix needs review</small></span>
+          <b class="fit ${fitClass(founder.score)}">${founder.score}</b>
+        </div>`;
+      }).join("");
+
+      document.getElementById("recommendedImprovements").innerHTML = `
+        <div class="recommendation"><span><b>Swap ${weakest[0].name} with a stronger cross-table fit</b></span><button data-recommendation>Apply swap</button></div>
+        <div class="recommendation"><span><b>Increase role diversity at Table ${tables.find(item => item.founders.includes(weakest[1])).number}</b></span><button data-recommendation>Rebalance</button></div>
+        <div class="recommendation"><span><b>Lock the strongest table before re-optimizing</b></span><button data-recommendation>Lock Table 01</button></div>
+      `;
+
+      const bands = [
+        { label: "&lt;70", count: founders.filter(founder => founder.score < 70).length, className: "risk-bg" },
+        { label: "70–79", count: founders.filter(founder => founder.score >= 70 && founder.score < 80).length, className: "watch-bg" },
+        { label: "80–89", count: founders.filter(founder => founder.score >= 80 && founder.score < 90).length, className: "good-bg" },
+        { label: "90+", count: founders.filter(founder => founder.score >= 90).length, className: "strong-bg" }
+      ];
+      const largestBand = Math.max(...bands.map(band => band.count));
+      document.getElementById("distribution").innerHTML = bands.map(band => `
+        <div class="distribution-item">
+          <i class="${band.className}" style="height:${Math.max(18, Math.round(band.count / largestBand * 105))}px"></i>
+          <b>${band.count}</b><span>${band.label}</span>
+        </div>
+      `).join("");
+
+      const roleClasses = {
+        Engineering: "role-eng",
+        Sales: "role-sales",
+        Design: "role-design",
+        Operations: "role-ops"
+      };
+      document.getElementById("roleMakeup").innerHTML = tables.map(table => {
+        const counts = roles.map(role => table.founders.filter(founder => founder.role === role).length);
+        return `<div class="makeup-row"><span>Table ${table.number}</span><span class="role-bar">${
+          roles.map((role, index) => `<i class="${roleClasses[role]}" style="width:${counts[index] / table.founders.length * 100}%"></i>`).join("")
+        }</span></div>`;
+      }).join("");
+
+      document.getElementById("heatmap").innerHTML = tables.map(table => `
+        <section class="heat-column" data-analysis-table="${table.index}">
+          <div class="heat-column-head"><span>Table ${table.number}</span><b>Avg ${table.quality}</b></div>
+          <div class="heat-column-body">
+            ${table.founders.map((founder, founderIndex) => `
+              <div class="heat-person" draggable="true" data-analysis-table="${table.index}" data-founder-index="${founderIndex}">
+                <span class="heat-dot ${scoreClass(founder.score)}">${founder.score}%</span>
+                <span title="${founder.name}">${founder.name}</span>
+              </div>
+            `).join("")}
+          </div>
+        </section>
+      `).join("");
+      wireHeatmapDrag();
+    }
+
+    let draggedFounder = null;
+
+    function wireHeatmapDrag() {
+      document.querySelectorAll(".heat-person").forEach(person => {
+        person.addEventListener("dragstart", () => {
+          draggedFounder = {
+            tableIndex: Number(person.dataset.analysisTable),
+            founderIndex: Number(person.dataset.founderIndex)
+          };
+          person.classList.add("dragging");
+        });
+        person.addEventListener("dragend", () => {
+          person.classList.remove("dragging");
+          document.querySelectorAll(".drop-target").forEach(item => item.classList.remove("drop-target"));
+          draggedFounder = null;
+        });
+        person.addEventListener("dragover", event => {
+          event.preventDefault();
+          if (!person.classList.contains("dragging")) person.classList.add("drop-target");
+        });
+        person.addEventListener("dragleave", () => person.classList.remove("drop-target"));
+        person.addEventListener("drop", event => {
+          event.preventDefault();
+          person.classList.remove("drop-target");
+          if (!draggedFounder) return;
+          const targetTableIndex = Number(person.dataset.analysisTable);
+          const targetFounderIndex = Number(person.dataset.founderIndex);
+          if (draggedFounder.tableIndex === targetTableIndex) return;
+          const sourceFounder = tables[draggedFounder.tableIndex].founders[draggedFounder.founderIndex];
+          const targetFounder = tables[targetTableIndex].founders[targetFounderIndex];
+          tables[draggedFounder.tableIndex].founders[draggedFounder.founderIndex] = targetFounder;
+          tables[targetTableIndex].founders[targetFounderIndex] = sourceFounder;
+          render();
+        });
+      });
+    }
+
+    function updateFocusLabel() {
+      const table = tables[focusedTable];
+      const status = statusFor(table);
+      document.getElementById("focusName").textContent = `Table ${table.number} · ${table.name}`;
+      document.getElementById("focusStatus").textContent = `${table.quality} quality · ${status.below} watch`;
+    }
+
+    function focusTable(index, shouldScroll = true) {
+      focusedTable = (index + tables.length) % tables.length;
+      document.querySelectorAll("[data-table]").forEach(element => {
+        element.classList.toggle("active", Number(element.dataset.table) === focusedTable && element.classList.contains("index-button"));
+      });
+      document.querySelectorAll(".table-card").forEach((card, cardIndex) => card.classList.toggle("focused", cardIndex === focusedTable));
+      updateFocusLabel();
+      if (shouldScroll && document.getElementById("device").dataset.frame !== "mobile") {
+        document.getElementById(`table-${focusedTable}`).scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    document.querySelectorAll("[data-frame-button]").forEach(button => {
+      button.addEventListener("click", () => {
+        const frame = button.dataset.frameButton;
+        document.getElementById("device").dataset.frame = frame;
+        document.querySelectorAll("[data-frame-button]").forEach(item => item.setAttribute("aria-pressed", String(item === button)));
+        focusTable(focusedTable, false);
+      });
+    });
+
+    document.querySelectorAll("[data-density]").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("[data-density]").forEach(item => item.classList.toggle("active", item === button));
+        document.getElementById("tables").classList.toggle("comfortable", button.dataset.density === "comfortable");
+      });
+    });
+
+    document.querySelectorAll("[data-view]").forEach(button => {
+      button.addEventListener("click", () => {
+        const analysis = button.dataset.view === "analysis";
+        document.querySelectorAll("[data-view]").forEach(item => item.classList.toggle("active", item === button));
+        document.getElementById("tablesView").style.display = analysis ? "none" : "";
+        document.getElementById("analysisView").classList.toggle("visible", analysis);
+      });
+    });
+
+    document.getElementById("threshold").addEventListener("input", event => {
+      threshold = Number(event.target.value);
+      render();
+    });
+
+    document.getElementById("editSetup").addEventListener("click", () => {
+      window.location.href = "./v2-cohort-tables-review-v36.html";
+    });
+    document.getElementById("previousTable").addEventListener("click", () => focusTable(focusedTable - 1));
+    document.getElementById("nextTable").addEventListener("click", () => focusTable(focusedTable + 1));
+    document.addEventListener("click", event => {
+      const recommendation = event.target.closest("[data-recommendation]");
+      if (recommendation) {
+        recommendation.textContent = "Applied ✓";
+        recommendation.disabled = true;
+        return;
+      }
+      const target = event.target.closest("[data-table]");
+      if (!target) return;
+      const targetTable = Number(target.dataset.table);
+      focusTable(targetTable);
+    });
+
+    render();
+    if (new URLSearchParams(window.location.search).get("view") === "analysis") {
+      document.querySelector('[data-view="analysis"]').click();
+    }
+  </script>
+</body>
+</html>

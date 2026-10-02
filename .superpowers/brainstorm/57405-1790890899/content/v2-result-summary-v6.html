@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>V2 Combined Result Summary</title>
+  <style>html,body,iframe{width:100%;height:100%;margin:0;border:0;display:block;background:#fff}</style>
+</head>
+<body>
+  <iframe id="mock" src="/files/v2-current-founder-v4.html" title="Founder Table V2 mockup"></iframe>
+  <script>
+    document.getElementById('mock').addEventListener('load', function () {
+      const doc = this.contentDocument
+      const founderButton = doc && doc.querySelector('.founder-button')
+      if (founderButton) {
+        founderButton.style.background = '#ffffff'
+        founderButton.addEventListener('mouseenter', () => { founderButton.style.background = '#f5f3ee' })
+        founderButton.addEventListener('mouseleave', () => {
+          if (founderButton.getAttribute('aria-expanded') !== 'true') founderButton.style.background = '#ffffff'
+        })
+      }
+      const summary = doc && doc.querySelector('.matched')
+      if (summary) {
+        summary.innerHTML = '<b style="color:#141414;font-size:17px">48 founders</b><span style="color:#5b5f66"> · Matched on Role, Company vertical, Age</span>'
+      }
+    })
+  </script>
+</body>
+</html>

@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Founder App V2 — Recovery and failure states review</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=League+Spartan:wght@700;800&display=swap");
+
+    :root {
+      --surface: #fff;
+      --surface-alt: #f5f3ee;
+      --line: #e3e5e9;
+      --line-strong: #7d828b;
+      --ink: #141414;
+      --ink-muted: #5b5f66;
+      --orange: #f26522;
+      --orange-soft: #fff3ed;
+      --blue: #2f5bea;
+      --blue-soft: #eef2ff;
+      --green: #17634d;
+      --red: #a63025;
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { margin: 0; min-width: 1040px; min-height: 100%; }
+    body {
+      color: var(--ink);
+      background: var(--surface);
+      font-family: "Figtree", "Avenir Next", system-ui, sans-serif;
+    }
+    button, select { color: inherit; font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, select:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .app {
+      height: 100vh;
+      min-height: 700px;
+      display: grid;
+      grid-template-rows: 64px 48px minmax(0, 1fr) 65px;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 240px 172px 178px 162px 1fr 318px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      position: relative;
+      z-index: 20;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 24px;
+      border-right: 1px solid var(--line);
+      font: 800 23px/.88 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .brand span:first-child { max-width: 105px; }
+    .brand .version { color: var(--orange); font-size: 24px; }
+    .nav-item {
+      position: relative;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      font-weight: 700;
+    }
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5px;
+      background: var(--blue);
+    }
+    .profile {
+      grid-column: 6;
+      display: grid;
+      grid-template-columns: 36px 1fr 18px;
+      align-items: center;
+      gap: 12px;
+      padding: 0 22px;
+      border-left: 1px solid var(--line);
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .profile small, .profile strong { display: block; }
+    .profile small { margin-bottom: 2px; color: var(--ink-muted); font-size: 12px; }
+    .profile strong { font-size: 14px; }
+
+    .review-bar {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      border-bottom: 1px solid var(--ink);
+      background: var(--ink);
+      color: #fff;
+    }
+    .review-label {
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-right: 1px solid #404044;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+    .review-label b { margin-left: 7px; color: #ff8a52; }
+    .state-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(175px, 1fr));
+    }
+    .state-tab {
+      position: relative;
+      border: 0;
+      border-right: 1px solid #404044;
+      background: var(--ink);
+      color: #c8c9cc;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .state-tab:last-child { border-right: 0; }
+    .state-tab[aria-selected="true"] {
+      color: var(--ink);
+      background: #fff;
+    }
+    .state-tab[aria-selected="true"]::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: var(--blue);
+    }
+
+    main {
+      min-height: 0;
+      overflow: auto;
+      background: var(--surface-alt);
+    }
+    .state-panel { min-height: 100%; }
+    .state-hero {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      min-height: 168px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+    .hero-block {
+      padding: 27px 28px;
+      color: #fff;
+      background: var(--blue);
+    }
+    .hero-block .eyebrow, .failure-copy .eyebrow {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .hero-block h1 {
+      margin: 12px 0 0;
+      font: 800 35px/.9 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .failure-copy {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 38px;
+      align-items: center;
+      padding: 28px 40px;
+    }
+    .failure-copy .eyebrow { color: var(--red); }
+    .failure-copy h2 {
+      max-width: 760px;
+      margin: 8px 0 8px;
+      font: 800 29px/.98 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .failure-copy p {
+      max-width: 740px;
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 13px;
+      line-height: 1.48;
+    }
+    .preserved {
+      padding: 14px 16px;
+      border: 1px solid var(--line-strong);
+      border-left: 4px solid var(--green);
+      background: #fff;
+    }
+    .preserved strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--green);
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .preserved span { color: var(--ink-muted); font-size: 12px; line-height: 1.35; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      min-height: 425px;
+      background: #fff;
+    }
+    .diagnosis { padding: 28px 32px 38px; border-right: 1px solid var(--line); }
+    .section-kicker {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+    .diagnosis h3 {
+      margin: 0 0 8px;
+      font: 800 22px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .diagnosis > p {
+      max-width: 730px;
+      margin: 0 0 22px;
+      color: var(--ink-muted);
+      font-size: 13px;
+      line-height: 1.48;
+    }
+    .blocker {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 16px;
+      min-height: 84px;
+      padding: 14px 18px;
+      border: 1px solid var(--ink);
+      border-left: 5px solid var(--orange);
+      background: var(--orange-soft);
+    }
+    .blocker-index {
+      font: 800 28px/1 "League Spartan", sans-serif;
+      text-align: center;
+    }
+    .blocker small, .work-card small, .stat small, .candidate small {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink-muted);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .blocker strong { display: block; font-size: 14px; line-height: 1.3; }
+    .blocker p { margin: 4px 0 0; color: var(--ink-muted); font-size: 12px; }
+    .blocker-status {
+      padding: 7px 9px;
+      border: 1px solid var(--red);
+      color: var(--red);
+      background: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .resolved .blocker { border-left-color: var(--green); background: #f1f8f5; }
+    .resolved .blocker-status { color: var(--green); border-color: var(--green); }
+
+    .work-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 24px 0 8px;
+    }
+    .work-label strong {
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .work-label span { color: var(--green); font-size: 11px; font-weight: 800; }
+    .work-grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); }
+    .work-card { min-height: 86px; padding: 14px 16px; border-right: 1px solid var(--line); background: #fff; }
+    .work-card:last-child { border-right: 0; }
+    .work-card strong { display: block; font-size: 13px; line-height: 1.35; }
+    .work-card span { display: block; margin-top: 4px; color: var(--ink-muted); font-size: 11px; line-height: 1.35; }
+    .rule-stack { margin-top: 10px; border: 1px solid var(--line); }
+    .rule-row {
+      min-height: 54px;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) 92px;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+    }
+    .rule-row:last-child { border-bottom: 0; }
+    .rule-row b { font: 800 17px/1 "League Spartan", sans-serif; }
+    .rule-row em { color: var(--ink-muted); font-size: 10px; font-style: normal; text-align: right; }
+    .rule-row.conflict { background: var(--orange-soft); }
+    .rule-row.removed { color: var(--ink-muted); text-decoration: line-through; background: var(--surface-alt); }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); }
+    .stat { padding: 14px; border-right: 1px solid var(--line); }
+    .stat:last-child { border-right: 0; }
+    .stat strong { font: 800 23px/1 "League Spartan", sans-serif; }
+    .capacity-bar { height: 22px; display: flex; margin-top: 12px; border: 1px solid var(--ink); }
+    .capacity-bar span { display: block; width: 83.333%; background: var(--blue); }
+    .capacity-bar i { flex: 1; background: var(--orange); }
+    .capacity-legend { display: flex; justify-content: space-between; margin-top: 7px; color: var(--ink-muted); font-size: 11px; }
+    .table-shape { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 13px; }
+    .table-shape div { padding: 10px; border: 1px solid var(--line); text-align: center; }
+    .table-shape strong { display: block; font: 800 19px/1 "League Spartan", sans-serif; }
+    .table-shape span { color: var(--ink-muted); font-size: 10px; }
+
+    .missing-record {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 13px;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+    }
+    .missing-avatar {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px dashed var(--line-strong);
+      color: var(--ink-muted);
+      font-weight: 800;
+    }
+    .missing-record strong { display: block; font-size: 13px; }
+    .missing-record span { color: var(--ink-muted); font-size: 11px; }
+    .missing-record em { color: var(--red); font-size: 10px; font-style: normal; font-weight: 800; text-transform: uppercase; }
+    .candidate-list { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 10px; border: 1px solid var(--line); }
+    .candidate {
+      min-height: 76px;
+      padding: 12px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      text-align: left;
+    }
+    .candidate:last-child { border-right: 0; }
+    .candidate:hover, .candidate.selected { background: var(--blue-soft); }
+    .candidate strong { display: block; font-size: 12px; }
+    .candidate span { color: var(--ink-muted); font-size: 10px; }
+
+    .provider-grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); }
+    .provider {
+      min-height: 88px;
+      padding: 14px;
+      border-right: 1px solid var(--line);
+      background: #fff;
+    }
+    .provider:last-child { border-right: 0; }
+    .provider strong { display: block; margin-bottom: 5px; font-size: 13px; }
+    .provider span { color: var(--ink-muted); font-size: 11px; }
+    .provider b {
+      display: inline-block;
+      margin-top: 8px;
+      color: var(--green);
+      font-size: 9px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .provider.failed b { color: var(--red); }
+    .provider.selected { border-bottom: 4px solid var(--blue); }
+
+    .recovery {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+      background: var(--surface-alt);
+    }
+    .recovery-head { padding: 28px 26px 20px; border-bottom: 1px solid var(--line); }
+    .recovery-head h3 { margin: 6px 0 7px; font: 800 23px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+    .recovery-head p { margin: 0; color: var(--ink-muted); font-size: 12px; line-height: 1.45; }
+    .actions { display: flex; flex-direction: column; gap: 8px; padding: 20px 26px; }
+    .action {
+      min-height: 45px;
+      padding: 10px 13px;
+      border: 1px solid var(--ink);
+      background: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: left;
+    }
+    .action small {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink-muted);
+      font-size: 10px;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+    .action.primary { color: #fff; border-color: var(--blue); background: var(--blue); }
+    .action.primary small { color: #dfe6ff; }
+    .action.danger { color: var(--red); }
+    .action:disabled { cursor: default; color: var(--ink-muted); border-color: var(--line); background: #ecebe7; }
+    .outcome {
+      margin: auto 26px 24px;
+      padding: 13px;
+      border-left: 4px solid var(--blue);
+      background: #fff;
+      color: var(--ink-muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .outcome strong { display: block; margin-bottom: 3px; color: var(--ink); }
+
+    .footer {
+      display: grid;
+      grid-template-columns: 76px 76px 1fr 150px 174px 235px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+      position: relative;
+      z-index: 30;
+    }
+    .footer button, .footer div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      font-weight: 800;
+    }
+    .footer .active-version { position: relative; color: var(--blue); background: var(--surface-alt); }
+    .footer .active-version::after { content: ""; position: absolute; right: 0; bottom: 0; left: 0; height: 3px; background: var(--blue); }
+    .footer .ai { justify-content: flex-start; padding: 0 16px; color: var(--red); font-size: 12px; font-weight: 700; }
+    .footer .secondary { font-size: 12px; }
+    .footer .primary { color: #fff; background: var(--blue); }
+    .footer .primary:disabled { color: #9b9da2; background: #deddd8; }
+    .live-region { position: fixed; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+    @media (max-width: 1180px) {
+      .failure-copy { grid-template-columns: 1fr 245px; gap: 24px; padding-right: 28px; }
+      .workspace { grid-template-columns: minmax(0, 1fr) 310px; }
+      .diagnosis { padding-left: 24px; padding-right: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span>Founder Table</span><span class="version">V2</span></div>
+      <button class="nav-item">Founder Search</button>
+      <button class="nav-item active">Table Config</button>
+      <button class="nav-item">Saved Dinners</button>
+      <div></div>
+      <div class="profile"><span class="avatar">YC</span><span><small>Organizer account</small><strong>YC Admin</strong></span><span>⌄</span></div>
+    </header>
+
+    <section class="review-bar" aria-label="Recovery state review">
+      <div class="review-label">Review screen <b>04 states</b></div>
+      <div class="state-tabs" role="tablist" aria-label="Failure states">
+        <button class="state-tab" role="tab" aria-selected="true" aria-controls="hard-rules-panel" id="hard-rules-tab" data-state="hard-rules">Unsatisfiable rules</button>
+        <button class="state-tab" role="tab" aria-selected="false" aria-controls="capacity-panel" id="capacity-tab" data-state="capacity">Capacity mismatch</button>
+        <button class="state-tab" role="tab" aria-selected="false" aria-controls="missing-founder-panel" id="missing-founder-tab" data-state="missing-founder">Missing saved founder</button>
+        <button class="state-tab" role="tab" aria-selected="false" aria-controls="provider-panel" id="provider-tab" data-state="provider">AI / provider failure</button>
+      </div>
+    </section>
+
+    <main>
+      <section class="state-panel" id="hard-rules-panel" role="tabpanel" aria-labelledby="hard-rules-tab">
+        <div class="state-hero">
+          <div class="hero-block"><span class="eyebrow">Generation stopped</span><h1>Rules cannot all be true</h1></div>
+          <div class="failure-copy">
+            <div><span class="eyebrow">Exact cause</span><h2>Alex Chen and Di Qi must sit together and apart.</h2><p>No table assignment was created. The conflict is limited to rules 2 and 4; your cohort, criteria, weights, and the other two rules remain unchanged.</p></div>
+            <div class="preserved"><strong>✓ Your work is preserved</strong><span>48 founders · 5 criteria · 4 hard rules · table setup 6 × 8</span></div>
+          </div>
+        </div>
+        <div class="workspace" id="hard-rules-workspace">
+          <div class="diagnosis">
+            <span class="section-kicker">Blocking item</span>
+            <h3>Two active rules conflict</h3>
+            <p>The optimizer will never silently break a hard rule. Resolve one of the two highlighted requirements, then generate from the same setup.</p>
+            <div class="blocker">
+              <span class="blocker-index">02↔04</span>
+              <div><small>Conflict pair</small><strong>Alex Chen + Di Qi · Lantern</strong><p>Together at one table / never at the same table</p></div>
+              <span class="blocker-status" id="hard-status">Blocks generation</span>
+            </div>
+            <div class="work-label"><strong>Active rules</strong><span>All other setup preserved</span></div>
+            <div class="rule-stack">
+              <div class="rule-row"><b>01</b><span>Separate founders from the same company</span><em>Compatible</em></div>
+              <div class="rule-row conflict" id="rule-two"><b>02</b><span>Keep Alex Chen and Di Qi together</span><em>Conflicts with 04</em></div>
+              <div class="rule-row"><b>03</b><span>Seat at least one Engineering founder per table</span><em>Compatible</em></div>
+              <div class="rule-row conflict" id="rule-four"><b>04</b><span>Keep Alex Chen and Di Qi apart</span><em>Conflicts with 02</em></div>
+            </div>
+          </div>
+          <aside class="recovery">
+            <div class="recovery-head"><span class="section-kicker">Resolve conflict</span><h3>Choose the rule to keep</h3><p>Only the selected conflicting rule changes. No search, criterion, weight, or table setting will reset.</p></div>
+            <div class="actions">
+              <button class="action primary" data-hard-action="keep-together">Keep rule 02 · remove rule 04<small>Alex Chen and Di Qi will be assigned together.</small></button>
+              <button class="action" data-hard-action="keep-apart">Keep rule 04 · remove rule 02<small>Alex Chen and Di Qi will be assigned separately.</small></button>
+              <button class="action" data-hard-action="edit">Edit rule 04<small>Return to the rule editor with this rule prefilled.</small></button>
+            </div>
+            <div class="outcome" id="hard-outcome"><strong>Next</strong>Select one resolution. Generate Tables will become available without rebuilding the brief.</div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="state-panel" id="capacity-panel" role="tabpanel" aria-labelledby="capacity-tab" hidden>
+        <div class="state-hero">
+          <div class="hero-block"><span class="eyebrow">Setup blocked</span><h1>Eight founders have no seat</h1></div>
+          <div class="failure-copy">
+            <div><span class="eyebrow">Exact cause</span><h2>48 founders cannot fit into 5 tables of 8.</h2><p>The current setup provides 40 seats. Nothing was generated, and nobody was dropped. Choose an exact-fit or balanced uneven arrangement to continue.</p></div>
+            <div class="preserved"><strong>✓ Your work is preserved</strong><span>Founder order · criteria · 3 hard rules · manual cohort edits</span></div>
+          </div>
+        </div>
+        <div class="workspace" id="capacity-workspace">
+          <div class="diagnosis">
+            <span class="section-kicker">Blocking item</span>
+            <h3>Selected capacity is smaller than the cohort</h3>
+            <p>Capacity is validated before optimization, so the app cannot produce partial tables or silently exclude the final eight founders.</p>
+            <div class="blocker">
+              <span class="blocker-index">−8</span>
+              <div><small>Capacity mismatch</small><strong>48 founders selected · 40 seats configured</strong><p>5 tables × 8 seats</p></div>
+              <span class="blocker-status" id="capacity-status">8 unseated</span>
+            </div>
+            <div class="work-label"><strong>Current setup</strong><span>Founder selection unchanged</span></div>
+            <div class="stat-grid">
+              <div class="stat"><small>Founders</small><strong>48</strong></div>
+              <div class="stat"><small>Tables</small><strong id="table-stat">5</strong></div>
+              <div class="stat"><small>Target seats</small><strong id="seat-stat">8</strong></div>
+              <div class="stat"><small>Total capacity</small><strong id="capacity-stat">40</strong></div>
+            </div>
+            <div class="capacity-bar" aria-label="40 of 48 founders have configured seats"><span id="capacity-fill"></span><i id="capacity-gap"></i></div>
+            <div class="capacity-legend"><span id="capacity-copy">40 configured seats</span><span id="gap-copy">8 founders over capacity</span></div>
+            <div class="table-shape" id="table-shape" hidden></div>
+          </div>
+          <aside class="recovery">
+            <div class="recovery-head"><span class="section-kicker">Choose a valid shape</span><h3>Seat all 48 founders</h3><p>Both options preserve founder order, criteria, and hard rules.</p></div>
+            <div class="actions">
+              <button class="action primary" data-capacity-action="exact">Use 6 tables × 8 seats<small>Exact fit · every table has eight founders.</small></button>
+              <button class="action" data-capacity-action="balanced">Keep 5 tables · balance 10 / 10 / 10 / 9 / 9<small>Uneven final capacities, with no empty seats or excluded founders.</small></button>
+              <button class="action" data-capacity-action="edit">Edit tables and seats<small>Return to the selector with 5 × 8 still entered.</small></button>
+            </div>
+            <div class="outcome" id="capacity-outcome"><strong>Why generation stopped</strong>A partial assignment would hide missing founders. V2 requires a complete, capacity-safe plan.</div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="state-panel" id="missing-founder-panel" role="tabpanel" aria-labelledby="missing-founder-tab" hidden>
+        <div class="state-hero">
+          <div class="hero-block"><span class="eyebrow">Saved dinner warning</span><h1>One saved founder is missing</h1></div>
+          <div class="failure-copy">
+            <div><span class="eyebrow">Exact cause</span><h2>Edward Frazer · ID 865934 is not in the current dataset.</h2><p>“AI Infrastructure Dinner · Sep 29” was saved with 48 founders. The other 47 founders, all assignments, criteria, rules, locks, and notes loaded successfully.</p></div>
+            <div class="preserved"><strong>✓ 47 of 48 founders restored</strong><span>Saved version 3 remains unchanged until you explicitly save a recovery.</span></div>
+          </div>
+        </div>
+        <div class="workspace" id="missing-workspace">
+          <div class="diagnosis">
+            <span class="section-kicker">Blocking item</span>
+            <h3>Saved assignment references an unavailable founder ID</h3>
+            <p>The app will not silently delete or guess a replacement. Select a known founder, open the dinner with an empty seat, or leave the saved version untouched.</p>
+            <div class="blocker">
+              <span class="blocker-index">01</span>
+              <div><small>Missing record</small><strong>Founder ID 865934</strong><p>Previously: Edward Frazer · DryMerge · Table 4 · seat locked</p></div>
+              <span class="blocker-status" id="missing-status">Needs decision</span>
+            </div>
+            <div class="work-label"><strong>Recovered table 4</strong><span>7 assignments loaded</span></div>
+            <div class="missing-record" id="missing-record">
+              <span class="missing-avatar">?</span>
+              <span><strong id="missing-name">Edward Frazer · DryMerge</strong><span id="missing-detail">Saved seat 06 · founder ID 865934 unavailable</span></span>
+              <em id="missing-tag">Missing</em>
+            </div>
+            <div class="candidate-list" id="candidate-list" hidden>
+              <button class="candidate" data-founder="Martin Hunt · Garage" data-id="747422"><small>Same role</small><strong>Martin Hunt · Garage</strong><span>Engineering · founder ID 747422</span></button>
+              <button class="candidate" data-founder="Daniel Hensley · Driver AI" data-id="1522141"><small>Same vertical</small><strong>Daniel Hensley · Driver AI</strong><span>B2B Software · founder ID 1522141</span></button>
+              <button class="candidate" data-founder="Sam Detjen · Hemingway" data-id="1653711"><small>Same cohort group</small><strong>Sam Detjen · Hemingway</strong><span>Group 3 · founder ID 1653711</span></button>
+            </div>
+          </div>
+          <aside class="recovery">
+            <div class="recovery-head"><span class="section-kicker">Recover saved dinner</span><h3>Decide this seat only</h3><p>The original saved version remains available. A changed recovery can be saved as a new version.</p></div>
+            <div class="actions">
+              <button class="action primary" id="find-replacement">Choose a replacement founder<small>Show eligible founders without changing the other 47 seats.</small></button>
+              <button class="action" id="open-short">Open with 47 founders<small>Leave Table 4 seat 06 empty and mark it for review.</small></button>
+              <button class="action" id="leave-saved">Return to Saved Dinners<small>Make no change to saved version 3.</small></button>
+            </div>
+            <div class="outcome" id="missing-outcome"><strong>Original is protected</strong>Recovery choices are staged locally. Nothing overwrites the saved dinner until Save as new version.</div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="state-panel" id="provider-panel" role="tabpanel" aria-labelledby="provider-tab" hidden>
+        <div class="state-hero">
+          <div class="hero-block"><span class="eyebrow">AI unavailable</span><h1>Anthropic did not process this request</h1></div>
+          <div class="failure-copy">
+            <div><span class="eyebrow">Exact cause</span><h2>Provider rate limit reached before criteria interpretation.</h2><p>Your brief has not been submitted again, and no partial provider output was applied. The same dinner can continue with database-only controls or another configured provider.</p></div>
+            <div class="preserved"><strong>✓ Your work is preserved</strong><span>Brief · cohort · manual criteria · table setup · 3 confirmed hard rules</span></div>
+          </div>
+        </div>
+        <div class="workspace" id="provider-workspace">
+          <div class="diagnosis">
+            <span class="section-kicker">Blocking item</span>
+            <h3>Anthropic returned HTTP 429 · retry after 14:32</h3>
+            <p>AI assistance is optional. Database search, manual criteria, hard-rule enforcement, optimization, saving, and export remain available.</p>
+            <div class="blocker">
+              <span class="blocker-index">429</span>
+              <div><small>Failed operation</small><strong>Interpret dinner brief · Anthropic</strong><p>Attempt 1 of 1 · no automatic resubmission</p></div>
+              <span class="blocker-status" id="provider-status">AI paused</span>
+            </div>
+            <div class="work-label"><strong>Configured providers</strong><span>Credentials remain server-side</span></div>
+            <div class="provider-grid">
+              <div class="provider failed selected" id="anthropic-provider"><strong>Anthropic</strong><span>Selected for interpretation and web evidence</span><b>Rate limited</b></div>
+              <div class="provider" id="openai-provider"><strong>OpenAI</strong><span>Validated Sep 30 · interpretation available</span><b>Ready</b></div>
+              <div class="provider" id="xai-provider"><strong>xAI</strong><span>Not configured for this account</span><b style="color:var(--ink-muted)">Setup required</b></div>
+            </div>
+            <div class="work-label"><strong>Preserved brief</strong><span>Not resubmitted</span></div>
+            <div class="work-grid">
+              <div class="work-card"><small>Dinner brief</small><strong>Mix sectors, diversify roles, avoid same-company pairs</strong></div>
+              <div class="work-card"><small>Manual criteria</small><strong>3 dimensions confirmed</strong><span>Company vertical · Role · Age</span></div>
+              <div class="work-card"><small>Hard rules</small><strong>3 rules confirmed</strong><span>All remain enforceable without AI</span></div>
+            </div>
+          </div>
+          <aside class="recovery">
+            <div class="recovery-head"><span class="section-kicker">Continue safely</span><h3>Choose how to proceed</h3><p>No generic retry: each action has a distinct, predictable result.</p></div>
+            <div class="actions">
+              <button class="action primary" id="continue-basic">Continue without AI<small>Keep the 3 manual criteria and generate with the deterministic optimizer.</small></button>
+              <button class="action" id="switch-openai">Use OpenAI for this brief<small>Submit the preserved brief once to the validated provider.</small></button>
+              <button class="action" id="review-connection">Review Anthropic connection<small>Open provider settings with the 429 diagnosis attached.</small></button>
+            </div>
+            <div class="outcome" id="provider-outcome"><strong>Database-only fallback is ready</strong>Core matching does not depend on AI. You can finish this dinner without losing work.</div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <button>V1</button>
+      <button class="active-version">V2</button>
+      <div class="ai" id="footer-ai">⚠ AI Connection Issue · Anthropic</div>
+      <button class="secondary">Save draft</button>
+      <button class="secondary">Back to setup</button>
+      <button class="primary" id="footer-primary" disabled>Generate Tables →</button>
+    </footer>
+    <div class="live-region" id="live-region" aria-live="polite"></div>
+  </div>
+
+  <script>
+    const panels = [...document.querySelectorAll(".state-panel")];
+    const tabs = [...document.querySelectorAll(".state-tab")];
+    const liveRegion = document.getElementById("live-region");
+    const footerPrimary = document.getElementById("footer-primary");
+    const footerAi = document.getElementById("footer-ai");
+    let activeState = "hard-rules";
+
+    const stateLabels = {
+      "hard-rules": "Unsatisfiable hard rules",
+      "capacity": "Capacity mismatch",
+      "missing-founder": "Missing saved founder",
+      "provider": "AI provider failure"
+    };
+
+    function showState(state) {
+      activeState = state;
+      panels.forEach(panel => { panel.hidden = panel.id !== state + "-panel"; });
+      tabs.forEach(tab => tab.setAttribute("aria-selected", String(tab.dataset.state === state)));
+      footerPrimary.disabled = true;
+      footerPrimary.textContent = state === "missing-founder" ? "Open recovered dinner →" : "Generate Tables →";
+      footerAi.textContent = state === "provider" ? "⚠ AI Connection Issue · Anthropic" : "✓ AI Enabled · Anthropic";
+      footerAi.style.color = state === "provider" ? "var(--red)" : "var(--green)";
+      liveRegion.textContent = stateLabels[state] + " review state shown";
+      document.querySelector("main").scrollTop = 0;
+    }
+
+    tabs.forEach(tab => tab.addEventListener("click", () => showState(tab.dataset.state)));
+
+    document.querySelectorAll("[data-hard-action]").forEach(button => {
+      button.addEventListener("click", () => {
+        const action = button.dataset.hardAction;
+        if (action === "edit") {
+          document.getElementById("hard-outcome").innerHTML = "<strong>Rule 04 opened for editing</strong>“Keep Alex Chen and Di Qi apart” is prefilled. The other rules and every setup value remain active.";
+          liveRegion.textContent = "Rule 04 opened for editing with current text preserved";
+          return;
+        }
+        const removed = action === "keep-together" ? document.getElementById("rule-four") : document.getElementById("rule-two");
+        const kept = action === "keep-together" ? document.getElementById("rule-two") : document.getElementById("rule-four");
+        removed.classList.add("removed");
+        removed.classList.remove("conflict");
+        removed.querySelector("em").textContent = "Removed";
+        kept.classList.remove("conflict");
+        kept.querySelector("em").textContent = "Active";
+        document.getElementById("hard-rules-workspace").classList.add("resolved");
+        document.getElementById("hard-status").textContent = "Conflict resolved";
+        document.getElementById("hard-outcome").innerHTML = "<strong>Ready to generate</strong>Three compatible hard rules remain. The cohort, criteria, weights, and table setup are unchanged.";
+        footerPrimary.disabled = false;
+        liveRegion.textContent = "Rule conflict resolved. Generate Tables is available.";
+      });
+    });
+
+    document.querySelectorAll("[data-capacity-action]").forEach(button => {
+      button.addEventListener("click", () => {
+        const action = button.dataset.capacityAction;
+        if (action === "edit") {
+          document.getElementById("capacity-outcome").innerHTML = "<strong>Table selector opened</strong>The current 5 × 8 setup remains entered so you can adjust either value.";
+          liveRegion.textContent = "Table selector opened with five tables and eight seats preserved";
+          return;
+        }
+        const exact = action === "exact";
+        document.getElementById("table-stat").textContent = exact ? "6" : "5";
+        document.getElementById("seat-stat").textContent = exact ? "8" : "9–10";
+        document.getElementById("capacity-stat").textContent = "48";
+        document.getElementById("capacity-fill").style.width = "100%";
+        document.getElementById("capacity-gap").hidden = true;
+        document.getElementById("capacity-copy").textContent = "48 configured seats";
+        document.getElementById("gap-copy").textContent = "Every founder seated";
+        document.getElementById("capacity-status").textContent = "Capacity valid";
+        document.getElementById("capacity-workspace").classList.add("resolved");
+        const shape = document.getElementById("table-shape");
+        shape.hidden = exact;
+        shape.innerHTML = exact ? "" : [10, 10, 10, 9, 9].map((count, index) => "<div><strong>" + count + "</strong><span>Table " + (index + 1) + "</span></div>").join("");
+        document.getElementById("capacity-outcome").innerHTML = exact
+          ? "<strong>Exact fit selected</strong>6 tables × 8 seats. All 48 founders are included and the rest of the setup is unchanged."
+          : "<strong>Balanced uneven capacities selected</strong>Tables will seat 10 / 10 / 10 / 9 / 9 founders, with no loss or duplication.";
+        footerPrimary.disabled = false;
+        liveRegion.textContent = "Capacity resolved. Every founder now has a seat.";
+      });
+    });
+
+    const candidateList = document.getElementById("candidate-list");
+    document.getElementById("find-replacement").addEventListener("click", () => {
+      candidateList.hidden = false;
+      document.getElementById("missing-outcome").innerHTML = "<strong>Choose one eligible founder</strong>The replacement will occupy Table 4 · seat 06. The other 47 assignments remain locked.";
+      candidateList.querySelector("button").focus();
+      liveRegion.textContent = "Three eligible replacement founders shown";
+    });
+
+    document.querySelectorAll(".candidate").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".candidate").forEach(item => item.classList.toggle("selected", item === button));
+        document.getElementById("missing-name").textContent = button.dataset.founder;
+        document.getElementById("missing-detail").textContent = "Replacement staged · founder ID " + button.dataset.id + " · Table 4 seat 06";
+        document.getElementById("missing-tag").textContent = "Staged";
+        document.getElementById("missing-status").textContent = "Replacement staged";
+        document.getElementById("missing-workspace").classList.add("resolved");
+        document.getElementById("missing-outcome").innerHTML = "<strong>Replacement staged, not saved</strong>" + button.dataset.founder + " will fill the missing seat. Save as new version keeps version 3 intact.";
+        footerPrimary.disabled = false;
+        footerPrimary.textContent = "Open recovered dinner →";
+        liveRegion.textContent = button.dataset.founder + " staged as replacement";
+      });
+    });
+
+    document.getElementById("open-short").addEventListener("click", () => {
+      document.getElementById("missing-name").textContent = "Open seat · Table 4";
+      document.getElementById("missing-detail").textContent = "Seat 06 will remain empty and flagged for organizer review";
+      document.getElementById("missing-tag").textContent = "47 founders";
+      document.getElementById("missing-status").textContent = "Open seat accepted";
+      document.getElementById("missing-workspace").classList.add("resolved");
+      document.getElementById("missing-outcome").innerHTML = "<strong>47-founder recovery staged</strong>No founder was substituted. Table 4 seat 06 remains visibly open.";
+      footerPrimary.disabled = false;
+      liveRegion.textContent = "Dinner ready to open with 47 founders and one visible open seat";
+    });
+
+    document.getElementById("leave-saved").addEventListener("click", () => {
+      document.getElementById("missing-outcome").innerHTML = "<strong>Returning without changes</strong>Saved version 3 remains exactly as stored. No recovery choice was applied.";
+      liveRegion.textContent = "Returning to Saved Dinners without changes";
+    });
+
+    document.getElementById("continue-basic").addEventListener("click", () => {
+      document.getElementById("provider-status").textContent = "Fallback active";
+      document.getElementById("provider-workspace").classList.add("resolved");
+      document.getElementById("provider-outcome").innerHTML = "<strong>Database-only mode active</strong>The three confirmed manual criteria and hard rules will drive deterministic optimization. No provider call is required.";
+      footerAi.textContent = "AI Off · Database-only matching";
+      footerAi.style.color = "var(--ink-muted)";
+      footerPrimary.disabled = false;
+      liveRegion.textContent = "Database-only fallback active. Generate Tables is available.";
+    });
+
+    document.getElementById("switch-openai").addEventListener("click", () => {
+      document.getElementById("anthropic-provider").classList.remove("selected");
+      document.getElementById("openai-provider").classList.add("selected");
+      document.getElementById("provider-status").textContent = "Provider switched";
+      document.getElementById("provider-workspace").classList.add("resolved");
+      document.getElementById("provider-outcome").innerHTML = "<strong>OpenAI selected for this brief</strong>The preserved brief is ready for one submission. Anthropic remains configured but paused.";
+      footerAi.textContent = "✓ AI Enabled · OpenAI";
+      footerAi.style.color = "var(--green)";
+      footerPrimary.disabled = false;
+      liveRegion.textContent = "Provider switched to OpenAI. Preserved brief is ready.";
+    });
+
+    document.getElementById("review-connection").addEventListener("click", () => {
+      document.getElementById("provider-outcome").innerHTML = "<strong>Provider settings opened</strong>Anthropic is selected with the HTTP 429 event, retry-after time, and credential status attached. The dinner draft remains open.";
+      liveRegion.textContent = "Anthropic provider settings opened with rate-limit diagnosis";
+    });
+
+    document.addEventListener("keydown", event => {
+      if (!event.target.classList.contains("state-tab")) return;
+      const index = tabs.indexOf(event.target);
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        tabs[(index + 1) % tabs.length].focus();
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        tabs[(index - 1 + tabs.length) % tabs.length].focus();
+      }
+      if (event.key === "Enter" || event.key === " ") showState(event.target.dataset.state);
+    });
+  </script>
+</body>
+</html>

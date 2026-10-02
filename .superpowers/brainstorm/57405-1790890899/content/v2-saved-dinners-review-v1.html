@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Founder App V2 — Saved Dinners review</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=League+Spartan:wght@700;800&display=swap");
+
+    :root {
+      --surface: #fff;
+      --surface-alt: #f5f3ee;
+      --line: #e3e5e9;
+      --line-strong: #7d828b;
+      --ink: #141414;
+      --ink-muted: #5b5f66;
+      --orange: #f26522;
+      --orange-soft: #fff3ed;
+      --blue: #2f5bea;
+      --blue-soft: #edf1ff;
+      --success: #17634d;
+      --success-soft: #eaf5f0;
+      --warning: #9a4b18;
+      --warning-soft: #fff0e5;
+      --danger: #b42318;
+      --danger-soft: #fff0ee;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-width: 1040px; min-height: 100%; }
+    body {
+      color: var(--ink);
+      background: var(--surface);
+      font-family: "Figtree", "Avenir Next", system-ui, sans-serif;
+    }
+    button, input, select { color: inherit; font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+      z-index: 3;
+    }
+    [hidden] { display: none !important; }
+
+    .app { min-height: 100vh; padding-bottom: 65px; }
+    .topbar {
+      height: 64px;
+      display: grid;
+      grid-template-columns: 240px 172px 178px 162px 1fr 318px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 24px;
+      border-right: 1px solid var(--line);
+      font: 800 23px/.88 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .brand span:first-child { max-width: 105px; }
+    .brand .version { color: var(--orange); font-size: 24px; }
+    .nav-item {
+      position: relative;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      font-weight: 700;
+    }
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5px;
+      background: var(--blue);
+    }
+    .profile {
+      grid-column: 6;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 0 24px 0 18px;
+      border-left: 1px solid var(--line);
+      background: #fff;
+    }
+    .profile-avatar {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 36px;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--ink);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .profile small { display: block; margin-bottom: 2px; color: var(--ink-muted); font-size: 12px; }
+    .profile strong { display: block; font-size: 14px; }
+    .profile .chevron { margin-left: auto; font-size: 18px; }
+
+    .review-strip {
+      height: 46px;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      color: #fff;
+      background: var(--ink);
+    }
+    .review-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 18px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .review-label b { color: #ff8a52; }
+    .state-switch { display: flex; }
+    .state-switch button {
+      min-width: 144px;
+      border: 0;
+      border-left: 1px solid #404044;
+      color: #c8c9cc;
+      background: var(--ink);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .state-switch button[aria-pressed="true"] {
+      color: var(--ink);
+      background: #fff;
+      box-shadow: inset 0 -4px var(--blue);
+    }
+
+    .hero {
+      height: 190px;
+      display: grid;
+      grid-template-columns: 20% 80%;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-title {
+      padding: 28px 32px;
+      color: #fff;
+      background: var(--blue);
+    }
+    .eyebrow {
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .hero-title h1 {
+      max-width: 210px;
+      margin: 14px 0 0;
+      font: 800 39px/.88 "League Spartan", "Avenir Next", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .hero-summary {
+      display: grid;
+      grid-template-columns: minmax(380px, 1fr) 156px 156px 156px 198px;
+      align-items: stretch;
+    }
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 36px;
+    }
+    .hero-copy h2 {
+      margin: 0 0 8px;
+      font: 800 30px/.96 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .hero-copy p {
+      max-width: 535px;
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 22px;
+      border-left: 1px solid var(--line);
+    }
+    .hero-stat strong {
+      font: 800 36px/.9 "League Spartan", sans-serif;
+    }
+    .hero-stat span {
+      margin-top: 8px;
+      color: var(--ink-muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .new-plan {
+      border: 0;
+      border-left: 1px solid var(--ink);
+      color: var(--ink);
+      background: var(--orange);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .toolbar {
+      height: 76px;
+      display: grid;
+      grid-template-columns: minmax(400px, 1fr) 190px 164px;
+      border-bottom: 1px solid var(--line);
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      border-right: 1px solid var(--line);
+    }
+    .search-box label {
+      margin-right: 14px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .search-box input {
+      width: min(520px, 72%);
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: #fff;
+      font-size: 13px;
+    }
+    .filter-cell {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 16px;
+      border-right: 1px solid var(--line);
+    }
+    .filter-cell label {
+      margin-bottom: 6px;
+      color: var(--ink-muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .filter-cell select {
+      height: 34px;
+      padding: 0 34px 0 11px;
+      appearance: none;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%23141414' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 11px center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .plan-count {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .table-head,
+    .plan-row {
+      display: grid;
+      grid-template-columns: minmax(300px, 1.45fr) 128px 112px 104px 210px 244px;
+      align-items: center;
+    }
+    .table-head {
+      height: 42px;
+      padding: 0 28px;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink-muted);
+      background: var(--surface-alt);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .plan-group { border-bottom: 1px solid var(--line); }
+    .plan-row {
+      min-height: 82px;
+      padding: 0 28px;
+      background: #fff;
+    }
+    .plan-row:hover { background: #fcfcfa; }
+    .plan-group.history-open .plan-row {
+      background: var(--blue-soft);
+      box-shadow: inset 4px 0 var(--blue);
+    }
+    .plan-name h2 {
+      margin: 0;
+      font: 800 20px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .plan-name p {
+      margin: 5px 0 0;
+      color: var(--ink-muted);
+      font-size: 12px;
+    }
+    .status {
+      width: max-content;
+      padding: 5px 9px 4px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .status.ready { color: var(--success); background: var(--success-soft); }
+    .status.draft { color: #284aa8; background: var(--blue-soft); }
+    .status.warning { color: var(--warning); background: var(--warning-soft); }
+    .count strong, .modified strong { display: block; font-size: 13px; }
+    .count span, .modified span {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink-muted);
+      font-size: 11px;
+    }
+    .row-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 7px;
+    }
+    .row-actions button {
+      height: 34px;
+      padding: 0 11px;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .row-actions .reopen {
+      min-width: 76px;
+      color: #fff;
+      border-color: var(--blue);
+      background: var(--blue);
+    }
+    .row-actions .delete {
+      width: 34px;
+      padding: 0;
+      color: var(--danger);
+      border-color: #dfb3ae;
+      font-size: 17px;
+    }
+    .row-actions .delete:hover { color: #fff; background: var(--danger); }
+
+    .history-panel {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 214px;
+      border-top: 1px solid #cfd8fb;
+      background: #f8f9ff;
+    }
+    .history-intro {
+      padding: 24px 28px;
+      border-right: 1px solid #cfd8fb;
+    }
+    .history-intro h3 {
+      margin: 7px 0 8px;
+      font: 800 24px/.98 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .history-intro p {
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .history-intro button {
+      margin-top: 18px;
+      padding: 0;
+      border: 0;
+      color: var(--blue);
+      background: transparent;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .version-list { padding: 8px 28px 16px; }
+    .version-row {
+      min-height: 62px;
+      display: grid;
+      grid-template-columns: 76px minmax(240px, 1fr) 150px 138px;
+      align-items: center;
+      border-bottom: 1px solid #dce2f8;
+      font-size: 12px;
+    }
+    .version-row:last-child { border-bottom: 0; }
+    .version-number {
+      font: 800 18px/1 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .version-number small {
+      display: block;
+      margin-top: 4px;
+      color: var(--success);
+      font: 800 9px/1 "Figtree", sans-serif;
+      letter-spacing: .08em;
+    }
+    .version-detail strong, .version-meta strong { display: block; }
+    .version-detail span, .version-meta span {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink-muted);
+      font-size: 10px;
+    }
+    .version-row button {
+      height: 32px;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .version-row:first-child button {
+      color: #fff;
+      border-color: var(--blue);
+      background: var(--blue);
+    }
+
+    .scrim {
+      position: fixed;
+      z-index: 40;
+      inset: 0;
+      background: rgba(20, 20, 20, .54);
+    }
+    .delete-dialog {
+      position: fixed;
+      z-index: 41;
+      top: 50%;
+      left: 50%;
+      width: 510px;
+      transform: translate(-50%, -50%);
+      border: 1px solid var(--ink);
+      background: #fff;
+    }
+    .danger-rule { height: 6px; background: var(--danger); }
+    .dialog-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .dialog-head h2 {
+      margin: 7px 0 0;
+      font: 800 28px/.95 "League Spartan", sans-serif;
+      text-transform: uppercase;
+    }
+    .dialog-close {
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      font-size: 21px;
+    }
+    .dialog-body { padding: 20px 24px; }
+    .dialog-body p {
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .delete-summary {
+      margin-top: 16px;
+      padding: 13px 14px;
+      border-left: 4px solid var(--danger);
+      background: var(--danger-soft);
+    }
+    .delete-summary strong { display: block; font-size: 14px; }
+    .delete-summary span {
+      display: block;
+      margin-top: 4px;
+      color: var(--danger);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .dialog-actions {
+      height: 62px;
+      display: flex;
+      justify-content: flex-end;
+      border-top: 1px solid var(--line);
+    }
+    .dialog-actions button {
+      min-width: 116px;
+      border: 0;
+      border-left: 1px solid var(--line);
+      background: #fff;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .dialog-actions .confirm-delete {
+      min-width: 176px;
+      color: #fff;
+      background: var(--danger);
+    }
+
+    .footer {
+      position: fixed;
+      z-index: 30;
+      inset: auto 0 0;
+      height: 65px;
+      display: grid;
+      grid-template-columns: 48px 48px 184px 1fr;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+    .footer button, .footer div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      font-weight: 800;
+    }
+    .footer > button:nth-child(-n+2) {
+      position: relative;
+      color: var(--ink-muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .footer > button.active-version { color: var(--blue); background: var(--surface-alt); }
+    .footer .active-version::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 3px;
+      background: var(--blue);
+    }
+    .footer .ai {
+      justify-content: flex-start;
+      padding: 0 16px;
+      color: #317565;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .live-region {
+      position: fixed;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    @media (max-width: 1180px) {
+      .topbar { grid-template-columns: 220px 158px 164px 148px 1fr 270px; }
+      .hero-summary { grid-template-columns: minmax(340px, 1fr) 126px 126px 126px 170px; }
+      .table-head, .plan-row { grid-template-columns: minmax(275px, 1.25fr) 112px 98px 92px 180px 224px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span>Founder<br>Table</span><span class="version">V2</span></div>
+      <button class="nav-item">Founder Search</button>
+      <button class="nav-item">Table Config</button>
+      <button class="nav-item active" aria-current="page">Saved Dinners</button>
+      <div></div>
+      <div class="profile">
+        <span class="profile-avatar">YC</span>
+        <span><small>Current organizer</small><strong>YC Admin</strong></span>
+        <span class="chevron" aria-hidden="true">⌄</span>
+      </div>
+    </header>
+
+    <section class="review-strip" aria-label="Review state controls">
+      <div class="review-label"><b>SCREEN-06</b> Review candidate · saved dinners</div>
+      <div class="state-switch">
+        <button id="defaultState" aria-pressed="true" onclick="setReviewState('default')">Default index</button>
+        <button id="historyState" aria-pressed="false" onclick="setReviewState('history')">Version history</button>
+        <button id="deleteState" aria-pressed="false" onclick="setReviewState('delete')">Delete confirmation</button>
+      </div>
+    </section>
+
+    <main>
+      <section class="hero">
+        <div class="hero-title">
+          <div class="eyebrow">Saved dinner<br>configurations</div>
+          <h1>Dinner plans.</h1>
+        </div>
+        <div class="hero-summary">
+          <div class="hero-copy">
+            <h2>Return to any room.</h2>
+            <p>Reopen complete dinner configurations, inspect prior versions, or remove plans that are no longer needed.</p>
+          </div>
+          <div class="hero-stat"><strong>5</strong><span>Saved plans</span></div>
+          <div class="hero-stat"><strong>272</strong><span>Founder seats</span></div>
+          <div class="hero-stat"><strong>41</strong><span>Total tables</span></div>
+          <button class="new-plan" onclick="announce('Starting a new dinner plan')">+ New dinner plan</button>
+        </div>
+      </section>
+
+      <section class="toolbar">
+        <div class="search-box">
+          <label for="planSearch">Find a plan</label>
+          <input id="planSearch" type="search" placeholder="Search dinner plan names" oninput="filterPlans()">
+        </div>
+        <div class="filter-cell">
+          <label for="statusFilter">Status</label>
+          <select id="statusFilter" onchange="filterPlans()">
+            <option value="all">All statuses</option>
+            <option value="ready">Ready</option>
+            <option value="draft">Draft</option>
+            <option value="warning">Needs attention</option>
+          </select>
+        </div>
+        <div class="plan-count" id="planCount">5 dinner plans</div>
+      </section>
+
+      <div class="table-head" aria-hidden="true">
+        <span>Dinner plan</span><span>Status</span><span>Founders</span><span>Tables</span><span>Last modified</span><span>Actions</span>
+      </div>
+
+      <section id="planList" aria-label="Saved dinner plans">
+        <article class="plan-group" data-name="Demo Day Founder Dinner" data-status="ready" data-version="4">
+          <div class="plan-row">
+            <div class="plan-name"><h2>Demo Day Founder Dinner</h2><p>Shared industries · mixed roles and ages · 2 hard rules</p></div>
+            <span class="status ready">Ready</span>
+            <div class="count"><strong>48 founders</strong><span>Complete cohort</span></div>
+            <div class="count"><strong>6 tables</strong><span>8 seats each</span></div>
+            <div class="modified"><strong>Today · 4:42 PM</strong><span>Version 4 · YC Admin</span></div>
+            <div class="row-actions">
+              <button class="reopen" onclick="reopenPlan(this)">Reopen</button>
+              <button onclick="openHistory(this)">Versions · 4</button>
+              <button class="delete" aria-label="Delete Demo Day Founder Dinner" title="Delete plan" onclick="openDelete(this)">×</button>
+            </div>
+          </div>
+          <section class="history-panel" hidden>
+            <div class="history-intro">
+              <span class="eyebrow">Version history</span>
+              <h3>Demo Day Founder Dinner</h3>
+              <p>Opening an earlier version keeps the latest intact. Saving it creates the next version.</p>
+              <button onclick="closeHistory()">Close version history ↑</button>
+            </div>
+            <div class="version-list">
+              <div class="version-row">
+                <div class="version-number">V4<small>Current</small></div>
+                <div class="version-detail"><strong>Manual swaps and final locks</strong><span>48 founders · 6 tables · 2 hard rules</span></div>
+                <div class="version-meta"><strong>Today · 4:42 PM</strong><span>YC Admin</span></div>
+                <button onclick="announce('Opening current version 4')">Open current</button>
+              </div>
+              <div class="version-row">
+                <div class="version-number">V3</div>
+                <div class="version-detail"><strong>Alternative 2 selected</strong><span>48 founders · 6 tables · 2 hard rules</span></div>
+                <div class="version-meta"><strong>Today · 3:18 PM</strong><span>YC Admin</span></div>
+                <button onclick="announce('Opening version 3 as an editable copy')">Open version</button>
+              </div>
+              <div class="version-row">
+                <div class="version-number">V2</div>
+                <div class="version-detail"><strong>Added competitor separation rule</strong><span>48 founders · 6 tables · 2 hard rules</span></div>
+                <div class="version-meta"><strong>Today · 2:51 PM</strong><span>YC Admin</span></div>
+                <button onclick="announce('Opening version 2 as an editable copy')">Open version</button>
+              </div>
+              <div class="version-row">
+                <div class="version-number">V1</div>
+                <div class="version-detail"><strong>Initial generated tables</strong><span>48 founders · 6 tables · 1 hard rule</span></div>
+                <div class="version-meta"><strong>Today · 2:34 PM</strong><span>YC Admin</span></div>
+                <button onclick="announce('Opening version 1 as an editable copy')">Open version</button>
+              </div>
+            </div>
+          </section>
+        </article>
+
+        <article class="plan-group" data-name="AI Infrastructure Roundtable" data-status="draft" data-version="2">
+          <div class="plan-row">
+            <div class="plan-name"><h2>AI Infrastructure Roundtable</h2><p>Shared market context · role diversity · no hard rules</p></div>
+            <span class="status draft">Draft</span>
+            <div class="count"><strong>24 founders</strong><span>Complete cohort</span></div>
+            <div class="count"><strong>3 tables</strong><span>8 seats each</span></div>
+            <div class="modified"><strong>Sep 30 · 6:15 PM</strong><span>Version 2 · YC Admin</span></div>
+            <div class="row-actions">
+              <button class="reopen" onclick="reopenPlan(this)">Reopen</button>
+              <button onclick="openHistory(this)">Versions · 2</button>
+              <button class="delete" aria-label="Delete AI Infrastructure Roundtable" title="Delete plan" onclick="openDelete(this)">×</button>
+            </div>
+          </div>
+          <section class="history-panel" hidden></section>
+        </article>
+
+        <article class="plan-group" data-name="Fintech Operator Mix" data-status="ready" data-version="7">
+          <div class="plan-row">
+            <div class="plan-name"><h2>Fintech Operator Mix</h2><p>Maximum functional diversity · engineering at every table</p></div>
+            <span class="status ready">Ready</span>
+            <div class="count"><strong>40 founders</strong><span>Complete cohort</span></div>
+            <div class="count"><strong>5 tables</strong><span>8 seats each</span></div>
+            <div class="modified"><strong>Sep 29 · 11:08 AM</strong><span>Version 7 · Maya Chen</span></div>
+            <div class="row-actions">
+              <button class="reopen" onclick="reopenPlan(this)">Reopen</button>
+              <button onclick="openHistory(this)">Versions · 7</button>
+              <button class="delete" aria-label="Delete Fintech Operator Mix" title="Delete plan" onclick="openDelete(this)">×</button>
+            </div>
+          </div>
+          <section class="history-panel" hidden></section>
+        </article>
+
+        <article class="plan-group" data-name="All Cohort Dinner Test" data-status="warning" data-version="3">
+          <div class="plan-row">
+            <div class="plan-name"><h2>All Cohort Dinner Test</h2><p>1 founder record changed since this plan was saved</p></div>
+            <span class="status warning">Needs attention</span>
+            <div class="count"><strong>160 founders</strong><span>1 needs review</span></div>
+            <div class="count"><strong>20 tables</strong><span>8 seats each</span></div>
+            <div class="modified"><strong>Sep 28 · 9:27 AM</strong><span>Version 3 · YC Admin</span></div>
+            <div class="row-actions">
+              <button class="reopen" onclick="reopenPlan(this)">Review</button>
+              <button onclick="openHistory(this)">Versions · 3</button>
+              <button class="delete" aria-label="Delete All Cohort Dinner Test" title="Delete plan" onclick="openDelete(this)">×</button>
+            </div>
+          </div>
+          <section class="history-panel" hidden></section>
+        </article>
+
+        <article class="plan-group" data-name="W24 New Founder Welcome" data-status="draft" data-version="1">
+          <div class="plan-row">
+            <div class="plan-name"><h2>W24 New Founder Welcome</h2><p>Similar company stage · mixed cohort sections</p></div>
+            <span class="status draft">Draft</span>
+            <div class="count"><strong>0 founders</strong><span>Cohort not selected</span></div>
+            <div class="count"><strong>7 tables</strong><span>Setup only</span></div>
+            <div class="modified"><strong>Sep 26 · 2:03 PM</strong><span>Version 1 · YC Admin</span></div>
+            <div class="row-actions">
+              <button class="reopen" onclick="reopenPlan(this)">Reopen</button>
+              <button onclick="openHistory(this)">Versions · 1</button>
+              <button class="delete" aria-label="Delete W24 New Founder Welcome" title="Delete plan" onclick="openDelete(this)">×</button>
+            </div>
+          </div>
+          <section class="history-panel" hidden></section>
+        </article>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <button>V1</button>
+      <button class="active-version">V2</button>
+      <div class="ai">✓ AI Enabled · Anthropic</div>
+      <div></div>
+    </footer>
+    <div class="live-region" id="liveRegion" aria-live="polite"></div>
+  </div>
+
+  <div class="scrim" id="scrim" hidden onclick="closeDelete()"></div>
+  <section class="delete-dialog" id="deleteDialog" role="dialog" aria-modal="true" aria-labelledby="deleteTitle" hidden>
+    <div class="danger-rule"></div>
+    <div class="dialog-head">
+      <div>
+        <span class="eyebrow">Permanent action</span>
+        <h2 id="deleteTitle">Delete dinner plan?</h2>
+      </div>
+      <button class="dialog-close" aria-label="Close delete confirmation" onclick="closeDelete()">×</button>
+    </div>
+    <div class="dialog-body">
+      <p>This cannot be undone. The saved configuration, assignments, rules, locks, alternatives, and every prior version will be permanently removed.</p>
+      <div class="delete-summary">
+        <strong id="deletePlanName">Demo Day Founder Dinner</strong>
+        <span id="deletePlanMeta">4 versions · 48 founders · 6 tables</span>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button onclick="closeDelete()">Cancel</button>
+      <button class="confirm-delete" id="confirmDelete" onclick="confirmDelete()">Delete dinner plan</button>
+    </div>
+  </section>
+
+  <script>
+    let pendingDeleteGroup = null;
+    const reviewButtons = {
+      default: document.getElementById("defaultState"),
+      history: document.getElementById("historyState"),
+      delete: document.getElementById("deleteState")
+    };
+
+    function announce(message) {
+      const liveRegion = document.getElementById("liveRegion");
+      liveRegion.textContent = "";
+      window.setTimeout(() => { liveRegion.textContent = message; }, 20);
+    }
+
+    function setReviewState(state) {
+      Object.entries(reviewButtons).forEach(([name, button]) => {
+        button.setAttribute("aria-pressed", String(name === state));
+      });
+      closeHistory();
+      closeDelete(false);
+      if (state === "history") {
+        openHistory(document.querySelector(".plan-group .row-actions button:nth-child(2)"));
+      }
+      if (state === "delete") {
+        openDelete(document.querySelector(".plan-group .delete"));
+      }
+    }
+
+    function getPlanGroup(button) {
+      return button.closest(".plan-group");
+    }
+
+    function reopenPlan(button) {
+      const group = getPlanGroup(button);
+      const name = group.dataset.name;
+      const needsReview = group.dataset.status === "warning";
+      announce(needsReview ? `${name} opened with a missing-founder recovery warning` : `${name} reopened at its latest version`);
+    }
+
+    function closeHistory() {
+      document.querySelectorAll(".plan-group").forEach(group => {
+        group.classList.remove("history-open");
+        const panel = group.querySelector(".history-panel");
+        panel.hidden = true;
+      });
+    }
+
+    function buildCompactHistory(group) {
+      const panel = group.querySelector(".history-panel");
+      if (panel.children.length) return;
+      const count = Number(group.dataset.version);
+      const name = group.dataset.name;
+      panel.innerHTML = `
+        <div class="history-intro">
+          <span class="eyebrow">Version history</span>
+          <h3>${name}</h3>
+          <p>Opening an earlier version keeps the latest intact. Saving it creates the next version.</p>
+          <button onclick="closeHistory()">Close version history ↑</button>
+        </div>
+        <div class="version-list">
+          ${Array.from({ length: count }, (_, index) => {
+            const version = count - index;
+            const current = index === 0;
+            return `<div class="version-row">
+              <div class="version-number">V${version}${current ? "<small>Current</small>" : ""}</div>
+              <div class="version-detail"><strong>${current ? "Latest saved configuration" : "Earlier saved configuration"}</strong><span>Complete cohort, criteria, rules, locks, and assignments</span></div>
+              <div class="version-meta"><strong>${index === 0 ? "Most recent" : `${index} save${index > 1 ? "s" : ""} earlier`}</strong><span>YC Admin</span></div>
+              <button onclick="announce('Opening version ${version}${current ? "" : " as an editable copy"}')">${current ? "Open current" : "Open version"}</button>
+            </div>`;
+          }).join("")}
+        </div>`;
+    }
+
+    function openHistory(button) {
+      closeDelete(false);
+      closeHistory();
+      const group = getPlanGroup(button);
+      buildCompactHistory(group);
+      group.classList.add("history-open");
+      group.querySelector(".history-panel").hidden = false;
+      reviewButtons.default.setAttribute("aria-pressed", "false");
+      reviewButtons.history.setAttribute("aria-pressed", "true");
+      reviewButtons.delete.setAttribute("aria-pressed", "false");
+      group.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      announce(`Showing version history for ${group.dataset.name}`);
+    }
+
+    function openDelete(button) {
+      closeHistory();
+      pendingDeleteGroup = getPlanGroup(button);
+      const row = pendingDeleteGroup.querySelector(".plan-row");
+      const counts = row.querySelectorAll(".count strong");
+      const versionCount = Number(pendingDeleteGroup.dataset.version);
+      document.getElementById("deletePlanName").textContent = pendingDeleteGroup.dataset.name;
+      document.getElementById("deletePlanMeta").textContent =
+        `${versionCount} version${versionCount === 1 ? "" : "s"} · ${counts[0].textContent} · ${counts[1].textContent}`;
+      document.getElementById("scrim").hidden = false;
+      document.getElementById("deleteDialog").hidden = false;
+      reviewButtons.default.setAttribute("aria-pressed", "false");
+      reviewButtons.history.setAttribute("aria-pressed", "false");
+      reviewButtons.delete.setAttribute("aria-pressed", "true");
+      document.getElementById("confirmDelete").focus();
+    }
+
+    function closeDelete(resetReview = true) {
+      document.getElementById("scrim").hidden = true;
+      document.getElementById("deleteDialog").hidden = true;
+      pendingDeleteGroup = null;
+      if (resetReview) {
+        reviewButtons.default.setAttribute("aria-pressed", "true");
+        reviewButtons.history.setAttribute("aria-pressed", "false");
+        reviewButtons.delete.setAttribute("aria-pressed", "false");
+      }
+    }
+
+    function confirmDelete() {
+      if (!pendingDeleteGroup) return;
+      const name = pendingDeleteGroup.dataset.name;
+      pendingDeleteGroup.remove();
+      closeDelete();
+      filterPlans();
+      announce(`${name} permanently deleted`);
+    }
+
+    function filterPlans() {
+      closeHistory();
+      const query = document.getElementById("planSearch").value.trim().toLowerCase();
+      const status = document.getElementById("statusFilter").value;
+      let visible = 0;
+      document.querySelectorAll(".plan-group").forEach(group => {
+        const matchesQuery = group.dataset.name.toLowerCase().includes(query);
+        const matchesStatus = status === "all" || group.dataset.status === status;
+        group.hidden = !(matchesQuery && matchesStatus);
+        if (!group.hidden) visible += 1;
+      });
+      document.getElementById("planCount").textContent = `${visible} dinner plan${visible === 1 ? "" : "s"}`;
+    }
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !document.getElementById("deleteDialog").hidden) closeDelete();
+    });
+  </script>
+</body>
+</html>
