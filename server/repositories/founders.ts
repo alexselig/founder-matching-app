@@ -1,0 +1,282 @@
+import type { Founder } from '../../src/shared/founder.js'
+import type { SqliteDatabase } from '../database.js'
+import {
+  RepositoryError,
+  throwRepositoryFailure,
+} from './errors.js'
+
+interface FounderRow {
+  id: string
+  name: string
+  cohort_group: string
+  cohort_section: string
+  company_vertical: string
+  company_vertical_levels_json: string
+  company: string
+  age: number
+  education: string
+  role: string
+  search_name: string
+  raw_json: string
+}
+
+export interface FounderListOptions {
+  limit?: number
+  offset?: number
+}
+
+function requireJson(value: unknown, label: string) {
+  try {
+    const encoded = JSON.stringify(value)
+    if (encoded === undefined) {
+      throw new Error(`${label} is not JSON serializable`)
+    }
+    return encoded
+  } catch {
+    throw new RepositoryError(
+      `${label} is not JSON serializable`,
+      'invalid_data',
+    )
+  }
+}
+
+function parseJson<T>(value: string, label: string): T {
+  try {
+    return JSON.parse(value) as T
+  } catch {
+    throw new RepositoryError(
+      `Stored ${label} is invalid`,
+      'storage_failure',
+    )
+  }
+}
+
+function rowToFounder(row: FounderRow): Founder {
+  const companyVerticalLevels = parseJson<unknown>(
+    row.company_vertical_levels_json,
+    'founder vertical levels',
+  )
+  const raw = parseJson<unknown>(row.raw_json, 'founder source record')
+
+  if (
+    !Array.isArray(companyVerticalLevels) ||
+    !companyVerticalLevels.every((value) => typeof value === 'string') ||
+    !raw ||
+    typeof raw !== 'object' ||
+    Array.isArray(raw)
+  ) {
+    throw new RepositoryError(
+      'Stored founder data has an invalid shape',
+      'storage_failure',
+    )
+  }
+
+  return {
+    id: row.id,
+    name: row.name,
+    cohortGroup: row.cohort_group,
+    cohortSection: row.cohort_section,
+    companyVertical: row.company_vertical,
+    companyVerticalLevels,
+    company: row.company,
+    age: row.age,
+    education: row.education,
+    role: row.role,
+    searchName: row.search_name,
+    raw: Object.freeze(raw as Record<string, unknown>),
+  }
+}
+
+function assertListOptions(options: FounderListOptions) {
+  if (
+    options.limit !== undefined &&
+    (!Number.isInteger(options.limit) || options.limit < 1)
+  ) {
+    throw new RepositoryError(
+      'Founder list limit must be a positive integer',
+      'invalid_data',
+    )
+  }
+
+  if (
+    options.offset !== undefined &&
+    (!Number.isInteger(options.offset) || options.offset < 0)
+  ) {
+    throw new RepositoryError(
+      'Founder list offset must be a non-negative integer',
+      'invalid_data',
+    )
+  }
+}
+
+export class FounderRepository {
+  constructor(private readonly database: SqliteDatabase) {}
+
+  saveAll(founders: readonly Founder[]): void {
+    const ids = new Set<string>()
+    for (const founder of founders) {
+      if (!founder.id || ids.has(founder.id)) {
+        throw new RepositoryError(
+          ids.has(founder.id)
+            ? `Duplicate founder ID ${founder.id}`
+            : 'Founder ID is required',
+          'invalid_data',
+        )
+      }
+      ids.add(founder.id)
+    }
+
+    try {
+      const statement = this.database.prepare(
+        `INSERT INTO founders (
+           id,
+           name,
+           cohort_group,
+           cohort_section,
+           company_vertical,
+           company_vertical_levels_json,
+           company,
+           age,
+           education,
+           role,
+           search_name,
+           raw_json
+         ) VALUES (
+           @id,
+           @name,
+           @cohortGroup,
+           @cohortSection,
+           @companyVertical,
+           @companyVerticalLevelsJson,
+           @company,
+           @age,
+           @education,
+           @role,
+           @searchName,
+           @rawJson
+         )
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name,
+           cohort_group = excluded.cohort_group,
+           cohort_section = excluded.cohort_section,
+           company_vertical = excluded.company_vertical,
+           company_vertical_levels_json =
+             excluded.company_vertical_levels_json,
+           company = excluded.company,
+           age = excluded.age,
+           education = excluded.education,
+           role = excluded.role,
+           search_name = excluded.search_name,
+           raw_json = excluded.raw_json`,
+      )
+      const save = this.database.transaction(
+        (records: readonly Founder[]) => {
+          for (const founder of records) {
+            statement.run({
+              id: founder.id,
+              name: founder.name,
+              cohortGroup: founder.cohortGroup,
+              cohortSection: founder.cohortSection,
+              companyVertical: founder.companyVertical,
+              companyVerticalLevelsJson: requireJson(
+                founder.companyVerticalLevels,
+                'Founder vertical levels',
+              ),
+              company: founder.company,
+              age: founder.age,
+              education: founder.education,
+              role: founder.role,
+              searchName: founder.searchName,
+              rawJson: requireJson(founder.raw, 'Founder source record'),
+            })
+          }
+        },
+      )
+
+      save(founders)
+    } catch (error) {
+      throwRepositoryFailure(error, 'Failed to save founders')
+    }
+  }
+
+  list(options: FounderListOptions = {}): Founder[] {
+    assertListOptions(options)
+
+    try {
+      const rows = this.database
+        .prepare(
+          `SELECT
+             id,
+             name,
+             cohort_group,
+             cohort_section,
+             company_vertical,
+             company_vertical_levels_json,
+             company,
+             age,
+             education,
+             role,
+             search_name,
+             raw_json
+           FROM founders
+           ORDER BY rowid
+           LIMIT @limit OFFSET @offset`,
+        )
+        .all({
+          limit: options.limit ?? -1,
+          offset: options.offset ?? 0,
+        }) as FounderRow[]
+
+      return rows.map(rowToFounder)
+    } catch (error) {
+      throwRepositoryFailure(error, 'Failed to list founders')
+    }
+  }
+
+  count(): number {
+    try {
+      const row = this.database
+        .prepare('SELECT COUNT(*) AS count FROM founders')
+        .get() as { count: number }
+
+      return row.count
+    } catch (error) {
+      throwRepositoryFailure(error, 'Failed to count founders')
+    }
+  }
+
+  get(id: string): Founder {
+    try {
+      const row = this.database
+        .prepare(
+          `SELECT
+             id,
+             name,
+             cohort_group,
+             cohort_section,
+             company_vertical,
+             company_vertical_levels_json,
+             company,
+             age,
+             education,
+             role,
+             search_name,
+             raw_json
+           FROM founders
+           WHERE id = ?`,
+        )
+        .get(id) as FounderRow | undefined
+
+      if (!row) {
+        throw new RepositoryError(
+          `Founder ${id} was not found`,
+          'not_found',
+        )
+      }
+
+      return rowToFounder(row)
+    } catch (error) {
+      throwRepositoryFailure(error, `Failed to read founder ${id}`)
+    }
+  }
+}
