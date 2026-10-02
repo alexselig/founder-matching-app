@@ -435,7 +435,7 @@ describe('DinnerPage results workspace', () => {
       'v2-dinner-density',
     ])
 
-    const threshold = screen.getByLabelText(/Threshold/) as HTMLInputElement
+    const threshold = screen.getByLabelText('Match threshold') as HTMLInputElement
     fireEvent.change(threshold, { target: { value: '85' } })
     expect(threshold.value).toBe('85')
     expect(container.querySelector('.v2-dinner-table-foot')!.textContent).toMatch(/85/)
@@ -521,8 +521,8 @@ describe('DinnerPage results workspace', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Analysis' }))
     expect(screen.getByRole('button', { name: 'Analysis' }).getAttribute('aria-pressed')).toBe('true')
     expect(screen.queryByRole('group', { name: 'Table density' })).toBeNull()
-    expect(screen.getByLabelText(/Threshold/)).toBeTruthy()
-    expect(screen.getByLabelText('Fit score legend')).toBeTruthy()
+    expect(screen.getByLabelText('Match threshold')).toBeTruthy()
+    expect(screen.getByLabelText('Match Threshold Color Coding')).toBeTruthy()
     expect(container.querySelector('.v2-dinner-analysis')!.className).toContain('v2-dinner-visible')
     expect((container.querySelector('.v2-dinner-table-workspace') as HTMLElement).hidden).toBe(true)
     expect(screen.getByText('Objective performance')).toBeTruthy()
@@ -916,7 +916,7 @@ describe('DinnerPage review regressions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(screen.getByRole('button', { name: 'Saving…' })).toBeTruthy()
 
-    const threshold = screen.getByLabelText(/Threshold/) as HTMLInputElement
+    const threshold = screen.getByLabelText('Match threshold') as HTMLInputElement
     expect(threshold.disabled).toBe(true)
     fireEvent.change(threshold, { target: { value: '55' } })
     tableCards(container).forEach((card) => expect((card.querySelector('.v2-dinner-lock') as HTMLButtonElement).disabled).toBe(true))

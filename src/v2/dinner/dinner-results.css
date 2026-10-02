@@ -45,6 +45,7 @@
 .v2-dinner-density .v2-dinner-active { background: var(--ink); color: white; }
 .v2-dinner-density-label { margin-right: 7px; color: var(--ink-muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .v2-dinner-legend { display: flex; align-items: center; gap: 8px; color: var(--ink-muted); font-size: 9px; font-weight: 800; }
+.v2-dinner-legend-label { color: var(--ink); font-size: 8px; letter-spacing: .07em; text-transform: uppercase; }
 .v2-dinner-legend span { display: flex; align-items: center; gap: 4px; }
 .v2-dinner-legend i, .v2-dinner-mini-dot { width: 9px; height: 9px; border: 1px solid rgba(20,20,20,.08); border-radius: 50%; }
 .v2-dinner-strong-bg { background: #dcefe7; }

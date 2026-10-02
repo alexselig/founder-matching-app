@@ -270,7 +270,7 @@ export function DinnerTables({
           ))}
         </div>
         <div className="v2-dinner-threshold">
-          <label htmlFor={thresholdId}>Threshold</label>
+          <label htmlFor={thresholdId}>Match threshold</label>
           <button
             type="button"
             aria-label="Decrease threshold"
@@ -298,7 +298,8 @@ export function DinnerTables({
             +
           </button>
         </div>
-        <div className="v2-dinner-legend" aria-label="Fit score legend">
+        <div className="v2-dinner-legend" aria-label="Match Threshold Color Coding">
+          <strong className="v2-dinner-legend-label">Match Threshold Color Coding</strong>
           <span>
             <i className="v2-dinner-strong-bg" />
             90+
