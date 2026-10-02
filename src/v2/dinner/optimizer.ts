@@ -69,15 +69,27 @@ interface Component {
   readonly locked: boolean
 }
 
-interface PreparedRequest {
+export interface PreparedDinnerRequest {
   readonly request: DinnerRequest
   readonly capacities: readonly number[]
   readonly rules: readonly HardRule[]
   readonly locks: readonly DinnerLock[]
   readonly effectiveLocks: readonly DinnerLock[]
   readonly components: readonly Component[]
+  readonly minimumRules: readonly Extract<HardRule, { type: 'field-count' }>[]
   readonly founderById: ReadonlyMap<string, Founder>
   readonly scoreCache: PairwiseScoreCache
+}
+
+type PreparedRequest = PreparedDinnerRequest
+
+export interface DinnerImprovementOptions {
+  readonly maxIterations?: number
+  readonly maxComparisons?: number
+  readonly acceptCandidate?: (
+    assignment: readonly (readonly string[])[],
+    metrics: DinnerMetrics,
+  ) => boolean
 }
 
 export class DinnerConflictError extends Error {
@@ -544,7 +556,7 @@ function componentConstraintConflicts(
   return conflicts
 }
 
-function prepareRequest(request: DinnerRequest): PreparedRequest {
+export function prepareDinnerRequest(request: DinnerRequest): PreparedDinnerRequest {
   const tableCapacities = capacities(request.founders.length, request.tableCount)
   const rules = request.rules ?? []
   const locks = request.locks ?? []
@@ -569,6 +581,31 @@ function prepareRequest(request: DinnerRequest): PreparedRequest {
   if (conflicts.length) {
     throw new DinnerConflictError(conflicts)
   }
+  const minimumRules = rules.filter(
+    (rule): rule is Extract<HardRule, { type: 'field-count' }> =>
+      rule.type === 'field-count' && rule.min !== undefined,
+  )
+  const components = [...componentResult.components].sort((left, right) => {
+    const minimumMatchCount = (component: Component) =>
+      minimumRules.reduce(
+        (count, rule) =>
+          count +
+          matchingCount(
+            component.founderIds,
+            founderById,
+            rule.field,
+            rule.value,
+          ),
+        0,
+      )
+    return (
+      Number(right.fixedTableIndex !== undefined) -
+        Number(left.fixedTableIndex !== undefined) ||
+      minimumMatchCount(right) - minimumMatchCount(left) ||
+      right.founderIds.length - left.founderIds.length ||
+      left.id.localeCompare(right.id)
+    )
+  })
 
   return {
     request,
@@ -576,7 +613,8 @@ function prepareRequest(request: DinnerRequest): PreparedRequest {
     rules,
     locks,
     effectiveLocks,
-    components: componentResult.components,
+    components,
+    minimumRules,
     founderById,
     scoreCache: buildPairwiseScores(request.founders, request.criteria),
   }
@@ -658,15 +696,11 @@ function candidateTableIndexes(
   if (component.fixedTableIndex !== undefined) {
     return [component.fixedTableIndex]
   }
-  const minimumRules = prepared.rules.filter(
-    (rule): rule is Extract<HardRule, { type: 'field-count' }> =>
-      rule.type === 'field-count' && rule.min !== undefined,
-  )
   return prepared.capacities
     .map((_, tableIndex) => tableIndex)
     .sort((left, right) => {
       const deficitScore = (tableIndex: number) =>
-        minimumRules.reduce((score, rule) => {
+        prepared.minimumRules.reduce((score, rule) => {
           const componentMatches = matchingCount(
             component.founderIds,
             prepared.founderById,
@@ -693,14 +727,10 @@ function minimumsRemainPossible(
   remainingComponents: readonly Component[],
   prepared: PreparedRequest,
 ) {
-  const minimumRules = prepared.rules.filter(
-    (rule): rule is Extract<HardRule, { type: 'field-count' }> =>
-      rule.type === 'field-count' && rule.min !== undefined,
-  )
-  if (!minimumRules.length) {
+  if (!prepared.minimumRules.length) {
     return true
   }
-  for (const rule of minimumRules) {
+  for (const rule of prepared.minimumRules) {
     const remainingMatches = remainingComponents.reduce(
       (count, component) =>
         count +
@@ -712,16 +742,24 @@ function minimumsRemainPossible(
         ),
       0,
     )
-    for (const table of tables) {
+    let totalShortfall = 0
+    for (let tableIndex = 0; tableIndex < tables.length; tableIndex += 1) {
+      const table = tables[tableIndex]!
       const currentMatches = matchingCount(
         table,
         prepared.founderById,
         rule.field,
         rule.value,
       )
-      if (currentMatches + remainingMatches < rule.min!) {
+      const shortfall = Math.max(0, rule.min! - currentMatches)
+      const remainingCapacity = prepared.capacities[tableIndex]! - table.length
+      if (shortfall > remainingCapacity) {
         return false
       }
+      totalShortfall += shortfall
+    }
+    if (remainingMatches < totalShortfall) {
+      return false
     }
   }
   return true
@@ -801,6 +839,109 @@ function satisfiesConstraints(
       )[lock.seatIndex] === lock.founderId
     )
   })
+}
+
+function tableSatisfiesConstraints(
+  founderIds: readonly string[],
+  tableIndex: number,
+  prepared: PreparedRequest,
+) {
+  if (founderIds.length !== prepared.capacities[tableIndex]) {
+    return false
+  }
+  const founderIdSet = new Set(founderIds)
+  for (const rule of prepared.rules) {
+    switch (rule.type) {
+      case 'must-sit-together':
+        break
+      case 'cannot-sit-together': {
+        let present = 0
+        for (const founderId of rule.founderIds) {
+          if (founderIdSet.has(founderId)) {
+            present += 1
+          }
+        }
+        if (present > 1) {
+          return false
+        }
+        break
+      }
+      case 'same-company-separation': {
+        const companies = new Set<string>()
+        for (const founderId of founderIds) {
+          const company = prepared.founderById.get(founderId)?.company
+          if (company && companies.has(company)) {
+            return false
+          }
+          if (company) {
+            companies.add(company)
+          }
+        }
+        break
+      }
+      case 'field-count': {
+        const count = matchingCount(
+          founderIds,
+          prepared.founderById,
+          rule.field,
+          rule.value,
+        )
+        if (
+          (rule.min !== undefined && count < rule.min) ||
+          (rule.max !== undefined && count > rule.max)
+        ) {
+          return false
+        }
+        break
+      }
+      case 'fixed-table-size':
+        if (founderIds.length !== rule.size) {
+          return false
+        }
+        break
+      case 'pinned-table':
+      case 'pinned-seat':
+        if (
+          (rule.tableIndex === tableIndex && !founderIdSet.has(rule.founderId)) ||
+          (rule.tableIndex !== tableIndex && founderIdSet.has(rule.founderId))
+        ) {
+          return false
+        }
+        break
+    }
+  }
+
+  for (const lock of prepared.effectiveLocks) {
+    if (
+      (lock.tableIndex === tableIndex && !founderIdSet.has(lock.founderId)) ||
+      (lock.tableIndex !== tableIndex && founderIdSet.has(lock.founderId))
+    ) {
+      return false
+    }
+    if (
+      lock.tableIndex === tableIndex &&
+      lock.seatIndex !== undefined &&
+      buildSeats(
+        founderIds,
+        prepared.capacities[tableIndex]!,
+        tableIndex,
+        prepared.effectiveLocks,
+      )[lock.seatIndex] !== lock.founderId
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+function affectedTablesSatisfyConstraints(
+  assignment: readonly (readonly string[])[],
+  tableIndexes: readonly number[],
+  prepared: PreparedRequest,
+) {
+  return tableIndexes.every((tableIndex) =>
+    tableSatisfiesConstraints(assignment[tableIndex]!, tableIndex, prepared),
+  )
 }
 
 function initialAssignment(prepared: PreparedRequest) {
@@ -917,15 +1058,36 @@ function metricsFromTables(tables: readonly DinnerTable[]): DinnerMetrics {
   }
 }
 
-function calculateMetrics(
+function replaceDinnerTables(
+  currentTables: readonly DinnerTable[],
+  replacements: readonly DinnerTable[],
+) {
+  const replacementByIndex = new Map(
+    replacements.map((table) => [table.index, table]),
+  )
+  return currentTables.map((table) => replacementByIndex.get(table.index) ?? table)
+}
+
+function evaluateAffectedTables(
   assignment: readonly (readonly string[])[],
+  currentTables: readonly DinnerTable[],
+  affectedTableIndexes: readonly number[],
   prepared: PreparedRequest,
 ) {
-  return metricsFromTables(
-    assignment.map((founderIds, tableIndex) =>
-      calculateTable(founderIds, tableIndex, prepared),
-    ),
+  const uniqueTableIndexes = [...new Set(affectedTableIndexes)].sort(
+    (left, right) => left - right,
   )
+  if (!affectedTablesSatisfyConstraints(assignment, uniqueTableIndexes, prepared)) {
+    return undefined
+  }
+  const replacements = uniqueTableIndexes.map((tableIndex) =>
+    calculateTable(assignment[tableIndex]!, tableIndex, prepared),
+  )
+  const tables = replaceDinnerTables(currentTables, replacements)
+  return {
+    tables,
+    metrics: metricsFromTables(tables),
+  }
 }
 
 function componentTableIndexes(
@@ -989,12 +1151,21 @@ function exchangedAssignment(
 function improveAssignment(
   initial: readonly (readonly string[])[],
   prepared: PreparedRequest,
+  options: DinnerImprovementOptions = {},
 ) {
   let assignment = initial.map((table) => [...table])
-  let metrics = calculateMetrics(assignment, prepared)
-  const maxIterations = prepared.request.maxIterations ?? DEFAULT_MAX_ITERATIONS
+  let tables: readonly DinnerTable[] = assignment.map((founderIds, tableIndex) =>
+    calculateTable(founderIds, tableIndex, prepared),
+  )
+  let metrics = metricsFromTables(tables)
+  const maxIterations =
+    options.maxIterations ??
+    prepared.request.maxIterations ??
+    DEFAULT_MAX_ITERATIONS
   const maxComparisons =
-    prepared.request.maxComparisons ?? DEFAULT_MAX_COMPARISONS
+    options.maxComparisons ??
+    prepared.request.maxComparisons ??
+    DEFAULT_MAX_COMPARISONS
   let comparisons = 0
   let iterations = 0
   let converged = false
@@ -1007,6 +1178,7 @@ function improveAssignment(
     iterations += 1
     const tableIndexes = componentTableIndexes(assignment, prepared.components)
     let bestAssignment: readonly (readonly string[])[] | undefined
+    let bestTables: readonly DinnerTable[] | undefined
     let bestMetrics = metrics
 
     for (
@@ -1056,13 +1228,23 @@ function improveAssignment(
             leftTableIndex,
             rightTableIndex,
           )
-          if (!satisfiesConstraints(candidate, prepared)) {
+          const evaluated = evaluateAffectedTables(
+            candidate,
+            tables,
+            [leftTableIndex, rightTableIndex],
+            prepared,
+          )
+          if (
+            !evaluated ||
+            (options.acceptCandidate &&
+              !options.acceptCandidate(candidate, evaluated.metrics))
+          ) {
             continue
           }
-          const candidateMetrics = calculateMetrics(candidate, prepared)
-          if (compareDinnerMetrics(candidateMetrics, bestMetrics) > 0) {
+          if (compareDinnerMetrics(evaluated.metrics, bestMetrics) > 0) {
             bestAssignment = candidate
-            bestMetrics = candidateMetrics
+            bestTables = evaluated.tables
+            bestMetrics = evaluated.metrics
           }
         }
       }
@@ -1099,13 +1281,23 @@ function improveAssignment(
           leftTableIndex,
           rightTableIndex,
         )
-        if (!satisfiesConstraints(candidate, prepared)) {
+        const evaluated = evaluateAffectedTables(
+          candidate,
+          tables,
+          [leftTableIndex, rightTableIndex],
+          prepared,
+        )
+        if (
+          !evaluated ||
+          (options.acceptCandidate &&
+            !options.acceptCandidate(candidate, evaluated.metrics))
+        ) {
           continue
         }
-        const candidateMetrics = calculateMetrics(candidate, prepared)
-        if (compareDinnerMetrics(candidateMetrics, bestMetrics) > 0) {
+        if (compareDinnerMetrics(evaluated.metrics, bestMetrics) > 0) {
           bestAssignment = candidate
-          bestMetrics = candidateMetrics
+          bestTables = evaluated.tables
+          bestMetrics = evaluated.metrics
         }
       }
     }
@@ -1115,10 +1307,11 @@ function improveAssignment(
       break
     }
     assignment = bestAssignment.map((table) => [...table])
+    tables = bestTables!
     metrics = bestMetrics
   }
 
-  return { assignment, iterations, comparisons, converged }
+  return { assignment, tables, metrics, iterations, comparisons, converged }
 }
 
 function solutionFromAssignment(
@@ -1129,6 +1322,14 @@ function solutionFromAssignment(
   const tables = assignment.map((founderIds, tableIndex) =>
     calculateTable(founderIds, tableIndex, prepared),
   )
+  return solutionFromTables(tables, prepared, optimization)
+}
+
+function solutionFromTables(
+  tables: readonly DinnerTable[],
+  prepared: PreparedRequest,
+  optimization: DinnerSolution['optimization'],
+): DinnerSolution {
   return {
     tables,
     metrics: metricsFromTables(tables),
@@ -1139,15 +1340,14 @@ function solutionFromAssignment(
   }
 }
 
-export function evaluateDinnerAssignment(
-  request: DinnerRequest,
+export function evaluatePreparedDinnerAssignment(
+  prepared: PreparedDinnerRequest,
   assignment: readonly (readonly string[])[],
 ): DinnerSolution {
-  const prepared = prepareRequest(request)
-  const expectedIds = request.founders.map((founder) => founder.id).sort()
+  const expectedIds = prepared.request.founders.map((founder) => founder.id).sort()
   const actualIds = assignment.flatMap((table) => table).sort()
   if (
-    assignment.length !== request.tableCount ||
+    assignment.length !== prepared.request.tableCount ||
     expectedIds.length !== actualIds.length ||
     expectedIds.some((founderId, index) => founderId !== actualIds[index]) ||
     !satisfiesConstraints(assignment, prepared)
@@ -1167,13 +1367,77 @@ export function evaluateDinnerAssignment(
   })
 }
 
-export function optimizeDinner(request: DinnerRequest): DinnerSolution {
-  const prepared = prepareRequest(request)
-  const initial = initialAssignment(prepared)
-  const improved = improveAssignment(initial, prepared)
-  return solutionFromAssignment(improved.assignment, prepared, {
+export function evaluatePreparedDinnerCandidate(
+  prepared: PreparedDinnerRequest,
+  current: DinnerSolution,
+  assignment: readonly (readonly string[])[],
+  affectedTableIndexes: readonly number[],
+): DinnerSolution {
+  const evaluated = evaluateAffectedTables(
+    assignment,
+    current.tables,
+    affectedTableIndexes,
+    prepared,
+  )
+  if (!evaluated) {
+    throw new DinnerConflictError([
+      ruleConflict(
+        prepared.rules.map((rule) => rule.id),
+        affectedTableIndexes.flatMap(
+          (tableIndex) => assignment[tableIndex] ?? [],
+        ),
+        'The candidate assignment violates a capacity, lock, or hard rule',
+      ),
+    ])
+  }
+  return solutionFromTables(evaluated.tables, prepared, {
+    iterations: 0,
+    comparisons: 0,
+    converged: true,
+  })
+}
+
+export function improvePreparedDinnerAssignment(
+  prepared: PreparedDinnerRequest,
+  assignment: readonly (readonly string[])[],
+  options: DinnerImprovementOptions = {},
+): DinnerSolution {
+  if (!satisfiesConstraints(assignment, prepared)) {
+    throw new DinnerConflictError([
+      ruleConflict(
+        prepared.rules.map((rule) => rule.id),
+        assignment.flatMap((table) => table),
+        'The supplied assignment violates a capacity, lock, or hard rule',
+      ),
+    ])
+  }
+  const improved = improveAssignment(assignment, prepared, options)
+  return solutionFromTables(improved.tables, prepared, {
     iterations: improved.iterations,
     comparisons: improved.comparisons,
     converged: improved.converged,
   })
+}
+
+export function optimizePreparedDinner(
+  prepared: PreparedDinnerRequest,
+): DinnerSolution {
+  const initial = initialAssignment(prepared)
+  const improved = improveAssignment(initial, prepared)
+  return solutionFromTables(improved.tables, prepared, {
+    iterations: improved.iterations,
+    comparisons: improved.comparisons,
+    converged: improved.converged,
+  })
+}
+
+export function evaluateDinnerAssignment(
+  request: DinnerRequest,
+  assignment: readonly (readonly string[])[],
+): DinnerSolution {
+  return evaluatePreparedDinnerAssignment(prepareDinnerRequest(request), assignment)
+}
+
+export function optimizeDinner(request: DinnerRequest): DinnerSolution {
+  return optimizePreparedDinner(prepareDinnerRequest(request))
 }

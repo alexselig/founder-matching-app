@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { performance } from 'node:perf_hooks'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildScaleFixture, type ScaleScenario } from '../../shared/fixtures.js'
@@ -7,6 +8,8 @@ import { compileCriteria } from './criteria.js'
 import {
   capacities,
   compareDinnerMetrics,
+  DEFAULT_MAX_COMPARISONS,
+  DEFAULT_MAX_ITERATIONS,
   DinnerConflictError,
   optimizeDinner,
 } from './optimizer.js'
@@ -48,6 +51,19 @@ function founder(
 
 function assignedIds(solution: ReturnType<typeof optimizeDinner>) {
   return solution.tables.flatMap((table) => table.founderIds)
+}
+
+function rarestEligibleEducation(founders: readonly Founder[], tableCount: number) {
+  const counts = new Map<string, number>()
+  for (const candidate of founders) {
+    counts.set(candidate.education, (counts.get(candidate.education) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .filter(([, count]) => count >= tableCount)
+    .sort(
+      ([leftEducation, leftCount], [rightEducation, rightCount]) =>
+        leftCount - rightCount || leftEducation.localeCompare(rightEducation),
+    )[0]![0]
 }
 
 describe('balanced capacities', () => {
@@ -92,6 +108,97 @@ describe('deterministic constrained maximin optimization', () => {
     const request = { founders, tableCount: 3, criteria, maxIterations: 2 }
 
     expect(optimizeDinner(request)).toEqual(optimizeDinner(request))
+  })
+
+  it.each([
+    ['five-tables', 5],
+    ['uneven-five-tables', 5],
+    ['twenty-tables', 20],
+  ] as const)(
+    'satisfies feasible per-table minimums without exhausting DFS for %s',
+    (scenario: ScaleScenario, tableCount: number) => {
+      const founders = buildScaleFixture(referenceFounders, scenario)
+      const education = rarestEligibleEducation(founders, tableCount)
+      const compiledRules = compileHardRules(
+        [
+          {
+            id: `minimum-${education}`,
+            type: 'field-count',
+            field: 'education',
+            value: education,
+            min: 1,
+          },
+        ],
+        founders,
+      )
+
+      const solution = optimizeDinner({
+        founders,
+        tableCount,
+        criteria,
+        rules: compiledRules.rules,
+        maxIterations: 0,
+      })
+
+      expect(
+        solution.tables.every(
+          (table) =>
+            table.founderIds.filter(
+              (founderId) =>
+                founders.find((candidate) => candidate.id === founderId)?.education ===
+                education,
+            ).length >= 1,
+        ),
+      ).toBe(true)
+    },
+    20_000,
+  )
+
+  it('identifies an impossible total per-table minimum', () => {
+    const founders = [
+      founder('a', 'Sales'),
+      founder('b', 'Engineering'),
+      founder('c', 'Engineering'),
+      founder('d', 'Design'),
+    ]
+    const compiledRules = compileHardRules(
+      [
+        {
+          id: 'minimum-sales',
+          type: 'field-count',
+          field: 'role',
+          value: 'Sales',
+          min: 1,
+        },
+      ],
+      founders,
+    )
+
+    expect(() =>
+      optimizeDinner({
+        founders,
+        tableCount: 2,
+        criteria,
+        rules: compiledRules.rules,
+      }),
+    ).toThrow(DinnerConflictError)
+
+    try {
+      optimizeDinner({
+        founders,
+        tableCount: 2,
+        criteria,
+        rules: compiledRules.rules,
+      })
+    } catch (error) {
+      expect((error as DinnerConflictError).conflicts).toEqual([
+        expect.objectContaining({
+          ruleIds: ['minimum-sales'],
+          founderIds: ['a'],
+          message: expect.stringMatching(/more matching founders than are available/i),
+        }),
+      ])
+    }
   })
 
   it('preserves table and seat locks while satisfying hard rules', () => {
@@ -277,4 +384,24 @@ describe('deterministic constrained maximin optimization', () => {
       movedComponentTable?.founderIds.filter((founderId) => founderId.startsWith('c')),
     ).toHaveLength(2)
   })
+
+  it(
+    'uses the default 20-table comparison budget within the CI performance ceiling',
+    () => {
+      const founders = buildScaleFixture(referenceFounders, 'twenty-tables')
+      const startedAt = performance.now()
+
+      const solution = optimizeDinner({
+        founders,
+        tableCount: 20,
+        criteria,
+      })
+      const elapsedMilliseconds = performance.now() - startedAt
+
+      expect(solution.optimization.comparisons).toBe(DEFAULT_MAX_COMPARISONS)
+      expect(solution.optimization.iterations).toBe(DEFAULT_MAX_ITERATIONS)
+      expect(elapsedMilliseconds).toBeLessThan(9_000)
+    },
+    20_000,
+  )
 })

@@ -1,13 +1,19 @@
 import type { HardRule } from './rules.js'
 import {
+  compareDinnerMetrics,
   DinnerConflictError,
-  evaluateDinnerAssignment,
-  optimizeDinner,
+  evaluatePreparedDinnerAssignment,
+  evaluatePreparedDinnerCandidate,
+  improvePreparedDinnerAssignment,
+  optimizePreparedDinner,
+  prepareDinnerRequest,
   type DinnerRequest,
   type DinnerSolution,
+  type PreparedDinnerRequest,
 } from './optimizer.js'
 
 export const ALTERNATIVE_STRUCTURAL_DIFFERENCE = 0.05
+export const ALTERNATIVE_MAX_WEAKEST_FIT_DROP = 0.05
 export const MAX_ALTERNATIVE_SWAP_ATTEMPTS = 10_000
 
 interface FounderGroup {
@@ -57,43 +63,55 @@ function tableByFounder(solution: DinnerSolution) {
   return result
 }
 
-export function structuralDifference(
-  left: DinnerSolution,
-  right: DinnerSolution,
-): number {
-  const leftTableByFounder = tableByFounder(left)
-  const rightTableByFounder = tableByFounder(right)
-  const founderIds = [...leftTableByFounder.keys()].sort()
+function structuralDifferenceFromAssignment(
+  reference: DinnerSolution,
+  assignment: readonly (readonly string[])[],
+) {
+  const referenceTableByFounder = tableByFounder(reference)
+  const candidateTableByFounder = new Map<string, number>()
+  assignment.forEach((table, tableIndex) => {
+    table.forEach((founderId) => candidateTableByFounder.set(founderId, tableIndex))
+  })
   if (
-    founderIds.length !== rightTableByFounder.size ||
-    founderIds.some((founderId) => !rightTableByFounder.has(founderId))
+    referenceTableByFounder.size !== candidateTableByFounder.size ||
+    [...referenceTableByFounder.keys()].some(
+      (founderId) => !candidateTableByFounder.has(founderId),
+    )
   ) {
     return 1
   }
 
-  let changedRelationships = 0
-  let relationships = 0
-  for (let leftIndex = 0; leftIndex < founderIds.length; leftIndex += 1) {
-    for (
-      let rightIndex = leftIndex + 1;
-      rightIndex < founderIds.length;
-      rightIndex += 1
-    ) {
-      const leftFounderId = founderIds[leftIndex]!
-      const rightFounderId = founderIds[rightIndex]!
-      const togetherOnLeft =
-        leftTableByFounder.get(leftFounderId) ===
-        leftTableByFounder.get(rightFounderId)
-      const togetherOnRight =
-        rightTableByFounder.get(leftFounderId) ===
-        rightTableByFounder.get(rightFounderId)
-      if (togetherOnLeft !== togetherOnRight) {
-        changedRelationships += 1
-      }
-      relationships += 1
-    }
+  const chooseTwo = (count: number) => (count * (count - 1)) / 2
+  const referenceTogether = reference.tables.reduce(
+    (total, table) => total + chooseTwo(table.founderIds.length),
+    0,
+  )
+  const candidateTogether = assignment.reduce(
+    (total, table) => total + chooseTwo(table.length),
+    0,
+  )
+  const overlapCounts = new Map<string, number>()
+  for (const [founderId, referenceTableIndex] of referenceTableByFounder) {
+    const candidateTableIndex = candidateTableByFounder.get(founderId)!
+    const key = `${referenceTableIndex}:${candidateTableIndex}`
+    overlapCounts.set(key, (overlapCounts.get(key) ?? 0) + 1)
   }
+  const togetherInBoth = [...overlapCounts.values()].reduce(
+    (total, count) => total + chooseTwo(count),
+    0,
+  )
+  const founderCount = referenceTableByFounder.size
+  const relationships = chooseTwo(founderCount)
+  const changedRelationships =
+    referenceTogether + candidateTogether - 2 * togetherInBoth
   return relationships ? changedRelationships / relationships : 0
+}
+
+export function structuralDifference(
+  left: DinnerSolution,
+  right: DinnerSolution,
+): number {
+  return structuralDifferenceFromAssignment(left, assignmentFromSolution(right))
 }
 
 function locationRules(rules: readonly HardRule[]) {
@@ -188,6 +206,17 @@ function minimumDifference(
   )
 }
 
+function minimumAssignmentDifference(
+  assignment: readonly (readonly string[])[],
+  references: readonly DinnerSolution[],
+) {
+  return Math.min(
+    ...references.map((reference) =>
+      structuralDifferenceFromAssignment(reference, assignment),
+    ),
+  )
+}
+
 function tablePairs(tableCount: number, seed: number) {
   const indexes = Array.from({ length: tableCount }, (_, index) => index)
   if (seed % 2 === 1) {
@@ -204,11 +233,18 @@ function tablePairs(tableCount: number, seed: number) {
 }
 
 function tryEvaluate(
-  request: DinnerRequest,
+  prepared: PreparedDinnerRequest,
+  current: DinnerSolution,
   assignment: readonly (readonly string[])[],
+  affectedTableIndexes: readonly number[],
 ) {
   try {
-    return evaluateDinnerAssignment(request, assignment)
+    return evaluatePreparedDinnerCandidate(
+      prepared,
+      current,
+      assignment,
+      affectedTableIndexes,
+    )
   } catch (error) {
     if (error instanceof DinnerConflictError) {
       return undefined
@@ -218,6 +254,7 @@ function tryEvaluate(
 }
 
 function buildAlternative(
+  prepared: PreparedDinnerRequest,
   request: DinnerRequest,
   base: DinnerSolution,
   priorAlternatives: readonly DinnerSolution[],
@@ -231,6 +268,9 @@ function buildAlternative(
   let attempts = 0
   const usedGroups = new Set<string>()
   const pairs = tablePairs(request.tableCount, seed)
+  const weakestFitFloor =
+    (base.metrics.founderFitVector[0] ?? 0) -
+    ALTERNATIVE_MAX_WEAKEST_FIT_DROP
 
   while (
     currentDifference < ALTERNATIVE_STRUCTURAL_DIFFERENCE &&
@@ -258,26 +298,55 @@ function buildAlternative(
         ...candidates.slice(offset),
         ...candidates.slice(0, offset),
       ]
+      let best:
+        | {
+            readonly assignment: readonly (readonly string[])[]
+            readonly solution: DinnerSolution
+            readonly difference: number
+            readonly left: FounderGroup
+            readonly right: FounderGroup
+          }
+        | undefined
       for (const candidate of orderedCandidates) {
         attempts += 1
         const swapped = swapGroups(assignment, candidate.left, candidate.right)
         if (!swapped) {
           continue
         }
-        const evaluated = tryEvaluate(request, swapped)
+        const evaluated = tryEvaluate(
+          prepared,
+          current,
+          swapped,
+          [leftTableIndex, rightTableIndex],
+        )
         if (!evaluated) {
           continue
         }
         const difference = minimumDifference(evaluated, references)
-        if (difference > currentDifference + 1e-12) {
-          assignment = swapped
-          current = evaluated
-          currentDifference = difference
-          usedGroups.add(candidate.left.id)
-          usedGroups.add(candidate.right.id)
-          accepted = true
-          break
+        if (
+          difference > currentDifference + 1e-12 &&
+          (evaluated.metrics.founderFitVector[0] ?? 0) >= weakestFitFloor &&
+          (!best ||
+            compareDinnerMetrics(evaluated.metrics, best.solution.metrics) > 0 ||
+            (compareDinnerMetrics(evaluated.metrics, best.solution.metrics) === 0 &&
+              difference > best.difference))
+        ) {
+          best = {
+            assignment: swapped,
+            solution: evaluated,
+            difference,
+            left: candidate.left,
+            right: candidate.right,
+          }
         }
+      }
+      if (best) {
+        assignment = best.assignment
+        current = best.solution
+        currentDifference = best.difference
+        usedGroups.add(best.left.id)
+        usedGroups.add(best.right.id)
+        accepted = true
       }
       if (
         accepted &&
@@ -319,14 +388,25 @@ function buildAlternative(
       if (!swapped) {
         continue
       }
-      const evaluated = tryEvaluate(request, swapped)
+      const leftTableIndex = groupTableIndex(assignment, candidate.left)
+      const rightTableIndex = groupTableIndex(assignment, candidate.right)
+      const evaluated = tryEvaluate(
+        prepared,
+        current,
+        swapped,
+        [leftTableIndex, rightTableIndex],
+      )
       if (!evaluated) {
         continue
       }
       const difference = minimumDifference(evaluated, references)
       if (
         difference > currentDifference + 1e-12 &&
-        (!best || difference > best.difference + 1e-12)
+        (evaluated.metrics.founderFitVector[0] ?? 0) >= weakestFitFloor &&
+        (!best ||
+          compareDinnerMetrics(evaluated.metrics, best.solution.metrics) > 0 ||
+          (compareDinnerMetrics(evaluated.metrics, best.solution.metrics) === 0 &&
+            difference > best.difference + 1e-12))
       ) {
         best = {
           assignment: swapped,
@@ -358,20 +438,34 @@ function buildAlternative(
       },
     ])
   }
-  return current
+  return improvePreparedDinnerAssignment(prepared, assignment, {
+    acceptCandidate: (candidateAssignment, metrics) =>
+      minimumAssignmentDifference(candidateAssignment, references) >=
+        ALTERNATIVE_STRUCTURAL_DIFFERENCE &&
+      (metrics.founderFitVector[0] ?? 0) >= weakestFitFloor,
+  })
 }
 
 export function generateAlternatives(
   request: DinnerRequest,
   count: number,
+  baseSolution?: DinnerSolution,
 ): DinnerSolution[] {
   if (count !== 2) {
     throw new Error('Dinner matching produces exactly two alternatives')
   }
-  const base = optimizeDinner(request)
+  const prepared = prepareDinnerRequest(request)
+  const base = baseSolution
+    ? evaluatePreparedDinnerAssignment(
+        prepared,
+        assignmentFromSolution(baseSolution),
+      )
+    : optimizePreparedDinner(prepared)
   const alternatives: DinnerSolution[] = []
   for (let seed = 0; seed < 2; seed += 1) {
-    alternatives.push(buildAlternative(request, base, alternatives, seed))
+    alternatives.push(
+      buildAlternative(prepared, request, base, alternatives, seed),
+    )
   }
   return alternatives
 }

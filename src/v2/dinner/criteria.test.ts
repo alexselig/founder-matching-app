@@ -109,6 +109,16 @@ describe('component scoring', () => {
     ).toBe(0.5)
   })
 
+  it('compares categorical array values rather than array identity', () => {
+    expect(
+      scoreCriterionValues(
+        { operator: 'categorical', objective: 'similarity', missingValuePolicy: 'exclude' },
+        ['Software', 'Infrastructure'],
+        ['Software', 'Infrastructure'],
+      ),
+    ).toBe(1)
+  })
+
   it('never treats missing values as positive matches', () => {
     expect(
       scoreCriterionValues(
@@ -154,5 +164,61 @@ describe('component scoring', () => {
     expect(cache.components).toBe(componentsBefore)
     expect(firstScore).toBe(0.25)
     expect(secondScore).toBe(0.75)
+  })
+
+  it('keeps cached zero-policy missing values at zero for diversity', () => {
+    const founders = [
+      founder('a', {
+        companyVertical: '',
+        companyVerticalLevels: [],
+      }),
+      founder('b', {
+        companyVertical: 'Software',
+        companyVerticalLevels: ['Software'],
+      }),
+    ]
+    const missingZero = compileCriteria({
+      source: 'manual',
+      criteria: [
+        {
+          field: 'company vertical',
+          objective: 'diversity',
+          weight: 'H',
+          missingValuePolicy: 'zero',
+        },
+      ],
+    })
+
+    const cache = buildPairwiseScores(founders, missingZero)
+
+    expect(scoreFounderPair(cache, missingZero, 'a', 'b')).toBe(0)
+  })
+
+  it('scores cached categorical company-vertical paths by value', () => {
+    const founders = [
+      founder('a', {
+        companyVertical: 'Software -> Infrastructure',
+        companyVerticalLevels: ['Software', 'Infrastructure'],
+      }),
+      founder('b', {
+        companyVertical: 'Software -> Infrastructure',
+        companyVerticalLevels: ['Software', 'Infrastructure'],
+      }),
+    ]
+    const categoricalVertical = compileCriteria({
+      source: 'manual',
+      criteria: [
+        {
+          field: 'company vertical',
+          objective: 'similarity',
+          weight: 'H',
+          operator: 'categorical',
+        },
+      ],
+    })
+
+    const cache = buildPairwiseScores(founders, categoricalVertical)
+
+    expect(scoreFounderPair(cache, categoricalVertical, 'a', 'b')).toBe(1)
   })
 })
