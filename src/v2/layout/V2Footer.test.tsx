@@ -44,7 +44,9 @@ describe('V2Footer', () => {
   })
 
   it('links founder accounts to AI settings and exposes Demo mode', () => {
+    history.replaceState({}, '', '/v2/dinner')
     render(<V2Footer role="founder" />)
+    expect(screen.getByRole('link', { name: 'V1' }).getAttribute('href')).toBe('/v1/admin')
     expect(screen.getByRole('link', { name: '+ AI Disabled' }).getAttribute('href')).toBe('/v2/settings/ai')
     expect(screen.getByRole('switch', { name: 'Demo mode' }).getAttribute('aria-checked')).toBe('false')
   })

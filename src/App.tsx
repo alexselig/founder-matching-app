@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { v2DestinationFor } from './app/versionLinks'
 import rawFounders from './founders.json'
 import {
   buildDiscovery,
@@ -75,7 +76,7 @@ function V1VersionFooter() {
   return (
     <footer className="v1-version-footer" aria-label="Version switcher">
       <a className="active" href="/v1" aria-current="page">V1</a>
-      <a href="/v2">V2</a>
+      <a href={v2DestinationFor(window.location.pathname)}>V2</a>
     </footer>
   )
 }
@@ -104,17 +105,20 @@ function Header({ active }: { active: 'plan' | 'directory' | 'algorithm' | 'admi
         Founder Table
       </a>
       <nav aria-label="Primary navigation">
-        <a className={active === 'plan' ? 'active' : ''} href={v1Href('/plan')}>
-          Plan review
-        </a>
         <a className={active === 'directory' ? 'active' : ''} href={v1Href('/directory')}>
           Directory
         </a>
-        <a className={active === 'algorithm' ? 'active' : ''} href={v1Href('/algorithm')}>
-          Algorithm
-        </a>
         <a className={active === 'admin' ? 'active' : ''} href={v1Href('/admin')}>
           Admin grouping
+        </a>
+        <a
+          className={['nav-secondary-start', active === 'plan' ? 'active' : ''].filter(Boolean).join(' ')}
+          href={v1Href('/plan')}
+        >
+          Plan review
+        </a>
+        <a className={active === 'algorithm' ? 'active' : ''} href={v1Href('/algorithm')}>
+          Algorithm
         </a>
       </nav>
       <span className="dataset-count">{founders.length} founders</span>

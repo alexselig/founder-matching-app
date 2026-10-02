@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { v1DestinationFor } from '../../app/versionLinks'
 import type { AccountRole } from '../search/accountState'
 import { isPublicDemoOnly, readDemoMode, setDemoMode } from '../demoMode'
 import '../search/v2-chrome.css'
@@ -36,7 +37,7 @@ export function V2Footer({ aiStatus = '+ AI Disabled', role = 'admin', onExport,
 
   return (
     <footer className={footerClass}>
-      <a className="v2-version-link" href="/v1">
+      <a className="v2-version-link" href={v1DestinationFor(window.location.pathname)}>
         V1
       </a>
       <a className="v2-version-link v2-active-version" href="/v2" aria-current="page">

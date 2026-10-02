@@ -42,7 +42,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 .v1-version-footer {
   position: fixed;
-  right: 0;
+  left: 0;
   bottom: 0;
   z-index: 35;
   height: 32px;
@@ -62,7 +62,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .v1-version-footer a:last-child { border-right: 0; }
 .v1-version-footer a:hover { background: var(--surface-alt); color: var(--ink); }
-.v1-version-footer a.active { box-shadow: inset 0 -3px var(--bauhaus-blue); color: var(--bauhaus-blue); }
+.v1-version-footer a.active { background: var(--bauhaus-blue); color: white; }
 
 .masthead {
   height: var(--space-7);
@@ -104,6 +104,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   text-decoration: none;
   border-bottom: 4px solid transparent;
 }
+.masthead nav a.nav-secondary-start { margin-left: auto; }
 .masthead nav a.active { color: var(--orange-text); border-bottom-color: var(--bauhaus-blue); }
 .dataset-count {
   display: grid;
@@ -471,6 +472,7 @@ code { padding: 2px var(--space-2); background: var(--surface-alt); color: var(-
   .dataset-count { display: none; }
   .masthead nav { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, 1fr); min-height: 88px; overflow: visible; border-top: 1px solid var(--line); }
   .masthead nav a { min-height: 44px; white-space: nowrap; padding: 0 var(--space-2); font-size: 11px; border-right: 1px solid var(--line); }
+  .masthead nav a.nav-secondary-start { margin-left: 0; }
   .plan-hero, .directory-search-hero, .admin-title { min-height: auto; grid-template-columns: 1fr; }
   .plan-hero > div, .directory-search-hero > div, .admin-title > div { padding: var(--space-6) var(--space-3); border-right: 0; border-bottom: 1px solid var(--line); }
   .plan-hero::before, .plan-hero::after { display: none; }
