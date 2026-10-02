@@ -7,7 +7,14 @@ import type { FastifyInstance } from 'fastify'
 import { normalizeFounders } from '../src/shared/founder.js'
 import { createServer } from './app.js'
 import { createDatabase } from './database.js'
+import { createConfiguredProviders } from './providers/configured.js'
 import { FounderRepository } from './repositories/founders.js'
+import { WebResultsRepository } from './repositories/webResults.js'
+import { createAiInterpretationService } from './services/aiInterpretation.js'
+import {
+  createEnrichmentRunManager,
+  createEnrichmentService,
+} from './services/enrichment.js'
 
 export function requireDurableDatabasePath(
   environment: NodeJS.ProcessEnv,
@@ -95,11 +102,25 @@ export async function startServer(
   try {
     const founderRepository = new FounderRepository(database)
     founderRepository.saveAll(loadFounders())
+    const webResultsRepository = new WebResultsRepository(database)
+    const providers = createConfiguredProviders(environment)
+    const enrichmentService = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers,
+    })
 
     const server = createServer({
       databaseStatus: () =>
         database.open ? 'ready' : 'not-ready',
       founderRepository,
+      webResultsRepository,
+      enrichmentRunManager: createEnrichmentRunManager({
+        service: enrichmentService,
+      }),
+      aiInterpretationService: createAiInterpretationService({
+        providers,
+      }),
       staticRoot: resolveStaticRoot(environment),
     })
     let closing = false

@@ -144,7 +144,22 @@ CREATE TABLE IF NOT EXISTS web_enrichment_runs (
   founder_id TEXT NOT NULL,
   query_fingerprint TEXT NOT NULL,
   provider TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'complete'
+    CHECK (
+      status IN (
+        'queued',
+        'running',
+        'complete',
+        'partial',
+        'failed'
+      )
+    ),
   retrieved_at TEXT NOT NULL,
+  completed_at TEXT,
+  warnings_json TEXT
+    CHECK (warnings_json IS NULL OR json_valid(warnings_json)),
+  error_json TEXT
+    CHECK (error_json IS NULL OR json_valid(error_json)),
   query_context_json TEXT
     CHECK (query_context_json IS NULL OR json_valid(query_context_json)),
   raw_provider_metadata_json TEXT

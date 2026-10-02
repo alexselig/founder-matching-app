@@ -37,6 +37,26 @@ npm run build
 npm run preview -- --host 127.0.0.1
 ```
 
+## V2 server and web enrichment
+
+The production server requires `DATABASE_PATH` and serves the V2 API plus the
+built client from one Fastify process. Optional provider adapters are enabled
+only when their server-side environment variables are present:
+
+- Anthropic: `ANTHROPIC_API_KEY` (`claude-opus-4-8`)
+- OpenAI: `OPENAI_API_KEY` and `OPENAI_MODEL`
+- xAI: `XAI_API_KEY` and `XAI_MODEL`
+
+Provider credentials stay server-side. They are never accepted by enrichment
+run requests or returned in API responses.
+
+`POST /api/v2/enrichment/runs` starts append-only founder enrichment.
+`GET /api/v2/enrichment/runs/:id` and
+`GET /api/v2/enrichment/runs/:id/progress` report batch state.
+`GET /api/v2/founders/:id/web-results` returns the latest successful evidence
+plus redacted run history. Tests inject fake transports and never require live
+provider access.
+
 ## Data
 
 The prototype checks in the dataset published at:

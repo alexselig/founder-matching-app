@@ -131,3 +131,412 @@ export const FounderListResponseSchema = createApiEnvelopeSchema(
 export const FounderDetailResponseSchema = createApiEnvelopeSchema(
   FounderResponseSchema,
 )
+
+export const ProviderIdSchema = z.enum([
+  'openai',
+  'anthropic',
+  'xai',
+])
+export type ProviderId = z.infer<typeof ProviderIdSchema>
+
+export const ProviderCapabilitiesSchema = z
+  .object({
+    searchIntent: z.boolean(),
+    dinnerCriteria: z.boolean(),
+    hardRules: z.boolean(),
+    reranking: z.boolean(),
+    webSearch: z.boolean(),
+    citations: z.boolean(),
+  })
+  .strict()
+
+export const SearchOperatorSchema = z.enum([
+  'is',
+  'contains',
+  'startsWith',
+  'between',
+  'atLeast',
+  'atMost',
+])
+
+const NumericRangeSchema = z
+  .object({
+    min: z.number().finite(),
+    max: z.number().finite(),
+  })
+  .strict()
+  .refine(
+    ({ min, max }) => min <= max,
+    'Range minimum must not exceed maximum',
+  )
+
+export const SearchDimensionSchema = z
+  .object({
+    field: z.enum([
+      'id',
+      'cohortGroup',
+      'cohortSection',
+      'companyVertical',
+      'company',
+      'age',
+      'education',
+      'role',
+    ]),
+    operator: SearchOperatorSchema,
+    value: z.union([
+      z.string().min(1),
+      z.number().finite(),
+      z.boolean(),
+      NumericRangeSchema,
+    ]),
+  })
+  .strict()
+  .superRefine((dimension, context) => {
+    if (dimension.field === 'age') {
+      if (
+        dimension.operator === 'between' &&
+        typeof dimension.value !== 'object'
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Age between searches require a numeric range',
+        })
+      } else if (
+        dimension.operator !== 'between' &&
+        typeof dimension.value !== 'number'
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Age searches require a numeric value',
+        })
+      }
+      return
+    }
+
+    if (
+      !['is', 'contains', 'startsWith'].includes(
+        dimension.operator,
+      ) ||
+      typeof dimension.value !== 'string'
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Text searches require a supported text operator and value',
+      })
+    }
+  })
+
+export const StructuredSearchQuerySchema = z
+  .object({
+    text: z.string(),
+    dimensions: z.array(SearchDimensionSchema),
+  })
+  .strict()
+export type StructuredSearchQuery = z.infer<
+  typeof StructuredSearchQuerySchema
+>
+
+export const DinnerCriterionSchema = z
+  .object({
+    field: z.enum([
+      'companyVertical',
+      'age',
+      'education',
+      'role',
+      'company',
+      'cohortGroup',
+      'cohortSection',
+    ]),
+    objective: z.enum(['similar', 'diverse']),
+    weight: z.enum(['low', 'medium', 'high']),
+    enabled: z.boolean(),
+  })
+  .strict()
+
+export const DinnerCriteriaSetSchema = z
+  .object({
+    criteria: z.array(DinnerCriterionSchema).min(1),
+  })
+  .strict()
+export type DinnerCriteriaSet = z.infer<
+  typeof DinnerCriteriaSetSchema
+>
+
+const FounderPairRuleSchema = z
+  .object({
+    type: z.enum([
+      'must_sit_together',
+      'cannot_sit_together',
+    ]),
+    founderIds: z.array(z.string().min(1)).min(2),
+  })
+  .strict()
+
+const FieldCountRuleSchema = z
+  .object({
+    type: z.literal('field_count'),
+    field: z.enum([
+      'companyVertical',
+      'age',
+      'education',
+      'role',
+      'company',
+      'cohortGroup',
+      'cohortSection',
+    ]),
+    value: z.union([
+      z.string().min(1),
+      z.number().finite(),
+      NumericRangeSchema,
+    ]),
+    min: SafeIntegerSchema.nonnegative().optional(),
+    max: SafeIntegerSchema.nonnegative().optional(),
+  })
+  .strict()
+  .superRefine((rule, context) => {
+    if (rule.min === undefined && rule.max === undefined) {
+      context.addIssue({
+        code: 'custom',
+        message: 'A field-count rule requires a minimum or maximum',
+      })
+    }
+    if (
+      rule.min !== undefined &&
+      rule.max !== undefined &&
+      rule.min > rule.max
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Field-count minimum must not exceed maximum',
+      })
+    }
+  })
+
+export const HardRuleSchema = z.union([
+  FounderPairRuleSchema,
+  z
+    .object({
+      type: z.literal('same_company_separation'),
+    })
+    .strict(),
+  FieldCountRuleSchema,
+  z
+    .object({
+      type: z.literal('fixed_table_size'),
+      size: SafeIntegerSchema.positive(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('pinned_table'),
+      founderId: z.string().min(1),
+      tableId: z.string().min(1),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('pinned_seat'),
+      founderId: z.string().min(1),
+      tableId: z.string().min(1),
+      seat: SafeIntegerSchema.nonnegative(),
+    })
+    .strict(),
+])
+export type HardRule = z.infer<typeof HardRuleSchema>
+
+export const InterpretationFallbackReasonSchema = z.enum([
+  'disabled',
+  'unavailable',
+  'invalid_output',
+  'rate_limited',
+])
+
+export const InterpretationResultSchema = z.union([
+  z
+    .object({
+      status: z.literal('interpreted'),
+      provider: ProviderIdSchema,
+      value: z.union([
+        StructuredSearchQuerySchema,
+        DinnerCriteriaSetSchema,
+        HardRuleSchema,
+      ]),
+    })
+    .strict(),
+  z
+    .object({
+      status: z.literal('fallback'),
+      provider: ProviderIdSchema,
+      reason: InterpretationFallbackReasonSchema,
+      message: z.string().min(1),
+    })
+    .strict(),
+])
+export type InterpretationResult = z.infer<
+  typeof InterpretationResultSchema
+>
+
+export const InterpretationRequestSchema = z
+  .object({
+    provider: ProviderIdSchema,
+    input: z.string().trim().min(1),
+  })
+  .strict()
+
+export const InterpretationResponseSchema = createApiEnvelopeSchema(
+  InterpretationResultSchema,
+)
+
+export const EnrichmentStatusSchema = z.enum([
+  'queued',
+  'running',
+  'complete',
+  'partial',
+  'failed',
+])
+export type EnrichmentStatus = z.infer<
+  typeof EnrichmentStatusSchema
+>
+
+const TimestampSchema = z
+  .string()
+  .refine(
+    (value) => !Number.isNaN(Date.parse(value)),
+    'Expected a valid timestamp',
+  )
+
+export const EntityMatchSchema = z
+  .object({
+    founder: z.boolean(),
+    company: z.boolean(),
+  })
+  .strict()
+
+export const PublicWebResultSchema = z
+  .object({
+    runId: z.string().min(1),
+    founderId: z.string().min(1),
+    rank: SafeIntegerSchema.min(1).max(5),
+    classification: z.enum(['founder', 'company', 'both']),
+    title: z.string().min(1),
+    url: z.url(),
+    domain: z.string().min(1),
+    snippet: z.string().min(1),
+    provider: ProviderIdSchema,
+    providerResultId: z.string().min(1).optional(),
+    retrievedAt: TimestampSchema,
+    confidence: z.number().min(0).max(1).optional(),
+    entityMatch: EntityMatchSchema,
+    staleAfter: TimestampSchema.optional(),
+  })
+  .strict()
+export type PublicWebResult = z.infer<typeof PublicWebResultSchema>
+
+export const PublicEnrichmentRunSchema = z
+  .object({
+    id: z.string().min(1),
+    founderId: z.string().min(1),
+    queryFingerprint: z.string().min(1),
+    provider: ProviderIdSchema,
+    status: EnrichmentStatusSchema,
+    retrievedAt: TimestampSchema,
+    completedAt: TimestampSchema.optional(),
+    warnings: z.array(z.string()).optional(),
+    error: z
+      .object({
+        code: z.string().min(1),
+        message: z.string().min(1),
+        retryable: z.boolean(),
+      })
+      .strict()
+      .optional(),
+    resultCount: SafeIntegerSchema.nonnegative(),
+  })
+  .strict()
+
+export const FounderWebResultsStatusSchema = z.enum([
+  'fresh',
+  'stale',
+  'no_results',
+  'unsupported',
+  'provider_failure',
+])
+
+export const FounderWebResultsDataSchema = z
+  .object({
+    founderId: z.string().min(1),
+    status: FounderWebResultsStatusSchema,
+    stale: z.boolean(),
+    items: z.array(PublicWebResultSchema).max(5),
+    latestRun: PublicEnrichmentRunSchema.optional(),
+    latestAttempt: PublicEnrichmentRunSchema.optional(),
+    history: z.array(PublicEnrichmentRunSchema),
+  })
+  .strict()
+export type FounderWebResultsData = z.infer<
+  typeof FounderWebResultsDataSchema
+>
+
+export const FounderWebResultsResponseSchema =
+  createApiEnvelopeSchema(FounderWebResultsDataSchema)
+
+export const CreateEnrichmentRunRequestSchema = z
+  .object({
+    provider: ProviderIdSchema,
+    founderIds: z.array(z.string().min(1)).min(1).max(1000).optional(),
+    forceRefresh: z.boolean().optional(),
+  })
+  .strict()
+export type CreateEnrichmentRunRequest = z.infer<
+  typeof CreateEnrichmentRunRequestSchema
+>
+
+export const EnrichmentProgressItemSchema = z
+  .object({
+    founderId: z.string().min(1),
+    status: z.enum(['complete', 'partial', 'failed']),
+    runId: z.string().min(1).optional(),
+    cached: z.boolean(),
+    error: z.string().min(1).optional(),
+  })
+  .strict()
+
+export const EnrichmentBatchSchema = z
+  .object({
+    id: z.string().min(1),
+    provider: ProviderIdSchema,
+    status: EnrichmentStatusSchema,
+    total: SafeIntegerSchema.nonnegative(),
+    completed: SafeIntegerSchema.nonnegative(),
+    failed: SafeIntegerSchema.nonnegative(),
+    cached: SafeIntegerSchema.nonnegative(),
+    createdAt: TimestampSchema,
+    updatedAt: TimestampSchema,
+    completedAt: TimestampSchema.optional(),
+    items: z.array(EnrichmentProgressItemSchema),
+  })
+  .strict()
+export type EnrichmentBatch = z.infer<typeof EnrichmentBatchSchema>
+
+export const EnrichmentProgressSchema = z
+  .object({
+    id: z.string().min(1),
+    status: EnrichmentStatusSchema,
+    total: SafeIntegerSchema.nonnegative(),
+    completed: SafeIntegerSchema.nonnegative(),
+    failed: SafeIntegerSchema.nonnegative(),
+    cached: SafeIntegerSchema.nonnegative(),
+    updatedAt: TimestampSchema,
+  })
+  .strict()
+
+export const EnrichmentRunParamsSchema = z
+  .object({
+    id: z.string().min(1),
+  })
+  .strict()
+
+export const EnrichmentBatchResponseSchema =
+  createApiEnvelopeSchema(EnrichmentBatchSchema)
+export const EnrichmentProgressResponseSchema =
+  createApiEnvelopeSchema(EnrichmentProgressSchema)
