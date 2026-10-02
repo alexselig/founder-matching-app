@@ -1,4 +1,5 @@
 import type { Founder } from '../../src/shared/founder.js'
+import { FOUNDER_LIST_MAX_LIMIT } from '../../src/shared/contracts.js'
 import type { SqliteDatabase } from '../database.js'
 import {
   RepositoryError,
@@ -107,7 +108,7 @@ function assertFounder(
 
   if (
     typeof founder.age !== 'number' ||
-    !Number.isInteger(founder.age) ||
+    !Number.isSafeInteger(founder.age) ||
     founder.age < 0
   ) {
     throw new RepositoryError(
@@ -217,11 +218,12 @@ function assertListOptions(
   if (
     options.limit !== undefined &&
     (typeof options.limit !== 'number' ||
-      !Number.isInteger(options.limit) ||
-      options.limit < 1)
+      !Number.isSafeInteger(options.limit) ||
+      options.limit < 1 ||
+      options.limit > FOUNDER_LIST_MAX_LIMIT)
   ) {
     throw new RepositoryError(
-      'Founder list limit must be a positive integer',
+      `Founder list limit must be a safe integer from 1 through ${FOUNDER_LIST_MAX_LIMIT}`,
       'invalid_data',
     )
   }
@@ -229,7 +231,7 @@ function assertListOptions(
   if (
     options.offset !== undefined &&
     (typeof options.offset !== 'number' ||
-      !Number.isInteger(options.offset) ||
+      !Number.isSafeInteger(options.offset) ||
       options.offset < 0)
   ) {
     throw new RepositoryError(

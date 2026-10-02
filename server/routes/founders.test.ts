@@ -91,6 +91,26 @@ describe('founder routes', () => {
     expect(response.json().error.details).toEqual(expect.any(Array))
   })
 
+  it.each([
+    '/api/v2/founders?limit=1001',
+    `/api/v2/founders?limit=${Number.MAX_VALUE}`,
+    `/api/v2/founders?offset=${Number.MAX_VALUE}`,
+  ])('rejects unsafe or excessive pagination in %s', async (url) => {
+    const response = await server.inject({
+      method: 'GET',
+      url,
+    })
+
+    expect(response.statusCode).toBe(400)
+    expect(response.json()).toMatchObject({
+      ok: false,
+      error: {
+        code: 'invalid_request',
+        message: 'Invalid founder list query',
+      },
+    })
+  })
+
   it('maps repository not-found errors to the API error envelope', async () => {
     const response = await server.inject({
       method: 'GET',

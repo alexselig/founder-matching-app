@@ -229,6 +229,23 @@ describe('SQLite repositories', () => {
     }
   })
 
+  it.each([
+    Number.MAX_VALUE,
+    Number.MAX_SAFE_INTEGER + 1,
+    1.5,
+  ])('rejects unsafe founder age %s as invalid_data', (age) => {
+    expectRepositoryError(
+      () =>
+        founderRepository.saveAll([
+          {
+            ...founders[0]!,
+            age,
+          },
+        ]),
+      'invalid_data',
+    )
+  })
+
   it('rejects sparse founder collections and company vertical levels', () => {
     expectRepositoryError(
       () =>
@@ -264,9 +281,15 @@ describe('SQLite repositories', () => {
       { limit: 0 },
       { limit: 1.5 },
       { limit: '1' },
+      { limit: 1001 },
+      { limit: Number.MAX_SAFE_INTEGER },
+      { limit: Number.MAX_SAFE_INTEGER + 1 },
+      { limit: Number.MAX_VALUE },
       { offset: -1 },
       { offset: 1.5 },
       { offset: '0' },
+      { offset: Number.MAX_SAFE_INTEGER + 1 },
+      { offset: Number.MAX_VALUE },
       { unexpected: true },
     ]
 
@@ -443,6 +466,12 @@ describe('SQLite repositories', () => {
       label: 'rank',
       mutate: (run: WebEnrichmentRun) => {
         run.results[0]!.rank = 0
+      },
+    },
+    {
+      label: 'unsafe rank',
+      mutate: (run: WebEnrichmentRun) => {
+        run.results[0]!.rank = Number.MAX_VALUE
       },
     },
     {
@@ -657,6 +686,101 @@ describe('SQLite repositories', () => {
         'invalid_data',
       )
     }
+  })
+
+  it.each([
+    Number.MAX_VALUE,
+    Number.MAX_SAFE_INTEGER + 1,
+    1.5,
+  ])('rejects unsafe dinner version %s as invalid_data', (version) => {
+    const configuration = makeDinnerConfiguration()
+    dinnerRepository.saveConfiguration(configuration)
+
+    expectRepositoryError(
+      () =>
+        dinnerRepository.appendVersion({
+          id: `dinner-unsafe-${String(version)}`,
+          configurationId: configuration.id,
+          version,
+          snapshot: {},
+          createdAt: '2026-10-01T12:01:00.000Z',
+        }),
+      'invalid_data',
+    )
+  })
+
+  it('enforces safe integer storage constraints in SQLite', () => {
+    const founderId = founders[0]!.id
+
+    expect(() =>
+      database
+        .prepare(
+          'UPDATE founders SET age = 9007199254740992 WHERE id = ?',
+        )
+        .run(founderId),
+    ).toThrow()
+    expect(() =>
+      database
+        .prepare('UPDATE founders SET age = 1.5 WHERE id = ?')
+        .run(founderId),
+    ).toThrow()
+
+    const run = makeRun(
+      founderId,
+      'integer-storage-run',
+      '2026-10-01T12:00:00.000Z',
+    )
+    webResultsRepository.appendRun(run)
+
+    expect(() =>
+      database
+        .prepare(
+          'UPDATE web_results SET rank = 1.5 WHERE run_id = ? AND rank = 1',
+        )
+        .run(run.id),
+    ).toThrow()
+
+    const configuration = makeDinnerConfiguration()
+    dinnerRepository.saveConfiguration(configuration)
+
+    expect(() =>
+      database
+        .prepare(
+          `INSERT INTO dinner_versions (
+             id,
+             configuration_id,
+             version,
+             snapshot_json,
+             created_at
+           ) VALUES (
+             'unsafe-version',
+             ?,
+             9007199254740992,
+             '{}',
+             '2026-10-01T12:01:00.000Z'
+           )`,
+        )
+        .run(configuration.id),
+    ).toThrow()
+    expect(() =>
+      database
+        .prepare(
+          `INSERT INTO dinner_versions (
+             id,
+             configuration_id,
+             version,
+             snapshot_json,
+             created_at
+           ) VALUES (
+             'fractional-version',
+             ?,
+             1.5,
+             '{}',
+             '2026-10-01T12:01:00.000Z'
+           )`,
+        )
+        .run(configuration.id),
+    ).toThrow()
   })
 
   it('persists saved dinner configurations with append-only versions', () => {

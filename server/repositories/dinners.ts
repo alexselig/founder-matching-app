@@ -182,7 +182,7 @@ function assertDinnerVersion(
 
   if (
     typeof version.version !== 'number' ||
-    !Number.isInteger(version.version) ||
+    !Number.isSafeInteger(version.version) ||
     version.version < 1
   ) {
     throw new RepositoryError(
