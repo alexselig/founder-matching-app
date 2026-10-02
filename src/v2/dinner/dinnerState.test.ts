@@ -10,6 +10,7 @@ import {
   buildDinnerView,
   capacityNote,
   capacityResolutions,
+  clampTableSetup,
   cohortCard,
   DEFAULT_CRITERIA,
   defaultTableSetup,
@@ -80,6 +81,22 @@ describe('setup gating copy', () => {
     expect(tablesCard(ready)).toMatchObject({ value: '6 × 8', hint: '6 tables × 8 target seats', action: 'Edit' })
     expect(summaryCopy(ready)).toEqual({ primary: '48 founders · 6 tables · 8 target seats', secondary: '1 hard rule added' })
   })
+
+  it('keeps a preselected Search cohort visible before the plan is named', () => {
+    const setup: SetupSnapshot = {
+      planName: '',
+      cohort: cohortOf(founders.slice(0, 56)),
+      tables: null,
+      rules: [],
+    }
+
+    expect(cohortCard(setup)).toEqual({
+      disabled: true,
+      value: '56 founders',
+      hint: 'From Founder Search · ordered results',
+      action: 'Change',
+    })
+  })
 })
 
 describe('table setup', () => {
@@ -98,7 +115,9 @@ describe('table setup', () => {
     ])
     expect(defaultTableSetup(48)).toEqual({ tableCount: 6, targetSeats: 8 })
     expect(defaultTableSetup(160)).toEqual({ tableCount: 20, targetSeats: 8 })
-    expect(tablePresets(574).every((preset) => preset.tableCount <= 20)).toBe(true)
+    expect(defaultTableSetup(574)).toEqual({ tableCount: 72, targetSeats: 8 })
+    expect(tablePresets(1000).every((preset) => preset.tableCount <= 100)).toBe(true)
+    expect(clampTableSetup(1000, { tableCount: 101, targetSeats: 8 })).toEqual({ tableCount: 100, targetSeats: 8 })
   })
 
   it('offers exact-fit and balanced capacity resolutions', () => {

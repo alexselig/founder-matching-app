@@ -169,8 +169,12 @@ describe('demo fixtures', () => {
         expect(result.domain).toBe(url.hostname)
         expect(result.provider).toBe('demo-fixture')
         expect(result.rawProviderMetadata).toBeUndefined()
-        expect(result.title.toLowerCase()).toContain('synthetic')
-        expect(result.snippet.toLowerCase()).toContain('synthetic')
+        expect(result.title.toLowerCase()).not.toContain('synthetic')
+        expect(result.snippet.toLowerCase()).not.toContain('synthetic')
+        expect(`${result.title} ${result.snippet}`).not.toContain('->')
+        expect(result.title).toMatch(/[A-Z][A-Za-z]+/)
+        expect(result.snippet.length).toBeGreaterThan(80)
+        expect(result.snippet).toMatch(/\b(founder|company|startup|platform|customers|market|team)\b/i)
       }
     }
   })

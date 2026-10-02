@@ -46,7 +46,7 @@ export interface SetupSnapshot {
   readonly rules: readonly RuleDraft[]
 }
 
-export const MAX_TABLES = 20
+export const MAX_TABLES = 100
 export const MIN_SEATS = 2
 export const MAX_SEATS = 12
 export const DEFAULT_THRESHOLD = 70
@@ -127,7 +127,12 @@ export interface ScopeCardCopy {
 
 export function cohortCard(setup: SetupSnapshot): ScopeCardCopy {
   if (!setup.planName.trim()) {
-    return { disabled: true, value: setup.cohort?.label ?? 'Select cohort', hint: 'Name the seating plan first', action: setup.cohort ? 'Change' : 'Select' }
+    return {
+      disabled: true,
+      value: setup.cohort?.label ?? 'Select cohort',
+      hint: setup.cohort?.hint ?? 'Name the seating plan first',
+      action: setup.cohort ? 'Change' : 'Select',
+    }
   }
   if (!setup.cohort) return { disabled: false, value: 'Select cohort', hint: 'Choose founders to include', action: 'Select' }
   return { disabled: false, value: setup.cohort.label, hint: setup.cohort.hint, action: 'Change' }

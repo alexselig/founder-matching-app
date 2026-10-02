@@ -144,7 +144,6 @@ export function AiProviderPage({
     return (
       <div className="v2-shell">
         <V2Header
-          active="table-config"
           role={role}
           currentFounder={currentFounder}
           onRoleChange={changeRole}
@@ -164,7 +163,6 @@ export function AiProviderPage({
   return (
     <div className="v2-shell v2-ai-shell">
       <V2Header
-        active="table-config"
         role={role}
         currentFounder={currentFounder}
         onRoleChange={changeRole}

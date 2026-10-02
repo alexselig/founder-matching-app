@@ -582,6 +582,35 @@ export function DinnerPage({
     return { ...baseRequest, locks: locksForTables(solution, lockSet) }
   }
 
+  function updateResultCriteria(nextCriteria: readonly CriterionDraft[]) {
+    if (!solution || frozen) return
+    const built = buildDinnerRequest({
+      founders: solutionFounders,
+      tableCount: solution.tables.length,
+      criteria: nextCriteria,
+      rules,
+    })
+    if (!('request' in built)) {
+      announce('Criteria update blocked · current hard rules are inconsistent')
+      return
+    }
+    const request = {
+      ...built.request,
+      locks: locksForTables(solution, locked),
+    }
+    void runAction(
+      () => engine.evaluate(request, assignmentOf(solution)),
+      (next) => {
+        setCriteria(nextCriteria)
+        setBaseRequest(built.request)
+        setSolution(next)
+        setRecommendations(NO_RECOMMENDATIONS)
+        announce('Matching criteria updated · current arrangement rescored')
+      },
+      (error) => announce(`Criteria update blocked · ${errorMessage(error)}`),
+    )
+  }
+
   async function runAction<T>(work: () => Promise<T>, onDone: (value: T) => void, onError: (error: unknown) => void) {
     const run = ++actionRef.current
     setBusy(true)
@@ -947,6 +976,7 @@ export function DinnerPage({
                 criteria={criteria}
                 rules={rules}
                 editDisabled={frozen}
+                onCriteriaChange={updateResultCriteria}
                 onEditSetup={editSetup}
               />
               <DinnerTables

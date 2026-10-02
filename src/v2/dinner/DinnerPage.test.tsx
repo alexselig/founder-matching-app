@@ -462,6 +462,21 @@ describe('DinnerPage results workspace', () => {
     expect(screen.getByLabelText('Table index').tagName).toBe('ASIDE')
   })
 
+  it('edits matching objectives and H M L weights directly while reviewing results', async () => {
+    renderDinner()
+    await generateTables('Fixture cohort', '3 × 8')
+
+    const rail = screen.getByRole('complementary', { name: 'Dinner setup' })
+    const role = within(rail).getByText('Role', { selector: 'span' }).closest('.v2-dinner-criterion') as HTMLElement
+    fireEvent.click(within(role).getByRole('button', { name: 'Diverse' }))
+    expect(await within(role).findByRole('button', { name: 'Similar' })).toBeTruthy()
+
+    const weights = within(role).getByRole('group', { name: 'Role weight' })
+    fireEvent.click(within(weights).getByRole('button', { name: 'L' }))
+    expect(await within(weights).findByRole('button', { name: 'L', pressed: true })).toBeTruthy()
+    expect(within(weights).getByRole('button', { name: 'H' }).getAttribute('aria-pressed')).toBe('false')
+  })
+
   it('switches to Analysis and swaps founders by keyboard or drag', async () => {
     const { container } = renderDinner()
     await generateTables('Fixture cohort', '3 × 8')

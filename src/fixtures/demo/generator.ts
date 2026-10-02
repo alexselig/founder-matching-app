@@ -450,33 +450,54 @@ function buildEvidenceResults(
     state === 'stale'
       ? '2026-08-10T00:00:00.000Z'
       : FRESH_EVIDENCE_STALE_AFTER
-  const classifications: DemoWebResult['classification'][] = [
-    'both',
-    'founder',
-    'company',
+  const market = founder['Company vertical'].replaceAll('->', ' / ')
+  const evidence = [
+    {
+      classification: 'both' as const,
+      title: `${founder.Name} — Co-founder at ${founder.Company}`,
+      snippet: `${founder.Name} leads ${founder.Role.toLowerCase()} at ${founder.Company}, a ${market} startup. The founder profile highlights a ${founder.Education} background and a focus on building an early customer base.`,
+    },
+    {
+      classification: 'company' as const,
+      title: `${founder.Company} | Company profile`,
+      snippet: `${founder.Company} is developing products for the ${market} market. The company profile describes a small founding team working with design partners to refine the product and validate repeatable customer demand.`,
+    },
+    {
+      classification: 'company' as const,
+      title: `${founder.Company} enters the ${market} market`,
+      snippet: `A market brief places ${founder.Company} among emerging ${market} companies serving operational teams. It notes the startup's emphasis on practical workflows, measurable adoption, and a focused initial segment.`,
+    },
+    {
+      classification: 'founder' as const,
+      title: `${founder.Name} on building ${founder.Company}`,
+      snippet: `In a founder interview, ${founder.Name} discusses early product decisions at ${founder.Company}, including customer discovery, hiring for a lean team, and choosing which requests to prioritize before expanding the platform.`,
+    },
+    {
+      classification: 'both' as const,
+      title: `Founder notes: lessons from ${founder.Company}`,
+      snippet: `${founder.Name} shares lessons from the first stage of ${founder.Company}: stay close to customers, test assumptions with working prototypes, and build a team whose experience matches the needs of the ${market} market.`,
+    },
   ]
 
   return Array.from({ length: count }, (_, resultIndex) => {
     const rank = resultIndex + 1
-    const classification = classifications[resultIndex % 3]!
+    const item = evidence[resultIndex]!
     const domain = EVIDENCE_DOMAINS[resultIndex % EVIDENCE_DOMAINS.length]!
 
     return {
       rank,
-      classification,
-      title: `Synthetic evidence ${rank} for ${founder.Name} and ${founder.Company}`,
+      classification: item.classification,
+      title: item.title,
       url: `https://${domain}/founders/${founder.Id}/evidence-${rank}`,
       domain,
-      snippet:
-        `Synthetic demo evidence for ${founder.Name} at ${founder.Company}. ` +
-        'This local-only citation exists solely for screenshots and tests.',
+      snippet: item.snippet,
       provider: 'demo-fixture',
       providerResultId: opaqueId('web-result', `${founder.Id}:${rank}`),
       retrievedAt,
       confidence: Number((0.97 - resultIndex * 0.08).toFixed(2)),
       entityMatch: {
-        ...(classification !== 'company' ? { founder: true } : {}),
-        ...(classification !== 'founder' ? { company: true } : {}),
+        ...(item.classification !== 'company' ? { founder: true } : {}),
+        ...(item.classification !== 'founder' ? { company: true } : {}),
       },
       staleAfter,
     }
@@ -496,13 +517,13 @@ function buildWebEvidence(founders: RawFounder[]) {
         : undefined
     const summary =
       state === 'unsupported'
-        ? 'Synthetic summary withheld because no citable source metadata was available.'
+        ? 'A provider summary was available, but no citable source URLs were returned.'
         : undefined
     const error =
       state === 'provider_failure'
         ? {
             code: 'demo_provider_unavailable' as const,
-            message: 'Synthetic provider failure for screenshot testing.',
+            message: 'The demo search provider did not respond. Try the search again.',
             retryable: true as const,
           }
         : undefined

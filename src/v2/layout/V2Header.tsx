@@ -10,7 +10,7 @@ import {
 import { founderAccountLabel, initials } from '../search/founderDisplay'
 import '../search/v2-chrome.css'
 
-export type V2NavItem = 'founder-index' | 'seating-plans' | 'table-config'
+export type V2NavItem = 'founder-index' | 'seating-plans'
 
 export interface V2HeaderProps {
   active?: V2NavItem
@@ -22,7 +22,6 @@ export interface V2HeaderProps {
 const NAV_ITEMS: readonly { key: V2NavItem; label: string; href: string }[] = [
   { key: 'founder-index', label: 'Founder Index', href: '/v2/search' },
   { key: 'seating-plans', label: 'Seating Plans', href: '/v2/seating-plans' },
-  { key: 'table-config', label: 'Table Config', href: '/v2/settings/ai' },
 ]
 
 const ROLE_MESSAGES: Readonly<Record<AccountRole, string>> = {

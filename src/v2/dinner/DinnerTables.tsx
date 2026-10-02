@@ -1,6 +1,13 @@
 import { useId, type ReactNode } from 'react'
 
-import { objectiveLabel, type CriterionDraft, type DinnerView, type RuleDraft } from './dinnerState'
+import {
+  objectiveLabel,
+  setWeight,
+  toggleObjective,
+  type CriterionDraft,
+  type DinnerView,
+  type RuleDraft,
+} from './dinnerState'
 
 export type WorkspaceView = 'tables' | 'analysis'
 export type Density = 'compact' | 'comfortable'
@@ -27,10 +34,23 @@ export interface DinnerSetupRailProps {
   readonly rules: readonly RuleDraft[]
   /** Pauses Edit setup while a plan snapshot is being saved or worked on by the engine. */
   readonly editDisabled?: boolean
+  readonly onCriteriaChange: (criteria: readonly CriterionDraft[]) => void
   readonly onEditSetup: () => void
 }
 
-export function DinnerSetupRail({ founderCount, tableCount, seatLabel, brief, criteria, rules, editDisabled = false, onEditSetup }: DinnerSetupRailProps) {
+const CRITERION_WEIGHTS = ['L', 'M', 'H'] as const
+
+export function DinnerSetupRail({
+  founderCount,
+  tableCount,
+  seatLabel,
+  brief,
+  criteria,
+  rules,
+  editDisabled = false,
+  onCriteriaChange,
+  onEditSetup,
+}: DinnerSetupRailProps) {
   return (
     <aside className="v2-dinner-setup" aria-label="Dinner setup">
       <div className="v2-dinner-setup-title">
@@ -61,11 +81,30 @@ export function DinnerSetupRail({ founderCount, tableCount, seatLabel, brief, cr
           <div key={criterion.field} className="v2-dinner-criterion">
             <div className="v2-dinner-criterion-head">
               <span>{criterion.label}</span>
-              <b>
-                {objectiveLabel(criterion.objective)} · {criterion.weight}
-              </b>
+              <button
+                type="button"
+                className="v2-dinner-objective-toggle"
+                disabled={editDisabled}
+                onClick={() => onCriteriaChange(toggleObjective(criteria, criterion.field))}
+              >
+                {objectiveLabel(criterion.objective)}
+              </button>
             </div>
             <small>{criterion.description}</small>
+            <span className="v2-dinner-weight-toggle" role="group" aria-label={`${criterion.label} weight`}>
+              {CRITERION_WEIGHTS.map((weight) => (
+                <button
+                  key={weight}
+                  type="button"
+                  className={criterion.weight === weight ? 'v2-dinner-active' : undefined}
+                  aria-pressed={criterion.weight === weight}
+                  disabled={editDisabled}
+                  onClick={() => onCriteriaChange(setWeight(criteria, criterion.field, weight))}
+                >
+                  {weight}
+                </button>
+              ))}
+            </span>
           </div>
         ))}
         <button type="button" className="v2-dinner-setup-link" disabled={editDisabled} onClick={onEditSetup}>
@@ -339,4 +378,3 @@ export function DinnerTables({
     </section>
   )
 }
-

@@ -438,6 +438,7 @@ describe('SearchPage roles and handoff', () => {
     const nav = screen.getByRole('navigation', { name: 'Primary' })
     expect(within(nav).getByRole('link', { name: 'Founder Index' })).toHaveAttribute('aria-current', 'page')
     expect(within(nav).getByRole('link', { name: 'Seating Plans' })).toHaveAttribute('href', '/v2/seating-plans')
+    expect(within(nav).queryByRole('link', { name: 'Table Config' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Current organizer/ })).toHaveTextContent('YC Admin')
   })
 
