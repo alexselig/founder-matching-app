@@ -271,66 +271,72 @@ export function DinnerTables({
         </div>
         <div className="v2-dinner-threshold">
           <label htmlFor={thresholdId}>Match threshold</label>
-          <button
-            type="button"
-            aria-label="Decrease threshold"
-            disabled={busy || threshold <= MIN_THRESHOLD}
-            onClick={() => updateThreshold(threshold - 1)}
-          >
-            −
-          </button>
-          <input
-            id={thresholdId}
-            type="number"
-            min={MIN_THRESHOLD}
-            max={MAX_THRESHOLD}
-            step={1}
-            value={threshold}
-            disabled={busy}
-            onChange={(event) => updateThreshold(Number(event.target.value))}
-          />
-          <button
-            type="button"
-            aria-label="Increase threshold"
-            disabled={busy || threshold >= MAX_THRESHOLD}
-            onClick={() => updateThreshold(threshold + 1)}
-          >
-            +
-          </button>
+          <div className="v2-dinner-threshold-controls">
+            <button
+              type="button"
+              aria-label="Decrease threshold"
+              disabled={busy || threshold <= MIN_THRESHOLD}
+              onClick={() => updateThreshold(threshold - 1)}
+            >
+              −
+            </button>
+            <input
+              id={thresholdId}
+              type="number"
+              min={MIN_THRESHOLD}
+              max={MAX_THRESHOLD}
+              step={1}
+              value={threshold}
+              disabled={busy}
+              onChange={(event) => updateThreshold(Number(event.target.value))}
+            />
+            <button
+              type="button"
+              aria-label="Increase threshold"
+              disabled={busy || threshold >= MAX_THRESHOLD}
+              onClick={() => updateThreshold(threshold + 1)}
+            >
+              +
+            </button>
+          </div>
         </div>
         <div className="v2-dinner-legend" aria-label="Match Threshold Color Coding">
           <strong className="v2-dinner-legend-label">Match Threshold Color Coding</strong>
-          <span>
-            <i className="v2-dinner-strong-bg" />
-            90+
-          </span>
-          <span>
-            <i className="v2-dinner-good-bg" />
-            80–89
-          </span>
-          <span>
-            <i className="v2-dinner-watch-bg" />
-            70–79
-          </span>
-          <span>
-            <i className="v2-dinner-risk-bg" />
-            &lt;70
-          </span>
+          <div className="v2-dinner-legend-values">
+            <span>
+              <i className="v2-dinner-strong-bg" />
+              90+
+            </span>
+            <span>
+              <i className="v2-dinner-good-bg" />
+              80–89
+            </span>
+            <span>
+              <i className="v2-dinner-watch-bg" />
+              70–79
+            </span>
+            <span>
+              <i className="v2-dinner-risk-bg" />
+              &lt;70
+            </span>
+          </div>
         </div>
         {!analysisOpen && (
           <div className="v2-dinner-density" role="group" aria-label="Table density">
             <span className="v2-dinner-density-label">Density</span>
-            {(['compact', 'comfortable'] as const).map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={density === item ? 'v2-dinner-active' : undefined}
-                aria-pressed={density === item}
-                onClick={() => onDensityChange(item)}
-              >
-                {item === 'compact' ? 'Compact' : 'Comfortable'}
-              </button>
-            ))}
+            <div className="v2-dinner-density-options">
+              {(['compact', 'comfortable'] as const).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={density === item ? 'v2-dinner-active' : undefined}
+                  aria-pressed={density === item}
+                  onClick={() => onDensityChange(item)}
+                >
+                  {item === 'compact' ? 'Compact' : 'Comfortable'}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

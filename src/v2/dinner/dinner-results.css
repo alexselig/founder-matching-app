@@ -35,25 +35,28 @@
 .v2-dinner-metric strong { display: block; font: 800 24px/1 "League Spartan", sans-serif; }
 .v2-dinner-metric span { display: block; margin-top: 5px; color: var(--ink-muted); font-size: 8px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .v2-dinner-metric.v2-dinner-alert strong { color: #9a5b00; }
-.v2-dinner-work-tools { min-height: 52px; display: flex; align-items: center; justify-content: flex-start; gap: 14px; padding: 0 14px 0 0; border-bottom: 1px solid var(--line); background: white; }
+.v2-dinner-work-tools { min-height: 68px; display: flex; align-items: stretch; justify-content: flex-start; gap: 16px; padding: 0 14px 0 0; border-bottom: 1px solid var(--line); background: white; }
 .v2-dinner-segmented { align-self: stretch; display: flex; align-items: stretch; }
 .v2-dinner-segmented button { height: 100%; min-width: 76px; padding: 0 20px; border: 0; border-right: 1px solid var(--line); background: white; color: var(--ink-muted); font-size: 10px; font-weight: 800; }
 .v2-dinner-segmented .v2-dinner-active { box-shadow: inset 0 -3px var(--v2-blue); background: var(--surface-alt); color: var(--v2-blue); }
-.v2-dinner-density { margin-left: auto; display: flex; align-items: center; }
+.v2-dinner-density, .v2-dinner-legend, .v2-dinner-threshold { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px; }
+.v2-dinner-density { margin-left: auto; }
+.v2-dinner-density-options, .v2-dinner-legend-values, .v2-dinner-threshold-controls { display: flex; align-items: center; }
 .v2-dinner-density button { min-height: 32px; padding: 0 12px; border: 1px solid var(--line-strong); border-right: 0; background: white; font-size: 10px; font-weight: 800; }
 .v2-dinner-density button:last-child { border-right: 1px solid var(--line-strong); }
 .v2-dinner-density .v2-dinner-active { background: var(--ink); color: white; }
-.v2-dinner-density-label { margin-right: 7px; color: var(--ink-muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.v2-dinner-legend { display: flex; align-items: center; gap: 8px; color: var(--ink-muted); font-size: 9px; font-weight: 800; }
-.v2-dinner-legend-label { color: var(--ink); font-size: 8px; letter-spacing: .07em; text-transform: uppercase; }
+.v2-dinner-density-label, .v2-dinner-legend-label, .v2-dinner-threshold label { color: var(--ink-muted); font-size: 8px; font-weight: 800; letter-spacing: .08em; line-height: 1; text-transform: uppercase; }
+.v2-dinner-legend { color: var(--ink-muted); font-size: 9px; font-weight: 800; }
+.v2-dinner-legend-values { gap: 8px; }
 .v2-dinner-legend span { display: flex; align-items: center; gap: 4px; }
 .v2-dinner-legend i, .v2-dinner-mini-dot { width: 9px; height: 9px; border: 1px solid rgba(20,20,20,.08); border-radius: 50%; }
 .v2-dinner-strong-bg { background: #dcefe7; }
 .v2-dinner-good-bg { background: #e6ebff; }
 .v2-dinner-watch-bg { background: #fff1d6; }
 .v2-dinner-risk-bg { background: #fde4e1; }
-.v2-dinner-threshold { display: flex; align-items: center; gap: 7px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.v2-dinner-threshold { font-size: 10px; font-weight: 800; white-space: nowrap; }
 .v2-dinner-threshold button { width: 28px; height: 28px; padding: 0; border: 1px solid var(--line-strong); background: white; font-size: 15px; font-weight: 800; }
+.v2-dinner-threshold button + input, .v2-dinner-threshold input + button { border-left: 0; }
 .v2-dinner-threshold button:disabled { cursor: not-allowed; opacity: .45; }
 .v2-dinner-threshold input { width: 42px; height: 28px; padding: 0 5px; border: 1px solid var(--line-strong); background: white; font-size: 11px; font-weight: 800; text-align: center; appearance: textfield; }
 .v2-dinner-threshold input::-webkit-inner-spin-button, .v2-dinner-threshold input::-webkit-outer-spin-button { margin: 0; appearance: none; }
@@ -206,7 +209,7 @@
   .v2-dinner-metric:first-of-type, .v2-dinner-metric.v2-dinner-alert { display: block; padding: 10px 7px; }
   .v2-dinner-metric strong { font-size: 19px; }
   .v2-dinner-metric span { font-size: 7px; }
-  .v2-dinner-work-tools { min-height: 47px; gap: 6px; padding: 0 8px 0 0; }
+  .v2-dinner-work-tools { min-height: 60px; gap: 6px; padding: 0 8px 0 0; }
   .v2-dinner-tool-left, .v2-dinner-tool-right { gap: 6px; }
   .v2-dinner-density { display: none; }
   .v2-dinner-threshold { margin-left: auto; gap: 4px; font-size: 9px; }

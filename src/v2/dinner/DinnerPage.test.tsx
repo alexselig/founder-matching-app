@@ -434,6 +434,12 @@ describe('DinnerPage results workspace', () => {
       'v2-dinner-legend',
       'v2-dinner-density',
     ])
+    expect(toolbar.querySelector('.v2-dinner-threshold')?.firstElementChild?.textContent).toBe('Match threshold')
+    expect(toolbar.querySelector('.v2-dinner-threshold')?.lastElementChild).toHaveClass('v2-dinner-threshold-controls')
+    expect(toolbar.querySelector('.v2-dinner-legend')?.firstElementChild?.textContent).toBe('Match Threshold Color Coding')
+    expect(toolbar.querySelector('.v2-dinner-legend')?.lastElementChild).toHaveClass('v2-dinner-legend-values')
+    expect(toolbar.querySelector('.v2-dinner-density')?.firstElementChild?.textContent).toBe('Density')
+    expect(toolbar.querySelector('.v2-dinner-density')?.lastElementChild).toHaveClass('v2-dinner-density-options')
 
     const threshold = screen.getByLabelText('Match threshold') as HTMLInputElement
     fireEvent.change(threshold, { target: { value: '85' } })
