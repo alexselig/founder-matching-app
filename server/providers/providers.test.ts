@@ -673,6 +673,60 @@ describe('provider adapters', () => {
       provider: 'OpenAI',
       create: (body: unknown) =>
         createOpenAIProvider({
+          apiKey: 'openai-test-key',
+          model: 'test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+      body: {
+        status: 'completed',
+        output: [
+          {
+            type: 'message',
+            content: [
+              {
+                type: 'output_text',
+                text: 'Ada Founder leads Analytical Engines.',
+                annotations: [{ type: 'url_citation' }],
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      provider: 'xAI',
+      create: (body: unknown) =>
+        createXaiProvider({
+          apiKey: 'xai-test-key',
+          model: 'test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+      body: {
+        status: 'completed',
+        output_text: '',
+        citations: [{ unexpected: true }],
+      },
+    },
+  ])(
+    'rejects malformed $provider citation entries',
+    async ({ create, body }) => {
+      await expect(
+        create(body).searchWeb({
+          founderId: 'founder-1',
+          context: identityContext,
+          query: 'Ada Founder Analytical Engines',
+        }),
+      ).rejects.toMatchObject({
+        code: 'invalid_response',
+      })
+    },
+  )
+
+  it.each([
+    {
+      provider: 'OpenAI',
+      create: (body: unknown) =>
+        createOpenAIProvider({
           apiKey: 'openai-secret',
           model: 'openai-test-model',
           transport: vi.fn(async () => jsonResponse(body)),
