@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: founder-index-demo
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 24.19.0
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_PATH
+        value: /tmp/founder-index-demo.sqlite
+      - key: FOUNDER_APP_MASTER_KEY
+        generateValue: true
+      - key: PUBLIC_DEMO_ONLY
+        value: "true"
+      - key: VITE_PUBLIC_DEMO_ONLY
+        value: "true"

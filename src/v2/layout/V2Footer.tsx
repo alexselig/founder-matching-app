@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 import type { AccountRole } from '../search/accountState'
-import { readDemoMode, setDemoMode } from '../demoMode'
+import { isPublicDemoOnly, readDemoMode, setDemoMode } from '../demoMode'
 import '../search/v2-chrome.css'
 import './v2-footer-actions.css'
 
@@ -26,8 +26,10 @@ export function V2Footer({ aiStatus = '+ AI Disabled', role = 'admin', onExport,
     .filter(Boolean)
     .join(' ')
   const demoMode = readDemoMode()
+  const publicDemoOnly = isPublicDemoOnly()
 
   function toggleDemoMode() {
+    if (publicDemoOnly) return
     setDemoMode(!demoMode)
     window.location.assign('/v2')
   }
@@ -53,6 +55,7 @@ export function V2Footer({ aiStatus = '+ AI Disabled', role = 'admin', onExport,
         aria-label="Demo mode"
         aria-checked={demoMode}
         aria-describedby="v2-demo-mode-description"
+        disabled={publicDemoOnly}
         onClick={toggleDemoMode}
       >
         <span>Demo mode</span>
@@ -61,7 +64,9 @@ export function V2Footer({ aiStatus = '+ AI Disabled', role = 'admin', onExport,
         </span>
         <strong>{demoMode ? 'On' : 'Off'}</strong>
         <span id="v2-demo-mode-description" className="v2-footer-demo-callout" role="tooltip">
-          Explore the app with fictitious founder data and sample seating history.
+          {publicDemoOnly
+            ? 'This public preview uses fictitious founder data and sample seating history.'
+            : 'Explore the app with fictitious founder data and sample seating history.'}
         </span>
       </button>
       {hasActions && <div className="v2-footer-actions">{actions}</div>}

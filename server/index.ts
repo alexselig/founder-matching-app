@@ -175,6 +175,7 @@ export async function startServer(
         founders: founderRepository,
         webResults: webResultsRepository,
       }),
+      publicDemoOnly: environment.PUBLIC_DEMO_ONLY === 'true',
       staticRoot: resolveStaticRoot(environment),
     })
     let closing = false

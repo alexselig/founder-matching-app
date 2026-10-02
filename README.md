@@ -28,6 +28,24 @@ npm run dev
 
 Open the URL printed by Vite.
 
+## Deploy the public demo on Render
+
+The checked-in `render.yaml` creates a free Render web service from this
+repository. It forces Demo mode and rejects mutating V2 API requests, so public
+visitors can explore fictitious founders and sample seating plans without
+storing provider credentials or changing shared data.
+
+1. In Render, choose **New → Blueprint**.
+2. Connect the `alexselig/founder-matching-app` GitHub repository.
+3. Select the repository's `render.yaml` and apply the Blueprint.
+4. Wait for `/healthz` to report a healthy deployment, then open the generated
+   `onrender.com` URL.
+
+The free service uses an ephemeral SQLite file because the public demo is
+read-only. A private persistent deployment should use a paid service with a
+disk mounted at `/var/data`, set `DATABASE_PATH=/var/data/founders.sqlite`, and
+keep a single service instance while SQLite remains in use.
+
 ## Validate
 
 ```bash

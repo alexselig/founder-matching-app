@@ -179,6 +179,35 @@ describe('createServer', () => {
     await server.close()
   })
 
+  it('keeps public demos readable while blocking mutating API requests', async () => {
+    const server = createServer({
+      ...serverOptions(),
+      publicDemoOnly: true,
+    })
+
+    const foundersResponse = await server.inject({
+      method: 'GET',
+      url: '/api/v2/founders?limit=1',
+    })
+    expect(foundersResponse.statusCode).toBe(200)
+
+    const mutationResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v2/ai/interpret/search',
+      payload: { provider: 'openai', input: 'sales founders' },
+    })
+    expect(mutationResponse.statusCode).toBe(403)
+    expect(mutationResponse.json()).toEqual({
+      ok: false,
+      error: {
+        code: 'public_demo_read_only',
+        message: 'This public demo is read-only',
+      },
+    })
+
+    await server.close()
+  })
+
   it('serves built assets and falls back to index.html for non-api routes', async () => {
     const server = createServer(serverOptions())
 

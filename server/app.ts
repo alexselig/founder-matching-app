@@ -35,6 +35,7 @@ export interface ServerOptions {
   dinnerService: DinnerService
   exportService: ExportService
   credentialValidator?: CredentialValidator
+  publicDemoOnly?: boolean
   staticRoot?: string
 }
 
@@ -61,6 +62,22 @@ function isClientDocumentRoute(method: string, rawUrl: string | undefined) {
 export function createServer(options: ServerOptions): FastifyInstance {
   const server = Fastify()
   const staticRoot = options.staticRoot ?? path.resolve(process.cwd(), 'dist')
+
+  server.addHook('onRequest', async (request, reply) => {
+    if (
+      options.publicDemoOnly &&
+      request.url.startsWith('/api/v2/') &&
+      !['GET', 'HEAD', 'OPTIONS'].includes(request.method)
+    ) {
+      return reply.code(403).send({
+        ok: false,
+        error: {
+          code: 'public_demo_read_only',
+          message: 'This public demo is read-only',
+        },
+      })
+    }
+  })
 
   server.register(fastifyStatic, {
     root: staticRoot,
