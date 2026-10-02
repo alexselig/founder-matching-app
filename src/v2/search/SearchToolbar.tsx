@@ -1,7 +1,7 @@
 import { useId, type CSSProperties, type ReactNode, type RefObject } from 'react'
 
 import { formatDimensionValue, getSearchField, type StructuredSearchQuery } from './searchEngine'
-import { groupOptions, sortOptions, type SearchView } from './searchState'
+import { groupOptions, isSearchActive, sortOptions, type SearchView } from './searchState'
 
 const GROUP_OPTIONS = groupOptions()
 const SORT_OPTIONS = sortOptions()
@@ -98,7 +98,7 @@ export function SearchToolbar({
   const groupId = useId()
   const sortId = useId()
   const dimensionsLabelId = useId()
-  const hasCriteria = query.dimensions.length > 0 || query.text.trim() !== ''
+  const hasCriteria = isSearchActive(query)
 
   return (
     <section className="v2-toolbar" aria-label="Search results controls">

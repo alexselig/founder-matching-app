@@ -35,9 +35,9 @@ export function founderAccountLabel(founder: Founder) {
 
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
 
-export function noResultsHeading(dimensionCount: number) {
-  if (dimensionCount === 0) return 'No founders match this search.'
-  if (dimensionCount === 1) return 'No founders match this dimension.'
-  if (dimensionCount === 2) return 'No founders match both dimensions.'
-  return `No founders match all ${NUMBER_WORDS[dimensionCount] ?? dimensionCount} dimensions.`
+export function noResultsHeading(constraintCount: number) {
+  if (constraintCount === 0) return 'No founders match this search.'
+  if (constraintCount === 1) return 'No founders match this dimension.'
+  if (constraintCount === 2) return 'No founders match both dimensions.'
+  return `No founders match all ${NUMBER_WORDS[constraintCount] ?? constraintCount} dimensions.`
 }

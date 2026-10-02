@@ -59,6 +59,25 @@ describe('Search-to-Dinner handoff', () => {
     expect(readSearchCohort(sessionStorage, 's-bad')).toBeNull()
     expect(readSearchCohort(sessionStorage, 's-missing')).toBeNull()
   })
+
+  it('refuses to hand off a cohort without an active search or without founders', () => {
+    sessionStorage.clear()
+    const allFounderIds = founders.map((founder) => founder.id)
+    const empty: StructuredSearchQuery = { text: '', dimensions: [] }
+
+    expect(() =>
+      createSearchCohortHandoff(sessionStorage, { founderIds: allFounderIds, query: empty, submittedText: '' }),
+    ).toThrow('Dinner handoff needs an active search with results')
+    expect(() => createSearchCohortHandoff(sessionStorage, { founderIds: [], query, submittedText: '' })).toThrow(
+      'Dinner handoff needs an active search with results',
+    )
+    expect(sessionStorage.length).toBe(0)
+
+    const stored = createSearchCohortHandoff(sessionStorage, { founderIds: ['343105'], query, submittedText: '' })
+    const key = `${SEARCH_COHORT_KEY_PREFIX}${stored.id}`
+    sessionStorage.setItem(key, JSON.stringify({ ...stored.payload, query: empty }))
+    expect(readSearchCohort(sessionStorage, stored.id)).toBeNull()
+  })
 })
 
 describe('Search export', () => {

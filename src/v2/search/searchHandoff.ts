@@ -1,6 +1,6 @@
 import { stableHash } from './discovery'
 import type { StructuredSearchQuery } from './searchEngine'
-import { parseStructuredQuery } from './searchState'
+import { isSearchActive, parseStructuredQuery } from './searchState'
 
 export const SEARCH_COHORT_KEY_PREFIX = 'founder-v2-search-cohort:'
 
@@ -38,6 +38,9 @@ export function createSearchCohortHandoff(
   input: CreateSearchCohortInput,
 ) {
   const founderIds = [...input.founderIds]
+  if (!isSearchActive(input.query) || founderIds.length === 0) {
+    throw new Error('Dinner handoff needs an active search with results')
+  }
   const id = `s-${stableHash(founderIds.join('\u001f')).toString(16).padStart(8, '0')}`
   const payload: SearchCohortHandoff = {
     version: 1,
@@ -76,7 +79,7 @@ export function readSearchCohort(storage: Pick<Storage, 'getItem'> | undefined, 
       return null
     }
     const query = parseStructuredQuery(value.query)
-    if (!query) return null
+    if (!query || !isSearchActive(query) || value.founderIds.length === 0) return null
     return { ...value, query } as SearchCohortHandoff
   } catch {
     return null

@@ -610,9 +610,31 @@ function buildVocabulary(founders: readonly Founder[], fields: readonly SearchFi
   return vocabulary
 }
 
+interface SourceToken {
+  text: string
+  index: number
+}
+
 interface FoundDimension {
   index: number
   dimension: SearchDimension
+  source: SourceToken[]
+}
+
+function wordTokens(text: string, offset = 0): SourceToken[] {
+  return [...text.matchAll(/[\p{L}\p{N}]+/gu)].map((match) => ({ text: match[0], index: offset + match.index }))
+}
+
+function sameDimension(a: SearchDimension, b: SearchDimension) {
+  return a.operator === b.operator && JSON.stringify(a.value) === JSON.stringify(b.value)
+}
+
+function mergeAgeBounds(a: SearchDimension, b: SearchDimension): SearchDimension | null {
+  const lower = a.operator === 'atLeast' ? a : b.operator === 'atLeast' ? b : null
+  const upper = a.operator === 'atMost' ? a : b.operator === 'atMost' ? b : null
+  if (!lower || !upper || typeof lower.value !== 'number' || typeof upper.value !== 'number') return null
+  if (lower.value > upper.value) return null
+  return { field: a.field, operator: 'between', value: { min: lower.value, max: upper.value } }
 }
 
 interface AgePattern {
@@ -683,14 +705,14 @@ export function compileSearchText(
         const groups = args.slice(0, -2).filter((group): group is string => typeof group === 'string')
         const built = pattern.build(groups)
         if (!built) return match
-        found.push({ index: offset, dimension: { field: ageField.key, ...built } })
+        found.push({ index: offset, dimension: { field: ageField.key, ...built }, source: wordTokens(match, offset) })
         return ' '.repeat(match.length)
       })
     }
   }
 
   const vocabulary = buildVocabulary(founders, fields)
-  const tokens = [...working.matchAll(/[\p{L}\p{N}]+/gu)].map((match) => ({ text: match[0], index: match.index }))
+  const tokens = wordTokens(working)
   const consumed = new Array<boolean>(tokens.length).fill(false)
 
   const phraseAt = (start: number, phrases: Map<string, string>) => {
@@ -715,7 +737,11 @@ export function compileSearchText(
       const valueStart = index + alias.tokens.length + (tokens[index + alias.tokens.length]?.text === 'is' ? 1 : 0)
       const phrase = phraseAt(valueStart, vocabulary.fieldPhrases.get(alias.field)!)
       if (!phrase) continue
-      found.push({ index: tokens[index].index, dimension: { field: alias.field, operator: 'is', value: phrase.value } })
+      found.push({
+        index: tokens[index].index,
+        dimension: { field: alias.field, operator: 'is', value: phrase.value },
+        source: tokens.slice(valueStart, valueStart + phrase.length),
+      })
       consume(index, valueStart - index + phrase.length)
       break
     }
@@ -727,7 +753,11 @@ export function compileSearchText(
       if (consumed[index] || !COMPANY_CONNECTORS.has(token.text)) return
       const phrase = phraseAt(index + 1, companyPhrases)
       if (!phrase) return
-      found.push({ index: tokens[index + 1].index, dimension: { field: 'company', operator: 'is', value: phrase.value } })
+      found.push({
+        index: tokens[index + 1].index,
+        dimension: { field: 'company', operator: 'is', value: phrase.value },
+        source: tokens.slice(index + 1, index + 1 + phrase.length),
+      })
       consume(index, phrase.length + 1)
     })
   }
@@ -740,19 +770,40 @@ export function compileSearchText(
       const candidates = vocabulary.barePhrases.get(slice.map((token) => token.text).join(' '))
       if (!candidates) continue
       const [best] = [...candidates].sort((a, b) => a.priority - b.priority)
-      found.push({ index: tokens[index].index, dimension: { field: best.field, operator: 'is', value: best.value } })
+      found.push({
+        index: tokens[index].index,
+        dimension: { field: best.field, operator: 'is', value: best.value },
+        source: slice,
+      })
       consume(index, length)
       break
     }
   }
 
+  // A query holds one dimension per field, so a second distinct value for a field stays visible as keyword text.
   const dimensions: SearchDimension[] = []
-  for (const { dimension } of found.sort((a, b) => a.index - b.index)) {
-    if (!dimensions.some((existing) => existing.field === dimension.field)) dimensions.push(dimension)
+  const released: SourceToken[] = []
+  for (const { dimension, source } of found.sort((a, b) => a.index - b.index)) {
+    const existing = dimensions.findIndex((item) => item.field === dimension.field)
+    if (existing === -1) {
+      dimensions.push(dimension)
+      continue
+    }
+    if (sameDimension(dimensions[existing], dimension)) continue
+    const merged = mergeAgeBounds(dimensions[existing], dimension)
+    if (merged) {
+      dimensions[existing] = merged
+      continue
+    }
+    const meaningful = source.filter((token) => !STOP_WORDS.has(token.text) && !vocabulary.aliasWords.has(token.text))
+    released.push(...(meaningful.length > 0 ? meaningful : source))
   }
 
-  const text = tokens
-    .filter((token, index) => !consumed[index] && !STOP_WORDS.has(token.text) && !vocabulary.aliasWords.has(token.text))
+  const residue = tokens.filter(
+    (token, index) => !consumed[index] && !STOP_WORDS.has(token.text) && !vocabulary.aliasWords.has(token.text),
+  )
+  const text = [...residue, ...released]
+    .sort((a, b) => a.index - b.index)
     .map((token) => token.text)
     .join(' ')
 
