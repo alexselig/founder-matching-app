@@ -142,7 +142,7 @@ export const providerRoutes: FastifyPluginAsync<
           )
       }
 
-      const secret = new ProviderSecret(body.data.secret)
+      const secret = new ProviderSecret(body.data.secret.trim())
       try {
         options.vault.assertCanStore(provider, secret)
       } catch (error) {

@@ -138,6 +138,22 @@ describe('provider credential routes', () => {
     expectNoSecretLeak(list.body)
   })
 
+  it('trims clipboard whitespace before validating and storing a credential', async () => {
+    const validator = vi.fn<CredentialValidator>(async () => ({ ok: true }))
+    const vault = await build({ validator })
+
+    const response = await server.inject({
+      method: 'PUT',
+      url: '/api/v2/providers/anthropic/credential',
+      payload: { secret: `  ${SECRET}\n` },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const [, passedSecret] = validator.mock.calls[0]!
+    expect((passedSecret as ProviderSecret).reveal()).toBe(SECRET)
+    expect(vault.reveal('anthropic').reveal()).toBe(SECRET)
+  })
+
   it('refuses to store without a master key before contacting the provider', async () => {
     const validator = vi.fn<CredentialValidator>(async () => ({ ok: true }))
     await build({ masterKey: null, validator })

@@ -104,7 +104,7 @@ export function AiProviderPage({
             lastFour: 'DEMO',
             validatedAt: new Date().toISOString(),
           }
-        : await saveProviderCredential(provider, secret)
+        : await saveProviderCredential(provider, secret.trim())
       setStatuses((current) =>
         current.map((item) => (item.provider === provider ? next : item)),
       )
