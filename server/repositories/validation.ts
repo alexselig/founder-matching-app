@@ -1,5 +1,17 @@
 import { RepositoryError } from './errors.js'
 
+export function assertRepositoryId(
+  value: unknown,
+  label: string,
+): asserts value is string {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new RepositoryError(
+      `${label} must be a non-empty string`,
+      'invalid_data',
+    )
+  }
+}
+
 export function assertDenseArray(
   value: unknown,
   label: string,

@@ -1,6 +1,6 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import type { FastifyInstance } from 'fastify'
 
@@ -24,12 +24,63 @@ export function requireDurableDatabasePath(
 }
 
 function loadFounders() {
-  const fixturePath = resolve(process.cwd(), 'src/founders.json')
+  const fixturePath = resolveRuntimeFile(
+    '../src/founders.json',
+    [
+      resolve(process.cwd(), 'src/founders.json'),
+      resolve(process.cwd(), 'dist-server/src/founders.json'),
+    ],
+    'founders.json',
+  )
   const rawFounders = JSON.parse(
     readFileSync(fixturePath, 'utf8'),
   ) as unknown
 
   return normalizeFounders(rawFounders)
+}
+
+function moduleRelativePath(relativePath: string) {
+  const moduleUrl = new URL(import.meta.url)
+  return moduleUrl.protocol === 'file:'
+    ? fileURLToPath(new URL(relativePath, moduleUrl))
+    : undefined
+}
+
+function resolveRuntimeFile(
+  moduleRelative: string,
+  fallbackPaths: string[],
+  label: string,
+) {
+  const candidates = [
+    moduleRelativePath(moduleRelative),
+    ...fallbackPaths,
+  ].filter((candidate): candidate is string => candidate !== undefined)
+  const filePath = candidates.find((candidate) => existsSync(candidate))
+
+  if (!filePath) {
+    throw new Error(`Could not locate ${label}`)
+  }
+
+  return filePath
+}
+
+function resolveStaticRoot(environment: NodeJS.ProcessEnv) {
+  if (environment.STATIC_ROOT) {
+    return resolve(environment.STATIC_ROOT)
+  }
+
+  const candidates = [
+    moduleRelativePath('../dist'),
+    moduleRelativePath('../../dist'),
+    resolve(process.cwd(), 'dist'),
+  ].filter((candidate): candidate is string => candidate !== undefined)
+  const staticRoot = candidates.find((candidate) => existsSync(candidate))
+
+  if (!staticRoot) {
+    throw new Error('Could not locate built client assets')
+  }
+
+  return staticRoot
 }
 
 export async function startServer(
@@ -49,6 +100,7 @@ export async function startServer(
       databaseStatus: () =>
         database.open ? 'ready' : 'not-ready',
       founderRepository,
+      staticRoot: resolveStaticRoot(environment),
     })
     let closing = false
 

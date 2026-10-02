@@ -229,6 +229,7 @@ describe('createServer', () => {
       DATABASE_PATH: databasePath,
       HOST: '127.0.0.1',
       PORT: '0',
+      STATIC_ROOT: staticRoot,
     }
 
     const firstServer = await startServer(environment)

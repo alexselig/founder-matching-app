@@ -6,6 +6,7 @@ import {
 import {
   assertDenseArray,
   assertNoSparseArrays,
+  assertRepositoryId,
 } from './validation.js'
 
 export interface DinnerConfiguration {
@@ -292,6 +293,8 @@ export class DinnerRepository {
   }
 
   getConfiguration(id: string): DinnerConfiguration {
+    assertRepositoryId(id, 'Dinner configuration ID')
+
     try {
       const row = this.database
         .prepare(
@@ -370,6 +373,11 @@ export class DinnerRepository {
   }
 
   listVersions(configurationId: string): DinnerVersion[] {
+    assertRepositoryId(
+      configurationId,
+      'Dinner configuration ID',
+    )
+
     try {
       const configuration = this.database
         .prepare(
