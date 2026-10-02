@@ -7,6 +7,7 @@ import {
   AppendDinnerVersionRequestSchema,
   CreateDinnerRequestSchema,
   DinnerStateSchema,
+  SavedDinnerSchema,
 } from '../../shared/dinnerContracts.js'
 import { normalizeFounders } from '../../shared/founder.js'
 import {
@@ -15,8 +16,10 @@ import {
   renderDemoFixtureFiles,
 } from '../../../scripts/generate-demo-fixtures.js'
 import { createDatabase } from '../../../server/database.js'
+import { DinnerRepository } from '../../../server/repositories/dinners.js'
 import { FounderRepository } from '../../../server/repositories/founders.js'
 import { WebResultsRepository } from '../../../server/repositories/webResults.js'
+import { DinnerService } from '../../../server/services/dinners.js'
 
 const authoritativeFounders = normalizeFounders(
   JSON.parse(
@@ -88,7 +91,7 @@ describe('demo fixtures', () => {
   })
 
   it('covers fresh, stale, no-results, unsupported, and provider-failure evidence states with safe URLs', () => {
-    const { founders, webEvidence } = buildDemoFixtureBundle()
+    const { founders, manifest, webEvidence } = buildDemoFixtureBundle()
     const founderIds = new Set(founders.map((founder) => founder.Id))
     const stateCounts = Object.fromEntries(
       ['fresh', 'stale', 'no_results', 'unsupported', 'provider_failure'].map(
@@ -122,7 +125,14 @@ describe('demo fixtures', () => {
         expect(
           record.run.results.every(
             (result) =>
-              Date.parse(result.staleAfter) > Date.parse(result.retrievedAt),
+              result.staleAfter === manifest.freshEvidenceStaleAfter,
+          ),
+        ).toBe(true)
+        expect(
+          record.run.results.every(
+            (result) =>
+              Date.parse(result.staleAfter) >
+              Date.parse('2050-01-01T00:00:00.000Z'),
           ),
         ).toBe(true)
       } else if (record.state === 'stale') {
@@ -130,7 +140,8 @@ describe('demo fixtures', () => {
         expect(
           record.run.results.every(
             (result) =>
-              Date.parse(result.staleAfter) < Date.parse('2026-10-01T00:00:00.000Z'),
+              Date.parse(result.staleAfter) <
+              Date.parse(manifest.demoReferenceTime),
           ),
         ).toBe(true)
       } else {
@@ -164,8 +175,8 @@ describe('demo fixtures', () => {
     }
   })
 
-  it('loads every provider-shaped run through the existing web-results repository', () => {
-    const { founders, webEvidence } = buildDemoFixtureBundle()
+  it('round trips all five evidence states through listRuns query context', () => {
+    const { founders, manifest, webEvidence } = buildDemoFixtureBundle()
     const database = createDatabase({ filename: ':memory:' })
 
     try {
@@ -176,15 +187,125 @@ describe('demo fixtures', () => {
         repository.appendRun(record.run)
       }
 
-      expect(repository.latest(webEvidence.records[0]!.founderId)).toHaveLength(
-        5,
+      for (const recordIndex of [0, 64, 96, 120, 144]) {
+        const record = webEvidence.records[recordIndex]!
+        const [stored] = repository.listRuns(record.founderId)
+        const queryContext = stored!.queryContext as {
+          demoReferenceTime: string
+          demoEvidence: {
+            state: string
+            unsupportedReason?: string
+            summary?: string
+            error?: {
+              code: string
+              message: string
+              retryable: boolean
+            }
+          }
+        }
+
+        expect(queryContext.demoReferenceTime).toBe(
+          manifest.demoReferenceTime,
+        )
+        expect(queryContext.demoEvidence.state).toBe(record.state)
+        expect(queryContext.demoEvidence.unsupportedReason).toBe(
+          record.unsupportedReason,
+        )
+        expect(queryContext.demoEvidence.summary).toBe(record.summary)
+        expect(queryContext.demoEvidence.error).toEqual(record.error)
+        expect(stored!.results).toEqual(
+          record.run.results.map((result) => ({
+            ...result,
+            runId: record.run.id,
+            founderId: record.founderId,
+          })),
+        )
+      }
+    } finally {
+      database.close()
+    }
+  })
+
+  it('seeds and reopens every saved plan through DinnerRepository and DinnerService', () => {
+    const { founders, seatingPlans } = buildDemoFixtureBundle()
+    const database = createDatabase({ filename: ':memory:' })
+
+    try {
+      const founderRepository = new FounderRepository(database)
+      founderRepository.saveAll(normalizeFounders(founders))
+      const dinnerRepository = new DinnerRepository(database)
+      const service = new DinnerService({
+        dinners: dinnerRepository,
+        founders: founderRepository,
+      })
+
+      for (const configuration of seatingPlans.configurations) {
+        dinnerRepository.saveConfiguration(configuration)
+      }
+      for (const version of seatingPlans.versions) {
+        dinnerRepository.appendVersion(version)
+      }
+
+      const listed = service.list()
+      expect(new Set(listed.map((dinner) => dinner.id))).toEqual(
+        new Set(
+          seatingPlans.scenarios.map((scenario) => scenario.configurationId),
+        ),
       )
-      expect(
-        repository.latest(webEvidence.records[64]!.founderId),
-      ).toHaveLength(3)
-      expect(
-        repository.latest(webEvidence.records[96]!.founderId),
-      ).toHaveLength(0)
+      for (const scenario of seatingPlans.scenarios) {
+        const seedConfiguration = seatingPlans.configurations.find(
+          (configuration) => configuration.id === scenario.configurationId,
+        )!
+        expect(
+          dinnerRepository.getConfiguration(scenario.configurationId),
+        ).toEqual(seedConfiguration)
+        expect(
+          dinnerRepository
+            .listVersions(scenario.configurationId)
+            .map((version) => version.version),
+        ).toEqual(
+          Array.from(
+            { length: scenario.latestVersion },
+            (_, index) => scenario.latestVersion - index,
+          ),
+        )
+        expect(
+          listed.find((dinner) => dinner.id === scenario.configurationId),
+        ).toMatchObject({
+          name: scenario.name,
+          status: 'ready',
+          founderCount: scenario.founderCount,
+          tableCount: scenario.tableCount,
+          latestVersion: scenario.latestVersion,
+          missingFounderCount: 0,
+        })
+
+        const history = service.listVersions(scenario.configurationId)
+        expect(history.map((version) => version.version)).toEqual(
+          Array.from(
+            { length: scenario.latestVersion },
+            (_, index) => scenario.latestVersion - index,
+          ),
+        )
+
+        for (const version of history) {
+          const reopened = service.get(
+            scenario.configurationId,
+            version.version,
+          )
+          expect(SavedDinnerSchema.parse(reopened)).toEqual(reopened)
+          expect(reopened.versionId).toBe(version.versionId)
+          expect(reopened.state.cohort.founderIds).toHaveLength(
+            scenario.founderCount,
+          )
+        }
+
+        expect(service.get(scenario.configurationId)).toMatchObject({
+          latestVersion: scenario.latestVersion,
+          version: scenario.latestVersion,
+          recovery: { status: 'complete', missingFounders: [] },
+        })
+      }
     } finally {
       database.close()
     }
@@ -199,34 +320,50 @@ describe('demo fixtures', () => {
       ['twenty-tables', { founders: 160, tables: 20, versions: 5 }],
     ])
 
+    expect(seatingPlans.scenarios).toHaveLength(4)
     expect(seatingPlans.configurations).toHaveLength(4)
+    expect(seatingPlans.versions).toHaveLength(15)
     expect(
-      new Set(seatingPlans.configurations.map((plan) => plan.scenario)),
+      new Set(seatingPlans.scenarios.map((plan) => plan.scenario)),
     ).toEqual(new Set(expected.keys()))
 
-    for (const plan of seatingPlans.configurations) {
-      const counts = expected.get(plan.scenario)
+    for (const scenario of seatingPlans.scenarios) {
+      const counts = expected.get(scenario.scenario)
       expect(counts).toBeDefined()
-      expect(plan.versions).toHaveLength(counts!.versions)
-      expect(plan.latestVersion).toBe(counts!.versions)
-      expect(plan.updatedAt).toBe(plan.versions.at(-1)!.savedAt)
-      expect(plan.versions.map((version) => version.version)).toEqual(
+      const configuration = seatingPlans.configurations.find(
+        (record) => record.id === scenario.configurationId,
+      )!
+      const versions = seatingPlans.versions.filter(
+        (version) => version.configurationId === scenario.configurationId,
+      )
+
+      expect(configuration.founderIds).toHaveLength(counts!.founders)
+      expect(configuration.configuration.summary).toEqual({
+        founderCount: counts!.founders,
+        tableCount: counts!.tables,
+        assigned: true,
+      })
+      expect(versions).toHaveLength(counts!.versions)
+      expect(scenario.latestVersion).toBe(counts!.versions)
+      expect(configuration.createdAt).toBe(versions[0]!.createdAt)
+      expect(configuration.updatedAt).toBe(versions.at(-1)!.createdAt)
+      expect(versions.map((version) => version.version)).toEqual(
         Array.from({ length: counts!.versions }, (_, index) => index + 1),
       )
       expect(
-        plan.versions.every(
+        versions.every(
           (version, index) =>
             index === 0 ||
-            Date.parse(version.savedAt) >
-              Date.parse(plan.versions[index - 1]!.savedAt),
+            Date.parse(version.createdAt) >
+              Date.parse(versions[index - 1]!.createdAt),
         ),
       ).toBe(true)
 
-      for (const [versionIndex, version] of plan.versions.entries()) {
-        const state = DinnerStateSchema.parse(version.state)
+      for (const [versionIndex, version] of versions.entries()) {
+        const state = DinnerStateSchema.parse(version.snapshot.state)
         const request = {
-          name: version.name,
-          note: version.note,
+          name: version.snapshot.name,
+          note: version.snapshot.note,
           state,
         }
         if (versionIndex === 0) {
@@ -245,6 +382,13 @@ describe('demo fixtures', () => {
         expect(state.alternatives).toHaveLength(3)
         expect(state.metrics).not.toBeNull()
         expect(state.notes.length).toBeGreaterThanOrEqual(3)
+        expect(version.snapshot.formatVersion).toBe(1)
+        expect(version.snapshot.founderDirectory).toHaveLength(
+          counts!.founders,
+        )
+        expect(
+          version.snapshot.founderDirectory.map((founder) => founder.id),
+        ).toEqual(state.cohort.founderIds)
 
         const seated = state.assignments.flatMap((table) => table.founderIds)
         expect(sorted(seated)).toEqual(sorted(state.cohort.founderIds))
@@ -262,11 +406,16 @@ describe('demo fixtures', () => {
       }
     }
 
-    const uneven = seatingPlans.configurations.find(
-      (plan) => plan.scenario === 'uneven-five-tables',
+    const uneven = seatingPlans.scenarios.find(
+      (scenario) => scenario.scenario === 'uneven-five-tables',
+    )!
+    const unevenLatest = seatingPlans.versions.find(
+      (version) =>
+        version.configurationId === uneven.configurationId &&
+        version.version === uneven.latestVersion,
     )!
     expect(
-      uneven.versions.at(-1)!.state.assignments.map((table) => table.capacity),
+      unevenLatest.snapshot.state.assignments.map((table) => table.capacity),
     ).toEqual([10, 10, 10, 9, 9])
   })
 
@@ -278,12 +427,17 @@ describe('demo fixtures', () => {
       expect(founderIds.has(evidence.founderId)).toBe(true)
     }
 
-    for (const plan of seatingPlans.configurations) {
-      for (const version of plan.versions) {
-        expect(
-          version.state.cohort.founderIds.every((id) => founderIds.has(id)),
-        ).toBe(true)
-      }
+    for (const configuration of seatingPlans.configurations) {
+      expect(
+        configuration.founderIds.every((id) => founderIds.has(id)),
+      ).toBe(true)
+    }
+    for (const version of seatingPlans.versions) {
+      expect(
+        version.snapshot.state.cohort.founderIds.every((id) =>
+          founderIds.has(id),
+        ),
+      ).toBe(true)
     }
   })
 
@@ -293,53 +447,51 @@ describe('demo fixtures', () => {
       founders.map((founder) => [founder.Id, founder]),
     )
 
-    for (const plan of seatingPlans.configurations) {
-      for (const version of plan.versions) {
-        const state = version.state
-        const mustSit = state.rules.find(
-          (rule) => rule.type === 'must-sit-together',
-        )
-        const cannotSit = state.rules.find(
-          (rule) => rule.type === 'cannot-sit-together',
-        )
-        const solutions = [
-          state.assignments,
-          ...state.alternatives.map((alternative) => alternative.tables),
-        ]
+    for (const version of seatingPlans.versions) {
+      const state = version.snapshot.state
+      const mustSit = state.rules.find(
+        (rule) => rule.type === 'must-sit-together',
+      )
+      const cannotSit = state.rules.find(
+        (rule) => rule.type === 'cannot-sit-together',
+      )
+      const solutions = [
+        state.assignments,
+        ...state.alternatives.map((alternative) => alternative.tables),
+      ]
 
-        for (const tables of solutions) {
-          const tableByFounder = new Map(
-            tables.flatMap((table) =>
-              table.founderIds.map((founderId) => [
-                founderId,
-                table.index,
-              ] as const),
-            ),
+      for (const tables of solutions) {
+        const tableByFounder = new Map(
+          tables.flatMap((table) =>
+            table.founderIds.map((founderId) => [
+              founderId,
+              table.index,
+            ] as const),
+          ),
+        )
+
+        for (const table of tables) {
+          const companies = table.founderIds.map(
+            (founderId) => foundersById.get(founderId)!.Company,
           )
-
-          for (const table of tables) {
-            const companies = table.founderIds.map(
-              (founderId) => foundersById.get(founderId)!.Company,
-            )
-            expect(new Set(companies).size).toBe(companies.length)
-            expect(
-              table.founderIds.some(
-                (founderId) =>
-                  foundersById.get(founderId)!.Role === 'Engineering',
-              ),
-            ).toBe(true)
-          }
-
+          expect(new Set(companies).size).toBe(companies.length)
           expect(
-            mustSit!.founderIds.map((id) => tableByFounder.get(id)),
-          ).toEqual([
-            tableByFounder.get(mustSit!.founderIds[0]!),
-            tableByFounder.get(mustSit!.founderIds[0]!),
-          ])
-          expect(tableByFounder.get(cannotSit!.founderIds[0]!)).not.toBe(
-            tableByFounder.get(cannotSit!.founderIds[1]!),
-          )
+            table.founderIds.some(
+              (founderId) =>
+                foundersById.get(founderId)!.Role === 'Engineering',
+            ),
+          ).toBe(true)
         }
+
+        expect(
+          mustSit!.founderIds.map((id) => tableByFounder.get(id)),
+        ).toEqual([
+          tableByFounder.get(mustSit!.founderIds[0]!),
+          tableByFounder.get(mustSit!.founderIds[0]!),
+        ])
+        expect(tableByFounder.get(cannotSit!.founderIds[0]!)).not.toBe(
+          tableByFounder.get(cannotSit!.founderIds[1]!),
+        )
       }
     }
   })
@@ -348,6 +500,13 @@ describe('demo fixtures', () => {
     const { manifest } = buildDemoFixtureBundle()
 
     expect(manifest.synthetic).toBe(true)
+    expect(manifest.demoReferenceTime).toBe('2026-10-01T20:00:00.000Z')
+    expect(manifest.freshEvidenceStaleAfter).toBe(
+      '2099-12-31T00:00:00.000Z',
+    )
+    expect(Date.parse(manifest.freshEvidenceStaleAfter)).toBeGreaterThan(
+      Date.parse('2050-01-01T00:00:00.000Z'),
+    )
     expect(manifest.counts).toEqual({
       founders: 160,
       evidenceRecords: 160,

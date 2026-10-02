@@ -2,6 +2,8 @@
   "fixtureVersion": 1,
   "seed": "founder-demo-fixtures-v1",
   "generatedAt": "2026-10-01T20:00:00.000Z",
+  "demoReferenceTime": "2026-10-01T20:00:00.000Z",
+  "freshEvidenceStaleAfter": "2099-12-31T00:00:00.000Z",
   "synthetic": true,
   "networkCallsRequired": false,
   "authoritativeRecordsUsed": false,

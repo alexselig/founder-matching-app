@@ -13,6 +13,7 @@ import type { RawFounder } from '../../shared/founder.js'
 const FIXTURE_VERSION = 1
 const FIXTURE_SEED = 'founder-demo-fixtures-v1'
 const GENERATED_AT = '2026-10-01T20:00:00.000Z'
+const FRESH_EVIDENCE_STALE_AFTER = '2099-12-31T00:00:00.000Z'
 
 export const DEMO_FIXTURE_FILE_NAMES = [
   'manifest.json',
@@ -61,6 +62,17 @@ interface DemoWebEvidenceRecord {
       source: 'demo-fixture'
       synthetic: true
       fixtureVersion: number
+      demoReferenceTime: string
+      demoEvidence: {
+        state: DemoEvidenceState
+        unsupportedReason?: 'provider_response_without_citations'
+        summary?: string
+        error?: {
+          code: 'demo_provider_unavailable'
+          message: string
+          retryable: true
+        }
+      }
     }
     rawProviderMetadata?: never
     results: DemoWebResult[]
@@ -80,24 +92,51 @@ type DemoScaleScenario =
   | 'uneven-five-tables'
   | 'twenty-tables'
 
-interface DemoPlanVersion {
+interface DemoDinnerConfigurationSeed {
   id: string
-  version: number
   name: string
-  note: string
-  savedAt: string
-  state: DinnerState
+  founderIds: string[]
+  configuration: {
+    formatVersion: 1
+    summary: {
+      founderCount: number
+      tableCount: number
+      assigned: true
+    }
+  }
+  createdAt: string
+  updatedAt: string
 }
 
-interface DemoSeatingPlan {
+interface DemoDinnerVersionSeed {
   id: string
+  configurationId: string
+  version: number
+  snapshot: {
+    formatVersion: 1
+    name: string
+    note: string
+    state: DinnerState
+    founderDirectory: Array<{
+      id: string
+      name: string
+      company: string
+      role: string
+    }>
+  }
+  createdAt: string
+}
+
+interface DemoSeatingScenario {
+  configurationId: string
   scenario: DemoScaleScenario
   name: string
   description: string
-  createdAt: string
-  updatedAt: string
+  founderCount: number
+  tableCount: number
+  capacities: number[]
   latestVersion: number
-  versions: DemoPlanVersion[]
+  screenshotUses: string[]
 }
 
 interface DemoManifestScenario {
@@ -111,6 +150,8 @@ interface DemoFixtureBundle {
     fixtureVersion: number
     seed: string
     generatedAt: string
+    demoReferenceTime: string
+    freshEvidenceStaleAfter: string
     synthetic: true
     networkCallsRequired: false
     authoritativeRecordsUsed: false
@@ -140,7 +181,9 @@ interface DemoFixtureBundle {
   seatingPlans: {
     fixtureVersion: number
     generatedAt: string
-    configurations: DemoSeatingPlan[]
+    scenarios: DemoSeatingScenario[]
+    configurations: DemoDinnerConfigurationSeed[]
+    versions: DemoDinnerVersionSeed[]
   }
 }
 
@@ -406,7 +449,7 @@ function buildEvidenceResults(
   const staleAfter =
     state === 'stale'
       ? '2026-08-10T00:00:00.000Z'
-      : '2026-12-31T00:00:00.000Z'
+      : FRESH_EVIDENCE_STALE_AFTER
   const classifications: DemoWebResult['classification'][] = [
     'both',
     'founder',
@@ -447,6 +490,22 @@ function buildWebEvidence(founders: RawFounder[]) {
       state === 'stale'
         ? '2026-05-12T15:30:00.000Z'
         : '2026-09-30T15:30:00.000Z'
+    const unsupportedReason =
+      state === 'unsupported'
+        ? 'provider_response_without_citations'
+        : undefined
+    const summary =
+      state === 'unsupported'
+        ? 'Synthetic summary withheld because no citable source metadata was available.'
+        : undefined
+    const error =
+      state === 'provider_failure'
+        ? {
+            code: 'demo_provider_unavailable' as const,
+            message: 'Synthetic provider failure for screenshot testing.',
+            retryable: true as const,
+          }
+        : undefined
     const record: DemoWebEvidenceRecord = {
       founderId: founder.Id,
       state,
@@ -460,22 +519,21 @@ function buildWebEvidence(founders: RawFounder[]) {
           source: 'demo-fixture',
           synthetic: true,
           fixtureVersion: FIXTURE_VERSION,
+          demoReferenceTime: GENERATED_AT,
+          demoEvidence: {
+            state,
+            ...(unsupportedReason === undefined
+              ? {}
+              : { unsupportedReason, summary }),
+            ...(error === undefined ? {} : { error }),
+          },
         },
         results: buildEvidenceResults(founder, state),
       },
-    }
-
-    if (state === 'unsupported') {
-      record.unsupportedReason = 'provider_response_without_citations'
-      record.summary =
-        'Synthetic summary withheld because no citable source metadata was available.'
-    }
-    if (state === 'provider_failure') {
-      record.error = {
-        code: 'demo_provider_unavailable',
-        message: 'Synthetic provider failure for screenshot testing.',
-        retryable: true,
-      }
+      ...(unsupportedReason === undefined
+        ? {}
+        : { unsupportedReason, summary }),
+      ...(error === undefined ? {} : { error }),
     }
 
     return record
@@ -849,42 +907,88 @@ function savedAt(firstSavedAt: string, version: number) {
 }
 
 function buildSeatingPlans(founders: readonly RawFounder[]) {
-  const configurations = PLAN_DEFINITIONS.map((definition) => {
+  const scenarios: DemoSeatingScenario[] = []
+  const configurations: DemoDinnerConfigurationSeed[] = []
+  const versions: DemoDinnerVersionSeed[] = []
+
+  for (const definition of PLAN_DEFINITIONS) {
     const cohortFounders = founders.slice(
       definition.founderStart,
       definition.founderStart + definition.founderCount,
     )
-    const versions: DemoPlanVersion[] = Array.from(
+    const founderIds = cohortFounders.map((founder) => founder.Id)
+    const planVersions: DemoDinnerVersionSeed[] = Array.from(
       { length: definition.versionCount },
       (_, index) => {
         const version = index + 1
+        const state = buildDinnerState(definition, cohortFounders, version)
         return {
           id: `${definition.id}-version-${version}`,
+          configurationId: definition.id,
           version,
-          name: definition.name,
-          note: VERSION_NOTES[index]!,
-          savedAt: savedAt(definition.firstSavedAt, version),
-          state: buildDinnerState(definition, cohortFounders, version),
+          snapshot: {
+            formatVersion: 1,
+            name: definition.name,
+            note: VERSION_NOTES[index]!,
+            state,
+            founderDirectory: cohortFounders.map((founder) => ({
+              id: founder.Id,
+              name: founder.Name,
+              company: founder.Company,
+              role: founder.Role,
+            })),
+          },
+          createdAt: savedAt(definition.firstSavedAt, version),
         }
       },
     )
+    const createdAt = planVersions[0]!.createdAt
+    const updatedAt = planVersions.at(-1)!.createdAt
 
-    return {
-      id: definition.id,
+    scenarios.push({
+      configurationId: definition.id,
       scenario: definition.scenario,
       name: definition.name,
       description: definition.description,
-      createdAt: versions[0]!.savedAt,
-      updatedAt: versions.at(-1)!.savedAt,
+      founderCount: definition.founderCount,
+      tableCount: definition.capacities.length,
+      capacities: [...definition.capacities],
       latestVersion: definition.versionCount,
-      versions,
-    }
-  })
+      screenshotUses: [
+        'Seating Plans populated index',
+        'Saved plan version history/reopen',
+        definition.scenario === 'twenty-tables'
+          ? 'Responsive mobile Tables view'
+          : 'Table view',
+        'Analysis view',
+        'Generate 2 Alternatives comparison',
+        'Export options/success',
+      ],
+    })
+    configurations.push({
+      id: definition.id,
+      name: definition.name,
+      founderIds,
+      configuration: {
+        formatVersion: 1,
+        summary: {
+          founderCount: founderIds.length,
+          tableCount: definition.capacities.length,
+          assigned: true,
+        },
+      },
+      createdAt,
+      updatedAt,
+    })
+    versions.push(...planVersions)
+  }
 
   return {
     fixtureVersion: FIXTURE_VERSION,
     generatedAt: GENERATED_AT,
+    scenarios,
     configurations,
+    versions,
   }
 }
 
@@ -897,15 +1001,14 @@ function buildManifest(
     (count, record) => count + record.run.results.length,
     0,
   )
-  const seatingPlanVersions = seatingPlans.configurations.reduce(
-    (count, plan) => count + plan.versions.length,
-    0,
-  )
+  const seatingPlanVersions = seatingPlans.versions.length
 
   return {
     fixtureVersion: FIXTURE_VERSION,
     seed: FIXTURE_SEED,
     generatedAt: GENERATED_AT,
+    demoReferenceTime: GENERATED_AT,
+    freshEvidenceStaleAfter: FRESH_EVIDENCE_STALE_AFTER,
     synthetic: true,
     networkCallsRequired: false,
     authoritativeRecordsUsed: false,
