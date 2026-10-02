@@ -4,6 +4,7 @@
   --v2-orange: var(--yc-orange, #f26522);
   --v2-orange-soft: #fff3ed;
   --v2-blue: var(--bauhaus-blue, #2f5bea);
+  --v2-on-blue: #fff;
   --v2-group-ink: #2348bd;
   --v2-group-bg: #edf1ff;
   --v2-group-line: #cfd8fb;
@@ -236,7 +237,7 @@
 .v2-footer button { cursor: pointer; font-size: 14px; }
 .v2-footer .v2-footer-export { grid-column: 5; }
 .v2-footer .v2-footer-export:hover { background: var(--surface-alt); }
-.v2-footer .v2-footer-create { grid-column: 6; border-right: 0; color: #fff; background: var(--v2-blue); }
+.v2-footer .v2-footer-create { grid-column: 6; border-right: 0; color: var(--v2-on-blue); background: var(--v2-blue); }
 .v2-footer .v2-footer-create:hover { background: var(--ink); }
 .v2-footer.v2-footer-founder .v2-footer-export {
   grid-column: 6;

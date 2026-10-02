@@ -299,7 +299,7 @@
   font-size: 12px;
   font-weight: 800;
 }
-.v2-picker-actions .v2-apply { color: #fff; border-color: var(--v2-blue); background: var(--v2-blue); }
+.v2-picker-actions .v2-apply { color: var(--v2-on-blue); border-color: var(--v2-blue); background: var(--v2-blue); }
 
 /* Shared result pieces */
 .v2-group-heading {
@@ -585,7 +585,7 @@
   font-weight: 800;
 }
 .v2-empty-actions button:hover { background: var(--surface-alt); }
-.v2-empty-actions .v2-primary-recovery { color: #fff; border-color: var(--v2-blue); background: var(--v2-blue); }
+.v2-empty-actions .v2-primary-recovery { color: var(--v2-on-blue); border-color: var(--v2-blue); background: var(--v2-blue); }
 .v2-empty-actions .v2-primary-recovery:hover { background: var(--ink); border-color: var(--ink); }
 .v2-recovery-note { padding: 20px 28px; color: var(--ink-muted); font-size: 13px; }
 

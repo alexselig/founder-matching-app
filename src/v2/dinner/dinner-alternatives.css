@@ -32,7 +32,7 @@
 .v2-alt-solution-kicker { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .v2-alt-solution-kicker span { color: var(--ink-muted); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .v2-alt-solution-kicker b { padding: 5px 7px; border: 1px solid var(--line-strong); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
-.v2-alt-solution.v2-alt-selected .v2-alt-solution-kicker b { border-color: var(--v2-blue); background: var(--v2-blue); color: #fff; }
+.v2-alt-solution.v2-alt-selected .v2-alt-solution-kicker b { border-color: var(--v2-blue); background: var(--v2-blue); color: var(--v2-on-blue); }
 .v2-alt-solution h3 { margin: 10px 0 4px; font: 800 24px/1 "League Spartan", sans-serif; text-transform: uppercase; }
 .v2-alt-solution-head p { margin: 0; color: var(--ink-muted); font-size: 11px; line-height: 1.35; }
 .v2-alt-hero-metrics { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
@@ -72,14 +72,14 @@
 .v2-alt-select-solution:hover { background: #eef2ff; }
 .v2-alt-selection-check { width: 19px; height: 19px; flex: 0 0 19px; display: grid; place-items: center; border: 2px solid var(--line-strong); background: var(--surface); color: transparent; font-size: 13px; line-height: 1; }
 .v2-alt-solution.v2-alt-selected .v2-alt-select-solution { background: #eef2ff; }
-.v2-alt-solution.v2-alt-selected .v2-alt-selection-check { border-color: var(--v2-blue); background: var(--v2-blue); color: #fff; }
+.v2-alt-solution.v2-alt-selected .v2-alt-selection-check { border-color: var(--v2-blue); background: var(--v2-blue); color: var(--v2-on-blue); }
 .v2-alt-comparison-actions { min-height: 58px; display: flex; align-items: stretch; justify-content: space-between; border-top: 1px solid var(--line); background: var(--surface); }
 .v2-alt-selection-copy { display: flex; align-items: center; gap: 12px; padding: 0 20px; font-size: 11px; }
 .v2-alt-selection-copy b { font: 800 15px/1 "League Spartan", sans-serif; text-transform: uppercase; }
 .v2-alt-selection-copy span { color: var(--ink-muted); }
 .v2-alt-action-buttons { display: flex; }
 .v2-alt-action-buttons button { min-width: 170px; border: 0; border-left: 1px solid var(--line); background: var(--surface); font-weight: 800; }
-.v2-alt-action-buttons .v2-alt-primary { min-width: 220px; background: var(--v2-blue); color: #fff; }
+.v2-alt-action-buttons .v2-alt-primary { min-width: 220px; background: var(--v2-blue); color: var(--v2-on-blue); }
 .v2-alt-confirmed { min-height: 0; flex: 1; display: grid; place-items: center; padding: 32px; overflow: auto; }
 .v2-alt-confirmation-card { width: min(720px, 100%); display: grid; grid-template-columns: 150px minmax(0, 1fr); border: 1px solid var(--line-strong); background: var(--surface); }
 .v2-alt-confirmation-mark { display: grid; place-items: center; background: var(--v2-blue); color: #fff; font: 800 58px/1 "League Spartan", sans-serif; }

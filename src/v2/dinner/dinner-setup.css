@@ -49,7 +49,7 @@
 .v2-setup-rule-actions span { padding-left: 20px; color: var(--ink-muted); font-size: 10px; font-weight: 700; }
 .v2-setup-rule-actions div { display: flex; }
 .v2-setup-rule-actions button { min-height: 52px; padding: 0 14px; border: 0; border-left: 1px solid var(--line); background: white; font-size: 10px; font-weight: 800; }
-.v2-setup-rule-actions .v2-setup-confirm-rule { min-width: 116px; background: var(--v2-blue); color: white; }
+.v2-setup-rule-actions .v2-setup-confirm-rule { min-width: 116px; background: var(--v2-blue); color: var(--v2-on-blue); }
 .v2-setup-active-rule { scroll-margin-bottom: 78px; display: grid; grid-template-columns: minmax(0, 1fr) 32px; align-items: center; gap: 10px; margin-top: 8px; padding: 5px 10px; border: 1px solid var(--line-strong); border-left: 4px solid var(--v2-orange); background: var(--surface); font-size: 10px; font-weight: 700; line-height: 1.35; }
 .v2-setup-active-rule > span { min-width: 0; overflow-wrap: anywhere; }
 .v2-setup-active-rule button { width: 32px; height: 32px; display: grid; place-items: center; padding: 0; border: 0; background: white; color: var(--ink-muted); font-size: 22px; line-height: 1; }
@@ -58,7 +58,7 @@
 .v2-setup-summary-copy { align-self: center; font-size: 11px; font-weight: 800; line-height: 1.4; }
 .v2-setup-summary-copy span { color: var(--ink-muted); font-weight: 600; }
 .v2-setup-generate { border: 0; background: #aeb9dd; color: white; font-size: 11px; font-weight: 800; }
-.v2-setup-generate.v2-setup-ready { background: var(--v2-blue); }
+.v2-setup-generate.v2-setup-ready { background: var(--v2-blue); color: var(--v2-on-blue); }
 .v2-setup-workspace { min-width: 0; background: linear-gradient(var(--line) 1px, transparent 1px),
         linear-gradient(90deg, var(--line) 1px, transparent 1px),
         var(--surface-alt); background-size: 96px 96px; position: relative; overflow: hidden; }
@@ -102,7 +102,7 @@
 .v2-setup-capacity-note { margin: 14px 0 0; padding: 10px 12px; border-left: 4px solid var(--v2-orange); background: #fff7f1; font-size: 10px; line-height: 1.4; }
 .v2-setup-overlay-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; border-top: 1px solid var(--line); background: var(--surface); }
 .v2-setup-overlay-actions span { padding-left: 20px; color: var(--ink-muted); font-size: 10px; font-weight: 700; }
-.v2-setup-overlay-actions button { min-height: 52px; padding: 0 20px; border: 0; background: var(--v2-blue); color: white; font-size: 11px; font-weight: 800; }
+.v2-setup-overlay-actions button { min-height: 52px; padding: 0 20px; border: 0; background: var(--v2-blue); color: var(--v2-on-blue); font-size: 11px; font-weight: 800; }
 .v2-setup-handoff-badge { display: none; margin: 12px 32px 0; padding: 9px 11px; border-left: 4px solid var(--v2-blue); background: #eef2ff; color: #213d9c; font-size: 10px; font-weight: 700; line-height: 1.4; }
 @container dinner (max-width: 820px) {
   .v2-setup-setup { border-right: 0; }
@@ -138,7 +138,7 @@
 .v2-dimension-dialog-body p { margin: 2px 0 0; color: var(--ink-muted); font-size: 10px; line-height: 1.5; }
 .v2-dimension-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--surface-alt); }
 .v2-dimension-dialog-actions button { min-width: 98px; height: 36px; border: 1px solid var(--line-strong); background: #fff; font-size: 10px; font-weight: 800; }
-.v2-dimension-dialog-actions .v2-dimension-dialog-confirm { background: var(--v2-blue); color: #fff; }
+.v2-dimension-dialog-actions .v2-dimension-dialog-confirm { background: var(--v2-blue); color: var(--v2-on-blue); }
 @container dinner (max-width: 820px) {
   .v2-dimension-dialog { left: 16px; right: 16px; top: 156px; width: auto; transform: none; }
 }

@@ -41,7 +41,7 @@
 .v2-export-privacy-note strong { display: block; margin-bottom: 3px; font-size: 10px; }
 .v2-export-panel-actions { min-height: 58px; display: flex; align-items: stretch; justify-content: flex-end; border-top: 1px solid var(--line); }
 .v2-export-panel-actions button { min-width: 124px; padding: 0 20px; border: 0; border-left: 1px solid var(--line); background: var(--surface); font-size: 11px; font-weight: 800; }
-.v2-export-panel-actions .v2-export-primary { color: #fff; background: var(--v2-blue); }
+.v2-export-panel-actions .v2-export-primary { color: var(--v2-on-blue); background: var(--v2-blue); }
 .v2-export-state-body { min-height: 390px; display: flex; flex-direction: column; justify-content: center; padding: 42px 46px; }
 .v2-export-state-mark { width: 56px; height: 56px; display: grid; place-items: center; margin-bottom: 22px; border: 1px solid var(--ink); color: #fff; background: var(--v2-blue); font: 800 25px/1 "League Spartan", sans-serif; }
 .v2-export-state-mark.v2-export-success { background: #17634d; }

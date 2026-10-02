@@ -12,7 +12,7 @@
 .v2-ai-provider-grid { display: grid; grid-template-columns: repeat(3, 1fr); margin: 18px 0 22px; }
 .v2-ai-provider-grid button { min-height: 112px; padding: 17px; border: 1px solid #141414; border-right: 0; background: #fff; text-align: left; }
 .v2-ai-provider-grid button:last-child { border-right: 1px solid #141414; }
-.v2-ai-provider-grid button[aria-pressed='true'] { color: #fff; background: #2f5bea; }
+.v2-ai-provider-grid button[aria-pressed='true'] { color: var(--v2-on-blue, #fff); background: #2f5bea; }
 .v2-ai-provider-grid button span { display: flex; align-items: center; justify-content: space-between; }
 .v2-ai-provider-grid strong { font: 800 18px/1 "League Spartan", sans-serif; text-transform: uppercase; }
 .v2-ai-provider-grid i { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-style: normal; }

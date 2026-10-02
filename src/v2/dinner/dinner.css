@@ -54,7 +54,7 @@
 .v2-dinner-restricted { width: min(560px, 100%); padding: 28px; border: 1px solid var(--line-strong); background: var(--surface); }
 .v2-dinner-restricted h1 { margin: 8px 0; font: 800 30px/1 var(--v2-display); text-transform: uppercase; }
 .v2-dinner-restricted p { color: var(--ink-muted); font-size: 13px; line-height: 1.5; }
-.v2-dinner-restricted a { display: inline-block; margin-top: 18px; padding: 12px 16px; background: var(--v2-blue); color: white; font-size: 12px; font-weight: 800; text-decoration: none; }
+.v2-dinner-restricted a { display: inline-block; margin-top: 18px; padding: 12px 16px; background: var(--v2-blue); color: var(--v2-on-blue); font-size: 12px; font-weight: 800; text-decoration: none; }
 
 /* Export dialog stage over the current workspace. */
 .v2-export-stage { position: fixed; inset: 64px 0 65px; z-index: 30; display: grid; place-items: center; padding: 34px 40px; background: rgba(20, 20, 20, .42); overflow: auto; }
