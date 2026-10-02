@@ -26,6 +26,23 @@ export interface DinnerVersion {
   createdAt: string
 }
 
+export interface DinnerConfigurationSummary extends DinnerConfiguration {
+  latestVersion: number
+}
+
+export interface NewDinnerVersion {
+  id: string
+  snapshot: unknown
+  createdAt: string
+}
+
+export interface NextDinnerVersion extends NewDinnerVersion {
+  configurationId: string
+  name: string
+  founderIds: string[]
+  configuration: unknown
+}
+
 interface DinnerConfigurationRow {
   id: string
   name: string
@@ -203,6 +220,32 @@ function assertDinnerVersion(
     'Dinner version creation time',
   )
 }
+
+function assertVersionNumber(value: unknown): asserts value is number {
+  if (
+    typeof value !== 'number' ||
+    !Number.isSafeInteger(value) ||
+    value < 1
+  ) {
+    throw new RepositoryError(
+      'Dinner version must be a positive integer',
+      'invalid_data',
+    )
+  }
+}
+
+const CONFIGURATION_COLUMNS = `id,
+  name,
+  founder_ids_json,
+  configuration_json,
+  created_at,
+  updated_at`
+
+const VERSION_COLUMNS = `id,
+  configuration_id,
+  version,
+  snapshot_json,
+  created_at`
 
 function rowToConfiguration(
   row: DinnerConfigurationRow,
@@ -413,5 +456,247 @@ export class DinnerRepository {
         `Failed to list dinner versions for ${configurationId}`,
       )
     }
+  }
+
+  createWithFirstVersion(
+    configuration: DinnerConfiguration,
+    first: NewDinnerVersion,
+  ): DinnerVersion {
+    assertDinnerConfiguration(configuration)
+    const version: DinnerVersion = {
+      id: first?.id,
+      configurationId: configuration.id,
+      version: 1,
+      snapshot: first?.snapshot,
+      createdAt: first?.createdAt,
+    }
+    assertDinnerVersion(version)
+    const founderIdsJson = encodeJson(
+      configuration.founderIds,
+      'Dinner founder IDs',
+    )
+    const configurationJson = encodeJson(
+      configuration.configuration,
+      'Dinner configuration',
+    )
+    const snapshotJson = encodeJson(
+      version.snapshot,
+      'Dinner version snapshot',
+    )
+
+    try {
+      this.database
+        .transaction(() => {
+          this.database
+            .prepare(
+              `INSERT INTO dinner_configurations (${CONFIGURATION_COLUMNS})
+               VALUES (?, ?, ?, ?, ?, ?)`,
+            )
+            .run(
+              configuration.id,
+              configuration.name,
+              founderIdsJson,
+              configurationJson,
+              configuration.createdAt,
+              configuration.updatedAt,
+            )
+          this.insertVersion(version, snapshotJson)
+        })
+        .immediate()
+      return version
+    } catch (error) {
+      throwRepositoryFailure(
+        error,
+        `Failed to create dinner configuration ${configuration.id}`,
+      )
+    }
+  }
+
+  appendNextVersion(next: NextDinnerVersion): DinnerVersion {
+    if (!next || typeof next !== 'object') {
+      throw new RepositoryError(
+        'Dinner version must be an object',
+        'invalid_data',
+      )
+    }
+    assertDinnerConfiguration({
+      id: next.configurationId,
+      name: next.name,
+      founderIds: next.founderIds,
+      configuration: next.configuration,
+      createdAt: next.createdAt,
+      updatedAt: next.createdAt,
+    })
+    assertDinnerVersion({
+      id: next.id,
+      configurationId: next.configurationId,
+      version: 1,
+      snapshot: next.snapshot,
+      createdAt: next.createdAt,
+    })
+    const founderIdsJson = encodeJson(next.founderIds, 'Dinner founder IDs')
+    const configurationJson = encodeJson(
+      next.configuration,
+      'Dinner configuration',
+    )
+    const snapshotJson = encodeJson(next.snapshot, 'Dinner version snapshot')
+
+    try {
+      return this.database
+        .transaction((): DinnerVersion => {
+          const current = this.database
+            .prepare(
+              `SELECT MAX(version) AS latest
+               FROM dinner_configurations AS configuration
+               LEFT JOIN dinner_versions AS version
+                 ON version.configuration_id = configuration.id
+               WHERE configuration.id = ?
+               GROUP BY configuration.id`,
+            )
+            .get(next.configurationId) as
+            | { latest: number | null }
+            | undefined
+
+          if (!current) {
+            throw new RepositoryError(
+              `Dinner configuration ${next.configurationId} was not found`,
+              'not_found',
+            )
+          }
+
+          const version: DinnerVersion = {
+            id: next.id,
+            configurationId: next.configurationId,
+            version: (current.latest ?? 0) + 1,
+            snapshot: next.snapshot,
+            createdAt: next.createdAt,
+          }
+          this.insertVersion(version, snapshotJson)
+          this.database
+            .prepare(
+              `UPDATE dinner_configurations
+               SET name = ?,
+                   founder_ids_json = ?,
+                   configuration_json = ?,
+                   updated_at = ?
+               WHERE id = ?`,
+            )
+            .run(
+              next.name,
+              founderIdsJson,
+              configurationJson,
+              next.createdAt,
+              next.configurationId,
+            )
+          return version
+        })
+        .immediate()
+    } catch (error) {
+      throwRepositoryFailure(
+        error,
+        `Failed to append dinner version ${next.id}`,
+      )
+    }
+  }
+
+  listConfigurations(): DinnerConfigurationSummary[] {
+    try {
+      const rows = this.database
+        .prepare(
+          `SELECT
+             ${CONFIGURATION_COLUMNS},
+             (
+               SELECT MAX(version)
+               FROM dinner_versions
+               WHERE configuration_id = dinner_configurations.id
+             ) AS latest_version
+           FROM dinner_configurations
+           ORDER BY updated_at DESC, id`,
+        )
+        .all() as Array<
+        DinnerConfigurationRow & { latest_version: number | null }
+      >
+
+      return rows
+        .filter((row) => row.latest_version !== null)
+        .map((row) => ({
+          ...rowToConfiguration(row),
+          latestVersion: row.latest_version!,
+        }))
+    } catch (error) {
+      throwRepositoryFailure(error, 'Failed to list dinner configurations')
+    }
+  }
+
+  getVersion(configurationId: string, version: number): DinnerVersion {
+    assertRepositoryId(configurationId, 'Dinner configuration ID')
+    assertVersionNumber(version)
+
+    try {
+      const row = this.database
+        .prepare(
+          `SELECT ${VERSION_COLUMNS}
+           FROM dinner_versions
+           WHERE configuration_id = ? AND version = ?`,
+        )
+        .get(configurationId, version) as DinnerVersionRow | undefined
+
+      if (!row) {
+        throw new RepositoryError(
+          `Dinner ${configurationId} version ${version} was not found`,
+          'not_found',
+        )
+      }
+      return rowToVersion(row)
+    } catch (error) {
+      throwRepositoryFailure(
+        error,
+        `Failed to read dinner ${configurationId} version ${version}`,
+      )
+    }
+  }
+
+  getLatestVersion(configurationId: string): DinnerVersion {
+    assertRepositoryId(configurationId, 'Dinner configuration ID')
+
+    try {
+      const row = this.database
+        .prepare(
+          `SELECT ${VERSION_COLUMNS}
+           FROM dinner_versions
+           WHERE configuration_id = ?
+           ORDER BY version DESC
+           LIMIT 1`,
+        )
+        .get(configurationId) as DinnerVersionRow | undefined
+
+      if (!row) {
+        throw new RepositoryError(
+          `Dinner configuration ${configurationId} was not found`,
+          'not_found',
+        )
+      }
+      return rowToVersion(row)
+    } catch (error) {
+      throwRepositoryFailure(
+        error,
+        `Failed to read latest version of dinner ${configurationId}`,
+      )
+    }
+  }
+
+  private insertVersion(version: DinnerVersion, snapshotJson: string) {
+    this.database
+      .prepare(
+        `INSERT INTO dinner_versions (${VERSION_COLUMNS})
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run(
+        version.id,
+        version.configurationId,
+        version.version,
+        snapshotJson,
+        version.createdAt,
+      )
   }
 }

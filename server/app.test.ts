@@ -10,19 +10,29 @@ import {
   InterpretationResponseSchema,
 } from '../src/shared/contracts.js'
 import { normalizeFounders } from '../src/shared/founder.js'
+import { buildDinnerState } from '../src/test/dinnerStateFixture.js'
 import { createDatabase, type SqliteDatabase } from './database.js'
 import {
   requireDurableDatabasePath,
   startServer,
 } from './index.js'
+import { DinnerRepository } from './repositories/dinners.js'
 import { FounderRepository } from './repositories/founders.js'
 import { WebResultsRepository } from './repositories/webResults.js'
 import type { ProviderAdapter } from './providers/types.js'
+import { ProviderCredentialRepository } from './repositories/providerCredentials.js'
+import {
+  CredentialVault,
+  ProviderSecret,
+  createCredentialVault,
+} from './services/credentials.js'
 import { createAiInterpretationService } from './services/aiInterpretation.js'
+import { DinnerService } from './services/dinners.js'
 import {
   createEnrichmentRunManager,
   createEnrichmentService,
 } from './services/enrichment.js'
+import { ExportService } from './services/export.js'
 import { createServer } from './app'
 
 const staticRoot = path.resolve(process.cwd(), 'server/test-fixtures/runtime-dist')
@@ -101,13 +111,50 @@ afterAll(async () => {
 })
 
 function serverOptions() {
+  const dinnerService = new DinnerService({
+    dinners: new DinnerRepository(database),
+    founders: founderRepository,
+  })
   return {
     databaseStatus: () => 'ready' as const,
     founderRepository,
     webResultsRepository,
     enrichmentRunManager,
     aiInterpretationService,
+    credentialVault: createCredentialVault(database, {}),
+    dinnerService,
+    exportService: new ExportService({
+      dinners: dinnerService,
+      founders: founderRepository,
+      webResults: webResultsRepository,
+    }),
     staticRoot,
+  }
+}
+
+const MASTER_KEY = Buffer.alloc(32, 7).toString('base64')
+const OTHER_MASTER_KEY = Buffer.alloc(32, 9).toString('base64')
+const STORED_SECRET = 'sk-startup-secret-0000000000wxyz'
+
+function runtimeEnvironment(name: string, overrides: NodeJS.ProcessEnv = {}) {
+  return {
+    DATABASE_PATH: path.join(staticRoot, `${name}.sqlite`),
+    HOST: '127.0.0.1',
+    PORT: '0',
+    STATIC_ROOT: staticRoot,
+    ...overrides,
+  }
+}
+
+function trackingDatabase() {
+  const opened: SqliteDatabase[] = []
+  return {
+    opened,
+    openDatabase: (filename: string) => {
+      const created = createDatabase({ filename })
+      opened.push(created)
+      return created
+    },
   }
 }
 
@@ -377,5 +424,143 @@ describe('createServer', () => {
       },
     })
     await secondServer.close()
+  })
+
+  it('exposes credential, dinner, and export routes through createServer', async () => {
+    const server = createServer(serverOptions())
+    const cohortIds = founders.slice(0, 6).map((founder) => founder.id)
+
+    const credentials = await server.inject({
+      method: 'GET',
+      url: '/api/v2/providers/credentials',
+    })
+    const created = await server.inject({
+      method: 'POST',
+      url: '/api/v2/dinners',
+      payload: { name: 'Wired Dinner', state: buildDinnerState(cohortIds) },
+    })
+    const id = created.json().data.id as string
+    const reopened = await server.inject({ method: 'GET', url: `/api/v2/dinners/${id}` })
+    const dinnerExport = await server.inject({
+      method: 'GET',
+      url: `/api/v2/dinners/${id}/export?format=json&includeWebResults=true`,
+    })
+    const founderExport = await server.inject({
+      method: 'POST',
+      url: '/api/v2/exports/founders',
+      payload: { founderIds: cohortIds.slice(0, 2), format: 'csv' },
+    })
+
+    expect(credentials.statusCode).toBe(200)
+    expect(credentials.json()).toMatchObject({
+      ok: true,
+      data: { masterKeyConfigured: false },
+    })
+    expect(created.statusCode).toBe(201)
+    expect(reopened.json().data.state).toEqual(buildDinnerState(cohortIds))
+    expect(dinnerExport.statusCode).toBe(200)
+    expect(dinnerExport.headers['content-disposition']).toMatch(/^attachment; filename="wired-dinner-v1-/)
+    expect(founderExport.statusCode).toBe(200)
+    expect(founderExport.body.split('\r\n')).toHaveLength(3)
+
+    await server.close()
+  })
+
+  it('starts without a master key when no provider credentials are stored', async () => {
+    const server = await startServer(runtimeEnvironment('no-master-key'))
+
+    const response = await server.inject({
+      method: 'GET',
+      url: '/api/v2/providers/credentials',
+    })
+    const save = await server.inject({
+      method: 'PUT',
+      url: '/api/v2/providers/openai/credential',
+      payload: { secret: STORED_SECRET },
+    })
+
+    expect(response.json()).toMatchObject({
+      ok: true,
+      data: {
+        masterKeyConfigured: false,
+        providers: [
+          { provider: 'openai', status: 'not_configured' },
+          { provider: 'anthropic', status: 'not_configured' },
+          { provider: 'xai', status: 'not_configured' },
+        ],
+      },
+    })
+    expect(save.statusCode).toBe(503)
+    expect(save.json().error.code).toBe('master_key_missing')
+    await server.close()
+  })
+
+  it.each([
+    ['not base64', 'not-a-key!'],
+    ['the wrong length', Buffer.alloc(16, 1).toString('base64')],
+    ['whitespace', '   '],
+  ])('rejects a master key that is %s and closes the database', async (_label, key) => {
+    const tracker = trackingDatabase()
+
+    await expect(
+      startServer(
+        runtimeEnvironment(`invalid-key-${tracker.opened.length}-${key.length}`, {
+          FOUNDER_APP_MASTER_KEY: key,
+        }),
+        { openDatabase: tracker.openDatabase },
+      ),
+    ).rejects.toMatchObject({
+      name: 'CredentialError',
+      code: 'master_key_invalid',
+      message: expect.not.stringContaining(key.trim() || 'never'),
+    })
+    expect(tracker.opened).toHaveLength(1)
+    expect(tracker.opened[0]!.open).toBe(false)
+  })
+
+  it('requires the original master key once provider credentials are stored', async () => {
+    const environment = runtimeEnvironment('stored-credential')
+    const seed = createDatabase({ filename: environment.DATABASE_PATH })
+    new CredentialVault(
+      new ProviderCredentialRepository(seed),
+      { masterKey: Buffer.from(MASTER_KEY, 'base64') },
+    ).store('openai', new ProviderSecret(STORED_SECRET))
+    seed.close()
+
+    const missing = trackingDatabase()
+    const missingKey = await startServer(environment, {
+      openDatabase: missing.openDatabase,
+    }).catch((error: unknown) => error)
+    const wrong = trackingDatabase()
+    const wrongKey = await startServer(
+      { ...environment, FOUNDER_APP_MASTER_KEY: OTHER_MASTER_KEY },
+      { openDatabase: wrong.openDatabase },
+    ).catch((error: unknown) => error)
+
+    expect(missingKey).toMatchObject({ name: 'CredentialError', code: 'master_key_missing' })
+    expect(wrongKey).toMatchObject({ name: 'CredentialError', code: 'master_key_mismatch' })
+    for (const error of [missingKey, wrongKey]) {
+      expect(String((error as Error).message)).not.toContain(STORED_SECRET)
+      expect(String((error as Error).message)).not.toContain(OTHER_MASTER_KEY)
+    }
+    expect(missing.opened[0]!.open).toBe(false)
+    expect(wrong.opened[0]!.open).toBe(false)
+
+    const server = await startServer({
+      ...environment,
+      FOUNDER_APP_MASTER_KEY: MASTER_KEY,
+    })
+    const response = await server.inject({
+      method: 'GET',
+      url: '/api/v2/providers/credentials',
+    })
+
+    expect(response.json().data.providers[0]).toMatchObject({
+      provider: 'openai',
+      status: 'valid',
+      lastFour: 'wxyz',
+    })
+    expect(response.body).not.toContain(STORED_SECRET)
+    await server.close()
   })
 })
