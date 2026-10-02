@@ -16,7 +16,7 @@
 | 12. Founder AI credential setup | Complete | `main` | `1222eaa`, `c470fdc` | AI setup available in Founder and Admin modes; provider validation no longer assumes premium Anthropic model access; pasted credentials normalized; 48 focused tests; lint; client/server build |
 | 13. Criteria controls and version navigation | Complete | `main` | `36355b5` | Generated criteria match the approved desktop treatment; criteria remain removable during review; V1 includes a compact V1/V2 footer; 28 dinner tests; browser visual QA |
 | 14. Safe Render public demo | Complete | `main` | `cf971cb`, `7328a4e` | Free Render Blueprint live; public Demo mode forced and locked; mutating V2 APIs return `403 public_demo_read_only`; live health, API, and browser verification passed |
-| 15. Final navigation, Dinner review, and showcase polish | Complete | `main` | Pending release commit | Context-preserving V1/V2 links; V1 navigation regrouping; full-height Dinner tabs; numeric threshold stepper; explicit dimension/weight dialog in setup and review; retryable in-place top-five web-results drawer; reload-only account callout; 553 tests; 2 Playwright E2E tests; lint/build; 16 refreshed screenshots |
+| 15. Final navigation, Dinner review, and showcase polish | Complete | `main` | `5d9c39d` | Context-preserving V1/V2 links; V1 navigation regrouping; full-height Dinner tabs; numeric threshold stepper; explicit dimension/weight dialog in setup and review; retryable in-place top-five web-results drawer; reload-only account callout; 553 tests; 2 Playwright E2E tests; lint/build; 16 refreshed screenshots |
 
 ## Current task list
 
