@@ -22,6 +22,72 @@ function optionalText(value: unknown) {
     : undefined
 }
 
+function isHttpUrl(value: unknown) {
+  if (typeof value !== 'string' || !value.trim()) return false
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function hasValidOptionalString(
+  record: Record<string, unknown>,
+  key: string,
+) {
+  return !Object.hasOwn(record, key) || typeof record[key] === 'string'
+}
+
+function validateTopLevelCitation(value: unknown, provider: string) {
+  if (typeof value === 'string') {
+    if (!isHttpUrl(value)) throw invalidEnvelope(provider)
+    return
+  }
+  if (
+    !isRecord(value) ||
+    !isHttpUrl(value.url) ||
+    !['id', 'title', 'snippet', 'cited_text'].every((key) =>
+      hasValidOptionalString(value, key),
+    )
+  ) {
+    throw invalidEnvelope(provider)
+  }
+}
+
+function validateAnnotation(
+  value: unknown,
+  textLength: number,
+  provider: string,
+) {
+  if (
+    !isRecord(value) ||
+    value.type !== 'url_citation' ||
+    !isHttpUrl(value.url) ||
+    !['title', 'snippet', 'cited_text'].every((key) =>
+      hasValidOptionalString(value, key),
+    )
+  ) {
+    throw invalidEnvelope(provider)
+  }
+
+  const hasStart = Object.hasOwn(value, 'start_index')
+  const hasEnd = Object.hasOwn(value, 'end_index')
+  if (hasStart !== hasEnd) throw invalidEnvelope(provider)
+  if (
+    hasStart &&
+    (
+      !Number.isInteger(value.start_index) ||
+      !Number.isInteger(value.end_index) ||
+      (value.start_index as number) < 0 ||
+      (value.end_index as number) <= (value.start_index as number) ||
+      (value.end_index as number) > textLength
+    )
+  ) {
+    throw invalidEnvelope(provider)
+  }
+}
+
 export function validateResponsesSearchEnvelope(
   body: unknown,
   provider: string,
@@ -57,6 +123,11 @@ export function validateResponsesSearchEnvelope(
     !Array.isArray(body.citations)
   ) {
     throw invalidEnvelope(provider)
+  }
+  if (Array.isArray(body.citations)) {
+    for (const citation of body.citations) {
+      validateTopLevelCitation(citation, provider)
+    }
   }
 
   const textParts: string[] = []
@@ -120,6 +191,11 @@ export function validateResponsesSearchEnvelope(
         !Array.isArray(content.annotations)
       ) {
         throw invalidEnvelope(provider)
+      }
+      if (Array.isArray(content.annotations)) {
+        for (const annotation of content.annotations) {
+          validateAnnotation(annotation, content.text.length, provider)
+        }
       }
       const text = optionalText(content.text)
       if (text) textParts.push(text)
