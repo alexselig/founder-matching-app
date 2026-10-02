@@ -257,6 +257,40 @@ describe('SQLite repositories', () => {
     )
   })
 
+  it('validates every founder repository read argument before SQLite access', () => {
+    const invalidListOptions = [
+      null,
+      'all',
+      { limit: 0 },
+      { limit: 1.5 },
+      { limit: '1' },
+      { offset: -1 },
+      { offset: 1.5 },
+      { offset: '0' },
+      { unexpected: true },
+    ]
+
+    for (const options of invalidListOptions) {
+      expectRepositoryError(
+        () =>
+          founderRepository.list(
+            options as unknown as {
+              limit?: number
+              offset?: number
+            },
+          ),
+        'invalid_data',
+      )
+    }
+
+    for (const id of [undefined, null, '', 343105]) {
+      expectRepositoryError(
+        () => founderRepository.get(id as unknown as string),
+        'invalid_data',
+      )
+    }
+  })
+
   it('surfaces founder storage failures instead of returning an empty list', () => {
     database.close()
 
@@ -308,6 +342,25 @@ describe('SQLite repositories', () => {
       () => webResultsRepository.listRuns('missing-founder'),
       'not_found',
     )
+  })
+
+  it('validates every web-results read founder ID before SQLite access', () => {
+    for (const founderId of [undefined, null, '', 343105]) {
+      expectRepositoryError(
+        () =>
+          webResultsRepository.latest(
+            founderId as unknown as string,
+          ),
+        'invalid_data',
+      )
+      expectRepositoryError(
+        () =>
+          webResultsRepository.listRuns(
+            founderId as unknown as string,
+          ),
+        'invalid_data',
+      )
+    }
   })
 
   it('normalizes enrichment timestamps to UTC before chronological ordering', () => {
@@ -585,6 +638,25 @@ describe('SQLite repositories', () => {
         }),
       'invalid_data',
     )
+  })
+
+  it('validates every dinner repository read ID before SQLite access', () => {
+    for (const id of [undefined, null, '', 1]) {
+      expectRepositoryError(
+        () =>
+          dinnerRepository.getConfiguration(
+            id as unknown as string,
+          ),
+        'invalid_data',
+      )
+      expectRepositoryError(
+        () =>
+          dinnerRepository.listVersions(
+            id as unknown as string,
+          ),
+        'invalid_data',
+      )
+    }
   })
 
   it('persists saved dinner configurations with append-only versions', () => {

@@ -12,13 +12,7 @@ export interface DatabaseOptions {
 }
 
 function defaultMigrationPath() {
-  const candidates = [
-    resolve(process.cwd(), 'server/migrations/001-v2.sql'),
-    resolve(
-      process.cwd(),
-      'dist-server/server/migrations/001-v2.sql',
-    ),
-  ]
+  const candidates: string[] = []
   const moduleUrl = new URL(import.meta.url)
   if (moduleUrl.protocol === 'file:') {
     candidates.push(
@@ -27,6 +21,13 @@ function defaultMigrationPath() {
       ),
     )
   }
+  candidates.push(
+    resolve(process.cwd(), 'server/migrations/001-v2.sql'),
+    resolve(
+      process.cwd(),
+      'dist-server/server/migrations/001-v2.sql',
+    ),
+  )
   const migrationPath = candidates.find((candidate) =>
     existsSync(candidate),
   )

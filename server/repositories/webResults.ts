@@ -6,6 +6,7 @@ import {
 import {
   assertDenseArray,
   assertNoSparseArrays,
+  assertRepositoryId,
 } from './validation.js'
 
 export type WebResultClassification = 'founder' | 'company' | 'both'
@@ -435,6 +436,8 @@ export class WebResultsRepository {
   }
 
   latest(founderId: string): WebResult[] {
+    assertRepositoryId(founderId, 'Founder ID')
+
     try {
       this.assertFounderExists(founderId)
 
@@ -458,6 +461,8 @@ export class WebResultsRepository {
   }
 
   listRuns(founderId: string): WebEnrichmentRun[] {
+    assertRepositoryId(founderId, 'Founder ID')
+
     try {
       this.assertFounderExists(founderId)
 

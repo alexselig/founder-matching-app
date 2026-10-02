@@ -7,6 +7,7 @@ import {
 import {
   assertDenseArray,
   assertNoSparseArrays,
+  assertRepositoryId,
 } from './validation.js'
 
 interface FounderRow {
@@ -191,10 +192,33 @@ function rowToFounder(row: FounderRow): Founder {
   }
 }
 
-function assertListOptions(options: FounderListOptions) {
+function assertListOptions(
+  value: unknown,
+): asserts value is FounderListOptions {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new RepositoryError(
+      'Founder list options must be an object',
+      'invalid_data',
+    )
+  }
+
+  const options = value as Record<string, unknown>
+  if (
+    Object.keys(options).some(
+      (key) => key !== 'limit' && key !== 'offset',
+    )
+  ) {
+    throw new RepositoryError(
+      'Founder list options contain an unknown field',
+      'invalid_data',
+    )
+  }
+
   if (
     options.limit !== undefined &&
-    (!Number.isInteger(options.limit) || options.limit < 1)
+    (typeof options.limit !== 'number' ||
+      !Number.isInteger(options.limit) ||
+      options.limit < 1)
   ) {
     throw new RepositoryError(
       'Founder list limit must be a positive integer',
@@ -204,7 +228,9 @@ function assertListOptions(options: FounderListOptions) {
 
   if (
     options.offset !== undefined &&
-    (!Number.isInteger(options.offset) || options.offset < 0)
+    (typeof options.offset !== 'number' ||
+      !Number.isInteger(options.offset) ||
+      options.offset < 0)
   ) {
     throw new RepositoryError(
       'Founder list offset must be a non-negative integer',
@@ -357,6 +383,8 @@ export class FounderRepository {
   }
 
   get(id: string): Founder {
+    assertRepositoryId(id, 'Founder ID')
+
     try {
       const row = this.database
         .prepare(
