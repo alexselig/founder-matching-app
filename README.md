@@ -30,6 +30,8 @@ Open the URL printed by Vite.
 
 ## Deploy the public demo on Render
 
+Live public demo: <https://founder-index-demo.onrender.com/v2>
+
 The checked-in `render.yaml` creates a free Render web service from this
 repository. It forces Demo mode and rejects mutating V2 API requests, so public
 visitors can explore fictitious founders and sample seating plans without
