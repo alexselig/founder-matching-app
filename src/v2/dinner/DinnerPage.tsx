@@ -46,7 +46,7 @@ import {
   type RuleDraft,
   type TableSetup,
 } from './dinnerState'
-import { DinnerSetupRail, DinnerTables, type Density, type WorkspaceView } from './DinnerTables'
+import { DinnerTables, type WorkspaceView } from './DinnerTables'
 import { DinnerConflictError, type DinnerRequest, type DinnerSolution } from './optimizer'
 import type { RuleConflict } from './rules'
 import './dinner-setup.css'
@@ -245,7 +245,7 @@ export function DinnerPage({
   const [baseRequest, setBaseRequest] = useState<DinnerRequest | null>(null)
   const [threshold, setThreshold] = useState(initialPlan?.threshold ?? DEFAULT_THRESHOLD)
   const [workspace, setWorkspace] = useState<WorkspaceView>('tables')
-  const [density, setDensity] = useState<Density>('compact')
+  const [setupPanelOpen, setSetupPanelOpen] = useState(false)
   const [focusIndex, setFocusIndex] = useState(0)
   const [locked, setLocked] = useState<ReadonlySet<number>>(() => new Set())
   const [recommendations, setRecommendations] = useState(NO_RECOMMENDATIONS)
@@ -277,6 +277,15 @@ export function DinnerPage({
     },
     [],
   )
+
+  useEffect(() => {
+    if (!setupPanelOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !frameRef.current?.querySelector('[role="dialog"]')) closeSetupPanel()
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [setupPanelOpen])
 
   const cohortFounders = useMemo(
     () => (cohort?.founderIds ?? []).map((founderId) => foundersById.get(founderId)).filter((founder): founder is Founder => !!founder),
@@ -327,6 +336,7 @@ export function DinnerPage({
     setSetupSeed((previous) => ({ ...seed, key: previous.key + 1 }))
     setRecovery(null)
     setExportState(null)
+    setSetupPanelOpen(false)
     setMode('setup')
   }
 
@@ -343,6 +353,7 @@ export function DinnerPage({
   }
 
   function showConflict(conflicts: readonly RuleConflict[], ruleSet: readonly RuleDraft[]) {
+    setSetupPanelOpen(false)
     setRecovery({ kind: 'conflict', conflict: conflicts[0]!, rules: ruleSet, removedRuleId: null, editing: false })
     setMode('recovery')
   }
@@ -839,7 +850,12 @@ export function DinnerPage({
   }
 
   function editSetup() {
-    if (!frozen) openSetup()
+    if (!frozen) setSetupPanelOpen(true)
+  }
+
+  function closeSetupPanel() {
+    setSetupPanelOpen(false)
+    window.requestAnimationFrame(() => frameRef.current?.querySelector<HTMLButtonElement>('.v2-dinner-edit-setup')?.focus())
   }
 
   function openExport() {
@@ -861,14 +877,14 @@ export function DinnerPage({
     footerActions = (
       <>
         {savedLabel}
-        <button type="button" className="v2-footer-secondary-dark" disabled={actionsDisabled} onClick={reoptimize}>
-          Re-optimize Remaining
-        </button>
         <button type="button" disabled={actionsDisabled} onClick={generateAlternatives}>
           Generate 2 Alternatives
         </button>
         <button type="button" disabled={actionsDisabled} onClick={openExport}>
           Export
+        </button>
+        <button type="button" className="v2-footer-secondary-dark" disabled={actionsDisabled} onClick={reoptimize}>
+          Re-optimize Remaining
         </button>
         <button type="button" className="v2-footer-primary" disabled={actionsDisabled || !onSave} onClick={() => void save()}>
           {saving ? 'Saving…' : 'Save'}
@@ -928,7 +944,7 @@ export function DinnerPage({
     <div className="v2-shell v2-dinner-shell">
       <V2Header active="seating-plans" role={role} currentFounder={currentFounder} onRoleChange={changeRole} />
       <main className="v2-dinner-main">
-        <div ref={frameRef} className="v2-dinner-frame" data-mode={frameMode}>
+        <div ref={frameRef} className="v2-dinner-frame" data-mode={frameMode} data-setup-open={setupPanelOpen ? 'true' : 'false'}>
           {restricted && (
             <section className="v2-dinner-restricted" aria-labelledby="dinner-restricted-title">
               <span className="v2-dinner-eyebrow">Seating plans</span>
@@ -968,17 +984,30 @@ export function DinnerPage({
           )}
           {!restricted && mode === 'results' && view && (
             <>
-              <DinnerSetupRail
-                founderCount={solutionFounders.length}
-                tableCount={view.tableCount}
-                seatLabel={seatLabel}
-                brief={brief}
-                criteria={criteria}
-                rules={rules}
-                editDisabled={frozen}
-                onCriteriaChange={updateResultCriteria}
-                onEditSetup={editSetup}
-              />
+              {setupPanelOpen && (
+                <DinnerSetup
+                  founders={founders}
+                  foundersById={foundersById}
+                  planName={planName}
+                  onPlanNameChange={whileIdle(setPlanName)}
+                  cohort={cohort}
+                  onCohortChange={whileIdle(setCohort)}
+                  tables={tables}
+                  onTablesChange={whileIdle(setTables)}
+                  brief={brief}
+                  onBriefChange={whileIdle(setBrief)}
+                  criteria={criteria}
+                  onCriteriaChange={updateResultCriteria}
+                  rules={rules}
+                  onRulesChange={whileIdle(setRules)}
+                  handoff={handoff}
+                  savedCohorts={savedCohorts}
+                  generating={generating || frozen}
+                  onGenerate={generateFromSetup}
+                  variant="panel"
+                  onClose={closeSetupPanel}
+                />
+              )}
               <DinnerTables
                 planName={planName}
                 view={view}
@@ -986,8 +1015,9 @@ export function DinnerPage({
                 onThresholdChange={changeThreshold}
                 workspace={workspace}
                 onWorkspaceChange={setWorkspace}
-                density={density}
-                onDensityChange={setDensity}
+                setupOpen={setupPanelOpen}
+                editSetupDisabled={frozen}
+                onEditSetup={editSetup}
                 focusIndex={Math.min(focusIndex, view.tables.length - 1)}
                 onFocusTable={setFocusIndex}
                 locked={locked}

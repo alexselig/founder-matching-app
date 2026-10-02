@@ -418,7 +418,7 @@ describe('DinnerPage recovery', () => {
 })
 
 describe('DinnerPage results workspace', () => {
-  it('drives the Tables view: threshold, density, jump grid, focus strip, and locks', async () => {
+  it('drives the compact Tables view: threshold, jump grid, continuous cards, and locks', async () => {
     const optimize = vi.fn(async (request: DinnerRequest) => roundRobin(request))
     const { container } = renderDinner({ engine: fastEngine({ optimize }) })
     await generateTables('Forty founders', '5 × 8')
@@ -429,17 +429,17 @@ describe('DinnerPage results workspace', () => {
 
     const toolbar = container.querySelector('.v2-dinner-work-tools')!
     expect([...toolbar.children].map((item) => item.className)).toEqual([
-      'v2-dinner-segmented',
+      'v2-dinner-view',
       'v2-dinner-threshold',
       'v2-dinner-legend',
-      'v2-dinner-density',
     ])
+    expect(toolbar.querySelector('.v2-dinner-view')?.firstElementChild?.textContent).toBe('View')
+    expect(toolbar.querySelector('.v2-dinner-view')?.lastElementChild).toHaveClass('v2-dinner-segmented')
     expect(toolbar.querySelector('.v2-dinner-threshold')?.firstElementChild?.textContent).toBe('Match threshold')
     expect(toolbar.querySelector('.v2-dinner-threshold')?.lastElementChild).toHaveClass('v2-dinner-threshold-controls')
     expect(toolbar.querySelector('.v2-dinner-legend')?.firstElementChild?.textContent).toBe('Match Threshold Color Coding')
     expect(toolbar.querySelector('.v2-dinner-legend')?.lastElementChild).toHaveClass('v2-dinner-legend-values')
-    expect(toolbar.querySelector('.v2-dinner-density')?.firstElementChild?.textContent).toBe('Density')
-    expect(toolbar.querySelector('.v2-dinner-density')?.lastElementChild).toHaveClass('v2-dinner-density-options')
+    expect(screen.queryByRole('group', { name: 'Table density' })).toBeNull()
 
     const threshold = screen.getByLabelText('Match threshold') as HTMLInputElement
     fireEvent.change(threshold, { target: { value: '85' } })
@@ -453,21 +453,12 @@ describe('DinnerPage results workspace', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Increase threshold' }))
     expect(threshold.value).toBe('61')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Comfortable' }))
-    expect(container.querySelector('.v2-dinner-tables')!.className).toContain('v2-dinner-comfortable')
-    expect(screen.getByRole('button', { name: 'Comfortable' }).getAttribute('aria-pressed')).toBe('true')
-
     const jump = container.querySelectorAll<HTMLButtonElement>('.v2-dinner-index-button')
     fireEvent.click(jump[3]!)
     expect(jump[3]!.className).toContain('v2-dinner-active')
     expect(jump[3]!.getAttribute('aria-current')).toBe('true')
     expect(tableCards(container)[3]!.className).toContain('v2-dinner-focused')
-    expect(container.querySelector('.v2-dinner-focus-label strong')!.textContent).toMatch(/^Table 04 · /)
-    fireEvent.click(screen.getByRole('button', { name: 'Next table' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Next table' }))
-    expect(container.querySelector('.v2-dinner-focus-label strong')!.textContent).toMatch(/^Table 01 · /)
-    fireEvent.click(screen.getByRole('button', { name: 'Previous table' }))
-    expect(container.querySelector('.v2-dinner-focus-label strong')!.textContent).toMatch(/^Table 05 · /)
+    expect(container.querySelector('.v2-dinner-focus-strip')).toBeTruthy()
 
     const lock = within(tableCards(container)[1]!).getByRole('button', { name: 'Lock table' })
     fireEvent.click(lock)
@@ -496,8 +487,9 @@ describe('DinnerPage results workspace', () => {
     renderDinner()
     await generateTables('Fixture cohort', '3 × 8')
 
-    const rail = screen.getByRole('complementary', { name: 'Dinner setup' })
-    const role = within(rail).getByText('Role', { selector: 'span' }).closest('.v2-dinner-criterion') as HTMLElement
+    fireEvent.click(screen.getByRole('button', { name: 'Edit setup' }))
+    const rail = screen.getByRole('complementary', { name: 'Edit setup' })
+    const role = within(rail).getByText('Role', { selector: 'strong' }).closest('.v2-setup-interpretation-row') as HTMLElement
     fireEvent.click(within(role).getByRole('button', { name: 'Diverse' }))
     expect(await within(role).findByRole('button', { name: 'Similar' })).toBeTruthy()
 
@@ -516,8 +508,8 @@ describe('DinnerPage results workspace', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'L' }))
     fireEvent.click(within(dialog).getByRole('button', { name: 'Add dimension' }))
 
-    const restoredRole = await within(rail).findByText('Role', { selector: 'span' })
-    const restoredWeights = within(restoredRole.closest('.v2-dinner-criterion') as HTMLElement).getByRole('group', { name: 'Role weight' })
+    const restoredRole = await within(rail).findByText('Role', { selector: 'strong' })
+    const restoredWeights = within(restoredRole.closest('.v2-setup-interpretation-row') as HTMLElement).getByRole('group', { name: 'Role weight' })
     expect(within(restoredWeights).getByRole('button', { name: 'L' }).getAttribute('aria-pressed')).toBe('true')
   })
 
@@ -642,13 +634,22 @@ describe('DinnerPage results workspace', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('returns to setup with every input preserved from Edit setup', async () => {
+  it('opens a docked Edit setup panel with inputs preserved and closes it without leaving results', async () => {
     renderDinner()
     await generateTables('Fixture cohort', '3 × 8')
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit setup' })[0]!)
+    const edit = screen.getByRole('button', { name: 'Edit setup' })
+    fireEvent.click(edit)
+    expect(screen.getByRole('complementary', { name: 'Edit setup' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Founders Dinner · Oct 16', level: 2 })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Edit setup' })).toBeNull()
     expect((screen.getByLabelText(/Seating plan name/) as HTMLInputElement).value).toBe('Founders Dinner · Oct 16')
     expect(within(scopeCard('3 · Table setup')).getByText('3 × 8')).toBeTruthy()
-    expect((screen.getByRole('button', { name: 'Generate tables →' }) as HTMLButtonElement).disabled).toBe(false)
+    expect((screen.getByRole('button', { name: 'Apply and re-optimize' }) as HTMLButtonElement).disabled).toBe(false)
+    expect(screen.getByRole('group', { name: 'Role weight' })).toBeTruthy()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('complementary', { name: 'Edit setup' })).toBeNull()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Edit setup' })).toBe(document.activeElement))
   })
 })
 
@@ -659,8 +660,8 @@ describe('Dinner responsive CSS contract', () => {
     const glue = read('./dinner.css')
     const results = read('./dinner-results.css')
     expect(glue).toMatch(/\.v2-dinner-main \{[^}]*container: dinner \/ inline-size/)
-    expect(glue).toMatch(/@container dinner \(max-width: 900px\) \{[^@]*\.v2-dinner-frame\[data-mode="results"\] \{ grid-template-columns: 1fr;/)
-    expect(results).toMatch(/@container dinner \(max-width: 560px\) \{[^@]*\.v2-dinner-table-card \{ display: none; \}[^@]*\.v2-dinner-table-card\.v2-dinner-focused \{ display: block;/)
+    expect(glue).toMatch(/@container dinner \(max-width: 900px\) \{[^@]*\.v2-dinner-frame\[data-mode="results"\],[^@]*grid-template-columns: 1fr;/)
+    expect(results).toMatch(/@container dinner \(max-width: 560px\) \{[^@]*\.v2-dinner-table-card \{ display: block; \}/)
     expect(results).toMatch(/\.v2-dinner-table-card \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
     expect(results).toMatch(/@container dinner \(max-width: 900px\) \{[^@]*\.v2-dinner-table-card \{ display: block; \}/)
     expect(glue).toMatch(/@media \(prefers-reduced-motion: reduce\)/)
@@ -874,6 +875,7 @@ describe('DinnerPage review regressions', () => {
     await act(async () => pending.resolve())
     await screen.findByRole('heading', { name: 'Founders Dinner · Oct 16', level: 2 })
     expect(optimize).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByRole('button', { name: 'Edit setup' }))
     expect(screen.getByText('Separate founders from the same company')).toBeTruthy()
   })
 

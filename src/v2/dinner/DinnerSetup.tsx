@@ -51,6 +51,8 @@ export interface DinnerSetupProps {
   readonly savedCohorts: readonly DinnerCohortOption[]
   readonly generating: boolean
   readonly onGenerate: () => void
+  readonly variant?: 'page' | 'panel'
+  readonly onClose?: () => void
   readonly initialDialog?: SetupDialog | null
   readonly initialRuleText?: string
   /** When set, the rule dialog replaces this rule in place instead of appending a new one. */
@@ -99,11 +101,14 @@ export function DinnerSetup(props: DinnerSetupProps) {
     savedCohorts,
     generating,
     onGenerate,
+    variant = 'page',
+    onClose,
   } = props
   const [dialog, setDialog] = useState<SetupDialog | null>(props.initialDialog ?? null)
   // A prefilled rule edit applies to the first rule dialog only; later "+ Add" clicks start blank.
   const [ruleSeed, setRuleSeed] = useState({ text: props.initialRuleText ?? '', editingRuleId: props.editingRuleId ?? null })
-  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const panel = variant === 'panel'
+  const [advancedOpen, setAdvancedOpen] = useState(panel)
   const planId = useId()
   const briefId = useId()
   const advancedId = useId()
@@ -182,10 +187,17 @@ export function DinnerSetup(props: DinnerSetupProps) {
 
   return (
     <>
-      <aside className="v2-setup-setup">
+      <aside className={panel ? 'v2-setup-setup v2-setup-panel' : 'v2-setup-setup'} aria-label={panel ? 'Edit setup' : undefined}>
         <div className="v2-setup-setup-title">
-          <span className="v2-setup-eyebrow">Dinner matching</span>
-          <h1>Build the room.</h1>
+          <div>
+            <span className="v2-setup-eyebrow">Dinner matching</span>
+            <h1>{panel ? 'Edit setup.' : 'Build the room.'}</h1>
+          </div>
+          {panel && (
+            <button type="button" className="v2-setup-panel-close" aria-label="Close edit setup" onClick={onClose}>
+              ×
+            </button>
+          )}
         </div>
         <div className={handoff ? 'v2-setup-handoff-badge v2-setup-handoff-visible' : 'v2-setup-handoff-badge'}>
           {handoff ? `Search handoff · Ordered ${handoff.founderIds.length}-founder result cohort is already attached.` : ''}
@@ -349,11 +361,11 @@ export function DinnerSetup(props: DinnerSetupProps) {
             disabled={!ready || generating}
             onClick={onGenerate}
           >
-            {generating ? 'Generating…' : 'Generate tables →'}
+            {generating ? 'Generating…' : panel ? 'Apply and re-optimize' : 'Generate tables →'}
           </button>
         </section>
       </aside>
-      <section className="v2-setup-workspace" aria-label="Empty setup workspace" />
+      {!panel && <section className="v2-setup-workspace" aria-label="Empty setup workspace" />}
       {dialog && !generating && <div className="v2-setup-scrim" onClick={close} />}
       {dialog === 'cohort' && !generating && <CohortDialog choices={choices} onChoose={chooseCohort} onClose={close} />}
       {dialog === 'tables' && cohort && !generating && (

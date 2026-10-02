@@ -4,6 +4,16 @@
 .v2-setup-setup-title { padding: 22px 32px; border-bottom: 1px solid var(--line); background: var(--v2-orange); }
 .v2-setup-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .v2-setup-setup-title h1 { margin: 7px 0 0; font: 800 34px/.95 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-setup-panel { width: 100%; border-right: 1px solid var(--ink); }
+.v2-setup-panel .v2-setup-setup-title { min-height: 108px; display: grid; grid-template-columns: minmax(0, 1fr) 54px; padding: 0; }
+.v2-setup-panel .v2-setup-setup-title > div { padding: 20px 22px; }
+.v2-setup-panel .v2-setup-setup-title h1 { font-size: 28px; }
+.v2-setup-panel-close { border: 0; border-left: 1px solid rgba(20, 20, 20, .22); background: transparent; font-size: 26px; }
+.v2-setup-panel .v2-setup-handoff-badge,
+.v2-setup-panel .v2-setup-scope-intro { display: none; }
+.v2-setup-panel .v2-setup-brief { padding: 18px 20px 0; }
+.v2-setup-panel .v2-setup-rules { padding-inline: 20px; }
+.v2-setup-panel .v2-setup-summary { padding-left: 20px; grid-template-columns: minmax(0, 1fr) 170px; }
 .v2-setup-brief { padding: 22px 32px 0; }
 .v2-setup-plan-name-field { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
 .v2-setup-plan-name-input { width: 100%; height: 48px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 0; color: var(--ink); background: var(--surface); font-size: 16px; font-weight: 700; }
@@ -106,6 +116,7 @@
 .v2-setup-handoff-badge { display: none; margin: 12px 32px 0; padding: 9px 11px; border-left: 4px solid var(--v2-blue); background: #eef2ff; color: #213d9c; font-size: 10px; font-weight: 700; line-height: 1.4; }
 @container dinner (max-width: 820px) {
   .v2-setup-setup { border-right: 0; }
+  .v2-setup-panel { min-height: 100%; overflow: auto; }
   .v2-setup-workspace { display: none; }
   .v2-setup-scope { grid-template-columns: 1fr; }
   .v2-setup-scope-card + .v2-setup-scope-card { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }

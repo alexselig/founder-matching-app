@@ -1,20 +1,8 @@
-import { useId, useRef, useState, type ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
-import { DinnerDimensionDialog } from './DinnerDimensionDialog'
-import {
-  addDimension,
-  canAddDimension,
-  objectiveLabel,
-  removeDimension,
-  setWeight,
-  toggleObjective,
-  type CriterionDraft,
-  type DinnerView,
-  type RuleDraft,
-} from './dinnerState'
+import { type DinnerView } from './dinnerState'
 
 export type WorkspaceView = 'tables' | 'analysis'
-export type Density = 'compact' | 'comfortable'
 
 export const MIN_THRESHOLD = 60
 export const MAX_THRESHOLD = 85
@@ -29,149 +17,6 @@ function indexColumns(tableCount: number) {
   return Math.max(1, Math.min(tableCount, 10))
 }
 
-export interface DinnerSetupRailProps {
-  readonly founderCount: number
-  readonly tableCount: number
-  readonly seatLabel: string
-  readonly brief: string
-  readonly criteria: readonly CriterionDraft[]
-  readonly rules: readonly RuleDraft[]
-  /** Pauses Edit setup while a plan snapshot is being saved or worked on by the engine. */
-  readonly editDisabled?: boolean
-  readonly onCriteriaChange: (criteria: readonly CriterionDraft[]) => void
-  readonly onEditSetup: () => void
-}
-
-const CRITERION_WEIGHTS = ['L', 'M', 'H'] as const
-
-export function DinnerSetupRail({
-  founderCount,
-  tableCount,
-  seatLabel,
-  brief,
-  criteria,
-  rules,
-  editDisabled = false,
-  onCriteriaChange,
-  onEditSetup,
-}: DinnerSetupRailProps) {
-  const [dimensionOpen, setDimensionOpen] = useState(false)
-  const railRef = useRef<HTMLElement>(null)
-
-  return (
-    <>
-      <aside ref={railRef} className="v2-dinner-setup" aria-label="Dinner setup" tabIndex={-1}>
-      <div className="v2-dinner-setup-title">
-        <span className="v2-dinner-eyebrow">Dinner matching</span>
-        <h1>Build the room.</h1>
-      </div>
-      <section className="v2-dinner-setup-section">
-        <div className="v2-dinner-scope-pair">
-          <div className="v2-dinner-scope-stat">
-            <strong>{founderCount}</strong>
-            <span>founders</span>
-          </div>
-          <div className="v2-dinner-scope-stat">
-            <strong>
-              {tableCount} × {seatLabel}
-            </strong>
-            <span>tables × seats</span>
-          </div>
-        </div>
-      </section>
-      <section className="v2-dinner-setup-section">
-        <h2>Matching brief</h2>
-        <p className="v2-dinner-brief">{brief.trim() || 'No written brief · criteria drive matching.'}</p>
-      </section>
-      <section className="v2-dinner-setup-section">
-        <h2>Matching criteria</h2>
-        {criteria.map((criterion) => (
-          <div key={criterion.field} className="v2-dinner-criterion">
-            <div className="v2-dinner-criterion-head">
-              <span>{criterion.label}</span>
-            </div>
-            <small>{criterion.description}</small>
-            <div className="v2-dinner-criterion-controls">
-              <button
-                type="button"
-                className="v2-dinner-objective-toggle"
-                disabled={editDisabled}
-                onClick={() => onCriteriaChange(toggleObjective(criteria, criterion.field))}
-              >
-                {objectiveLabel(criterion.objective)}
-              </button>
-              <span className="v2-dinner-weight-toggle" role="group" aria-label={`${criterion.label} weight`}>
-                {CRITERION_WEIGHTS.map((weight) => (
-                  <button
-                    key={weight}
-                    type="button"
-                    className={criterion.weight === weight ? 'v2-dinner-active' : undefined}
-                    aria-pressed={criterion.weight === weight}
-                    disabled={editDisabled}
-                    onClick={() => onCriteriaChange(setWeight(criteria, criterion.field, weight))}
-                  >
-                    {weight}
-                  </button>
-                ))}
-              </span>
-              <button
-                type="button"
-                className="v2-dinner-remove-criterion"
-                aria-label={`Remove ${criterion.label}`}
-                disabled={criteria.length <= 1 || editDisabled}
-                onClick={() => onCriteriaChange(removeDimension(criteria, criterion.field))}
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        ))}
-        {canAddDimension(criteria) && (
-          <button
-            type="button"
-            className="v2-dinner-add-dimension"
-            disabled={editDisabled}
-            onClick={() => setDimensionOpen(true)}
-          >
-            + Add dimension
-          </button>
-        )}
-        <button type="button" className="v2-dinner-setup-link" disabled={editDisabled} onClick={onEditSetup}>
-          Edit setup
-        </button>
-      </section>
-      <section className="v2-dinner-setup-section">
-        <h2>Hard rules</h2>
-        {rules.length ? (
-          rules.map((rule) => (
-            <div key={rule.id} className="v2-dinner-rule">
-              {rule.text}
-            </div>
-          ))
-        ) : (
-          <div className="v2-dinner-rule">No hard rules · criteria only</div>
-        )}
-      </section>
-      <button type="button" className="v2-dinner-setup-link v2-dinner-setup-link-compact" disabled={editDisabled} onClick={onEditSetup}>
-        Edit setup
-      </button>
-      </aside>
-      {dimensionOpen && !editDisabled && <div className="v2-setup-scrim" onClick={() => setDimensionOpen(false)} />}
-      {dimensionOpen && !editDisabled && (
-        <DinnerDimensionDialog
-          criteria={criteria}
-          onAdd={(field, weight) => {
-            onCriteriaChange(addDimension(criteria, field, weight))
-            setDimensionOpen(false)
-          }}
-          onClose={() => setDimensionOpen(false)}
-          returnFocusRef={railRef}
-        />
-      )}
-    </>
-  )
-}
-
 export interface DinnerTablesProps {
   readonly planName: string
   readonly view: DinnerView
@@ -179,8 +24,9 @@ export interface DinnerTablesProps {
   readonly onThresholdChange: (value: number) => void
   readonly workspace: WorkspaceView
   readonly onWorkspaceChange: (view: WorkspaceView) => void
-  readonly density: Density
-  readonly onDensityChange: (density: Density) => void
+  readonly setupOpen: boolean
+  readonly editSetupDisabled?: boolean
+  readonly onEditSetup: () => void
   readonly focusIndex: number
   readonly onFocusTable: (index: number) => void
   readonly locked: ReadonlySet<number>
@@ -204,8 +50,9 @@ export function DinnerTables({
   onThresholdChange,
   workspace,
   onWorkspaceChange,
-  density,
-  onDensityChange,
+  setupOpen,
+  editSetupDisabled = false,
+  onEditSetup,
   focusIndex,
   onFocusTable,
   locked,
@@ -231,8 +78,20 @@ export function DinnerTables({
   }
 
   return (
-    <section className="v2-dinner-workspace" aria-label="Seating plan results">
+    <section className="v2-dinner-workspace" aria-label="Seating plan results" data-setup-open={setupOpen ? 'true' : 'false'}>
       <div className="v2-dinner-work-head">
+        {!setupOpen && (
+          <button type="button" className="v2-dinner-edit-setup" aria-label="Edit setup" disabled={editSetupDisabled} onClick={onEditSetup}>
+            <span>
+              Edit
+              <br />
+              setup
+            </span>
+            <span className="v2-dinner-edit-chevron" aria-hidden="true">
+              ›
+            </span>
+          </button>
+        )}
         <div className="v2-dinner-work-title">
           <span className="v2-dinner-eyebrow">Recommended solution</span>
           <h2>{planName}</h2>
@@ -249,25 +108,28 @@ export function DinnerTables({
           <strong>{view.tableCount}</strong>
           <span>Tables</span>
         </div>
-        <div className="v2-dinner-metric v2-dinner-alert">
-          <strong>{view.watchCount}</strong>
-          <span>Watch placements</span>
+        <div className="v2-dinner-metric">
+          <strong>{view.aboveCount + view.watchCount}</strong>
+          <span>Seat placements</span>
         </div>
       </div>
 
       <div className="v2-dinner-work-tools">
-        <div className="v2-dinner-segmented" role="group" aria-label="Workspace view">
-          {(['tables', 'analysis'] as const).map((item) => (
-            <button
-              key={item}
-              type="button"
-              className={workspace === item ? 'v2-dinner-active' : undefined}
-              aria-pressed={workspace === item}
-              onClick={() => onWorkspaceChange(item)}
-            >
-              {item === 'tables' ? 'Tables' : 'Analysis'}
-            </button>
-          ))}
+        <div className="v2-dinner-view">
+          <span className="v2-dinner-view-label">View</span>
+          <div className="v2-dinner-segmented" role="group" aria-label="Workspace view">
+            {(['tables', 'analysis'] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                className={workspace === item ? 'v2-dinner-active' : undefined}
+                aria-pressed={workspace === item}
+                onClick={() => onWorkspaceChange(item)}
+              >
+                {item === 'tables' ? 'Tables' : 'Analysis'}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="v2-dinner-threshold">
           <label htmlFor={thresholdId}>Match threshold</label>
@@ -321,24 +183,6 @@ export function DinnerTables({
             </span>
           </div>
         </div>
-        {!analysisOpen && (
-          <div className="v2-dinner-density" role="group" aria-label="Table density">
-            <span className="v2-dinner-density-label">Density</span>
-            <div className="v2-dinner-density-options">
-              {(['compact', 'comfortable'] as const).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className={density === item ? 'v2-dinner-active' : undefined}
-                  aria-pressed={density === item}
-                  onClick={() => onDensityChange(item)}
-                >
-                  {item === 'compact' ? 'Compact' : 'Comfortable'}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="v2-dinner-table-workspace" hidden={analysisOpen}>
@@ -391,7 +235,7 @@ export function DinnerTables({
               Next →
             </button>
           </div>
-          <div className={density === 'comfortable' ? 'v2-dinner-tables v2-dinner-comfortable' : 'v2-dinner-tables'}>
+          <div className="v2-dinner-tables">
             {view.tables.map((table, position) => {
               const isLocked = locked.has(table.index)
               const className = [

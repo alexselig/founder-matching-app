@@ -78,22 +78,23 @@ describe('Dinner and Seating Plans responsive header', () => {
 })
 
 describe('Dinner tables responsive grid', () => {
-  it('uses full-height workspace tabs and keeps density at the far right', () => {
+  it('uses a labeled compact View toggle and keeps the threshold legend visible', () => {
     const css = read('dinner-results.css')
-    expect(css).toMatch(/\.v2-dinner-segmented \{[^}]*align-self: stretch/)
-    expect(css).toMatch(/\.v2-dinner-segmented button \{[^}]*height: 100%/)
-    expect(css).toMatch(/\.v2-dinner-segmented \.v2-dinner-active \{[^}]*box-shadow: inset 0 -3px var\(--v2-blue\)/)
-    expect(css).toMatch(/\.v2-dinner-density \{[^}]*margin-left: auto/)
+    expect(css).toMatch(/\.v2-dinner-work-tools \{[^}]*padding: 0 14px 0 20px/)
+    expect(css).toMatch(/\.v2-dinner-view-label,[^{]*\.v2-dinner-legend-label/)
+    expect(css).toMatch(/\.v2-dinner-segmented button \{[^}]*height: 32px;[^}]*border: 1px solid var\(--line-strong\)/)
+    expect(css).toMatch(/\.v2-dinner-segmented \.v2-dinner-active \{[^}]*background: var\(--ink\);[^}]*color: white/)
+    expect(css).not.toContain('.v2-dinner-density')
 
     const tablet = css.slice(css.indexOf('@container dinner (max-width: 900px)'), css.indexOf('@container dinner (max-width: 560px)'))
     const phone = css.slice(css.indexOf('@container dinner (max-width: 560px)'))
-    expect(tablet).toMatch(/\.v2-dinner-work-tools \{[^}]*padding: 0 10px 0 0/)
-    expect(phone).toMatch(/\.v2-dinner-work-tools \{[^}]*padding: 0 8px 0 0/)
-    expect(css).toMatch(/\.v2-dinner-segmented button \{[^}]*padding: 0 20px/)
-    expect(css).toMatch(/\.v2-dinner-density, \.v2-dinner-legend, \.v2-dinner-threshold \{[^}]*justify-content: flex-start;[^}]*padding-top: 12px/)
+    expect(tablet).toMatch(/\.v2-dinner-work-tools \{[^}]*flex-wrap: wrap;[^}]*padding: 0 10px 12px 16px/)
+    expect(phone).toMatch(/\.v2-dinner-work-tools \{[^}]*display: grid;[^}]*padding: 10px 8px 12px 12px/)
+    expect(css).toMatch(/\.v2-dinner-segmented button \{[^}]*padding: 0 13px/)
+    expect(css).toMatch(/\.v2-dinner-view, \.v2-dinner-legend, \.v2-dinner-threshold \{[^}]*justify-content: flex-start;[^}]*padding-top: 12px/)
     expect(css).toMatch(/\.v2-dinner-legend i \{[^}]*width: 28px;[^}]*height: 28px/)
-    expect(phone).toMatch(/\.v2-dinner-density \{[^}]*display: none/)
-    expect(phone).toMatch(/\.v2-dinner-threshold \{[^}]*margin-left: auto/)
+    expect(tablet).not.toMatch(/\.v2-dinner-legend \{[^}]*display: none/)
+    expect(phone).toMatch(/\.v2-dinner-legend \{[^}]*grid-column: 1 \/ -1/)
     expect(phone).toMatch(/\.v2-dinner-segmented button \{[^}]*padding: 0 14px/)
   })
 
