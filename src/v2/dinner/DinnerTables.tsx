@@ -2,6 +2,7 @@ import { useId, type ReactNode } from 'react'
 
 import {
   objectiveLabel,
+  removeDimension,
   setWeight,
   toggleObjective,
   type CriterionDraft,
@@ -81,6 +82,9 @@ export function DinnerSetupRail({
           <div key={criterion.field} className="v2-dinner-criterion">
             <div className="v2-dinner-criterion-head">
               <span>{criterion.label}</span>
+            </div>
+            <small>{criterion.description}</small>
+            <div className="v2-dinner-criterion-controls">
               <button
                 type="button"
                 className="v2-dinner-objective-toggle"
@@ -89,22 +93,30 @@ export function DinnerSetupRail({
               >
                 {objectiveLabel(criterion.objective)}
               </button>
+              <span className="v2-dinner-weight-toggle" role="group" aria-label={`${criterion.label} weight`}>
+                {CRITERION_WEIGHTS.map((weight) => (
+                  <button
+                    key={weight}
+                    type="button"
+                    className={criterion.weight === weight ? 'v2-dinner-active' : undefined}
+                    aria-pressed={criterion.weight === weight}
+                    disabled={editDisabled}
+                    onClick={() => onCriteriaChange(setWeight(criteria, criterion.field, weight))}
+                  >
+                    {weight}
+                  </button>
+                ))}
+              </span>
+              <button
+                type="button"
+                className="v2-dinner-remove-criterion"
+                aria-label={`Remove ${criterion.label}`}
+                disabled={criteria.length <= 1 || editDisabled}
+                onClick={() => onCriteriaChange(removeDimension(criteria, criterion.field))}
+              >
+                ×
+              </button>
             </div>
-            <small>{criterion.description}</small>
-            <span className="v2-dinner-weight-toggle" role="group" aria-label={`${criterion.label} weight`}>
-              {CRITERION_WEIGHTS.map((weight) => (
-                <button
-                  key={weight}
-                  type="button"
-                  className={criterion.weight === weight ? 'v2-dinner-active' : undefined}
-                  aria-pressed={criterion.weight === weight}
-                  disabled={editDisabled}
-                  onClick={() => onCriteriaChange(setWeight(criteria, criterion.field, weight))}
-                >
-                  {weight}
-                </button>
-              ))}
-            </span>
           </div>
         ))}
         <button type="button" className="v2-dinner-setup-link" disabled={editDisabled} onClick={onEditSetup}>

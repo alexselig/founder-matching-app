@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -475,6 +475,9 @@ describe('DinnerPage results workspace', () => {
     fireEvent.click(within(weights).getByRole('button', { name: 'L' }))
     expect(await within(weights).findByRole('button', { name: 'L', pressed: true })).toBeTruthy()
     expect(within(weights).getByRole('button', { name: 'H' }).getAttribute('aria-pressed')).toBe('false')
+
+    fireEvent.click(within(role).getByRole('button', { name: 'Remove Role' }))
+    await waitFor(() => expect(within(rail).queryByRole('button', { name: 'Remove Role' })).toBeNull())
   })
 
   it('switches to Analysis and swaps founders by keyboard or drag', async () => {

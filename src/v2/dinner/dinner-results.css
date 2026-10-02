@@ -13,14 +13,16 @@
 .v2-dinner-brief { margin: 0; color: var(--ink-muted); font-size: 12px; font-weight: 600; line-height: 1.45; }
 .v2-dinner-criterion { padding: 10px 0; border-top: 1px solid var(--line); }
 .v2-dinner-criterion:first-of-type { border-top: 0; }
-.v2-dinner-criterion-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 800; }
+.v2-dinner-criterion-head { font-size: 12px; font-weight: 800; }
 .v2-dinner-criterion small { display: block; margin-top: 3px; color: var(--ink-muted); font-size: 10px; }
-.v2-dinner-objective-toggle { padding: 2px 4px; border: 0; background: transparent; color: var(--v2-blue); font-size: 10px; font-weight: 800; text-transform: uppercase; }
-.v2-dinner-weight-toggle { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 7px; border: 1px solid var(--line-strong); }
-.v2-dinner-weight-toggle button { height: 26px; padding: 0; border: 0; border-right: 1px solid var(--line); background: var(--surface); font-size: 10px; font-weight: 800; }
+.v2-dinner-criterion-controls { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(108px, 1fr) 28px; gap: 10px; align-items: center; margin-top: 9px; }
+.v2-dinner-objective-toggle { height: 34px; padding: 0 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font-size: 11px; font-weight: 800; }
+.v2-dinner-weight-toggle { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line-strong); }
+.v2-dinner-weight-toggle button { height: 32px; padding: 0; border: 0; border-right: 1px solid var(--line); background: var(--surface); font-size: 10px; font-weight: 800; }
 .v2-dinner-weight-toggle button:last-child { border-right: 0; }
 .v2-dinner-weight-toggle button.v2-dinner-active { background: var(--ink); color: var(--surface); }
-.v2-dinner-objective-toggle:disabled, .v2-dinner-weight-toggle button:disabled { cursor: not-allowed; opacity: .55; }
+.v2-dinner-remove-criterion { width: 28px; height: 34px; padding: 0; border: 0; background: var(--surface); color: var(--ink); font-size: 18px; }
+.v2-dinner-objective-toggle:disabled, .v2-dinner-weight-toggle button:disabled, .v2-dinner-remove-criterion:disabled { cursor: not-allowed; opacity: .55; }
 .v2-dinner-rule { display: flex; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.35; }
 .v2-dinner-rule::before { content: "✓"; color: #17634d; font-weight: 800; }
 .v2-dinner-setup-link { width: 100%; min-height: 36px; margin-top: 11px; border: 1px solid var(--line-strong); background: white; font-size: 11px; font-weight: 800; }

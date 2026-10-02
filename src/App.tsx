@@ -71,6 +71,15 @@ function v1Href(path = '') {
   return `${v1BasePath}${path}`
 }
 
+function V1VersionFooter() {
+  return (
+    <footer className="v1-version-footer" aria-label="Version switcher">
+      <a className="active" href="/v1" aria-current="page">V1</a>
+      <a href="/v2">V2</a>
+    </footer>
+  )
+}
+
 function normalizeV1Pathname(pathname: string) {
   if (!pathname.startsWith(v1BasePath)) {
     return pathname
@@ -803,8 +812,17 @@ function Admin() {
 
 export default function App() {
   const path = normalizeV1Pathname(window.location.pathname)
-  if (path.startsWith('/admin')) return <Admin />
-  if (path.startsWith('/algorithm')) return <AlgorithmPage />
-  if (path.startsWith('/plan')) return <PlanReview />
-  return <Directory />
+  const page = path.startsWith('/admin')
+    ? <Admin />
+    : path.startsWith('/algorithm')
+      ? <AlgorithmPage />
+      : path.startsWith('/plan')
+        ? <PlanReview />
+        : <Directory />
+  return (
+    <>
+      {page}
+      <V1VersionFooter />
+    </>
+  )
 }
