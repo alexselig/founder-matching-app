@@ -30,26 +30,33 @@ export type FounderFieldNormalizer =
   | 'integer'
 
 export interface FounderFieldDefinition {
-  key: FounderFieldKey
-  path: FounderFieldKey
-  label: string
-  kind: FounderFieldKind
-  source: RawFounderField
-  provenance: 'src/founders.json'
-  search: boolean
-  filter: boolean
-  group: boolean
-  sort: boolean
-  display: boolean
-  match: boolean
-  aliases: readonly string[]
-  normalizer: FounderFieldNormalizer
+  readonly key: FounderFieldKey
+  readonly path: FounderFieldKey
+  readonly label: string
+  readonly kind: FounderFieldKind
+  readonly source: RawFounderField
+  readonly provenance: 'src/founders.json'
+  readonly search: boolean
+  readonly filter: boolean
+  readonly group: boolean
+  readonly sort: boolean
+  readonly display: boolean
+  readonly match: boolean
+  readonly aliases: readonly string[]
+  readonly normalizer: FounderFieldNormalizer
 }
 
 const provenance = 'src/founders.json' as const
 
+function freezeDefinition(definition: FounderFieldDefinition): FounderFieldDefinition {
+  return Object.freeze({
+    ...definition,
+    aliases: Object.freeze([...definition.aliases]),
+  })
+}
+
 export const FOUNDER_SCHEMA = Object.freeze<readonly FounderFieldDefinition[]>([
-  {
+  freezeDefinition({
     key: 'id',
     path: 'id',
     label: 'Founder ID',
@@ -64,8 +71,8 @@ export const FOUNDER_SCHEMA = Object.freeze<readonly FounderFieldDefinition[]>([
     match: true,
     aliases: ['founder id', 'id', 'record id'],
     normalizer: 'opaque-string',
-  },
-  {
+  }),
+  freezeDefinition({
     key: 'name',
     path: 'name',
     label: 'Founder name',
@@ -80,8 +87,8 @@ export const FOUNDER_SCHEMA = Object.freeze<readonly FounderFieldDefinition[]>([
     match: true,
     aliases: ['founder', 'founder name', 'name'],
     normalizer: 'unicode-text',
-  },
-  {
+  }),
+  freezeDefinition({
     key: 'cohortGroup',
     path: 'cohortGroup',
     label: 'Cohort group',
@@ -96,8 +103,8 @@ export const FOUNDER_SCHEMA = Object.freeze<readonly FounderFieldDefinition[]>([
     match: true,
     aliases: ['cohort', 'cohort group', 'group'],
     normalizer: 'category-code',
-  },
-  {
+  }),
+  freezeDefinition({
     key: 'cohortSection',
     path: 'cohortSection',
     label: 'Cohort section',
@@ -112,8 +119,8 @@ export const FOUNDER_SCHEMA = Object.freeze<readonly FounderFieldDefinition[]>([
     match: true,
     aliases: ['cohort section', 'group section', 'section'],
     normalizer: 'category-code',
-  },
-  {
+  }),
+  freezeDefinition({
     key: 'companyVertical',
     path: 'companyVertical',
     label: 'Company vertical',
@@ -128,8 +135,8 @@ export const FOUNDER_SCHEMA = Object.freeze<readonly FounderFieldDefinition[]>([
     match: true,
     aliases: ['company vertical', 'industry', 'sector', 'vertical'],
     normalizer: 'vertical-path',
-  },
-  {
+  }),
+  freezeDefinition({
     key: 'company',
     path: 'company',
     label: 'Company',
@@ -144,8 +151,8 @@ export const FOUNDER_SCHEMA = Object.freeze<readonly FounderFieldDefinition[]>([
     match: true,
     aliases: ['company', 'startup'],
     normalizer: 'unicode-text',
-  },
-  {
+  }),
+  freezeDefinition({
     key: 'age',
     path: 'age',
     label: 'Age',
@@ -160,8 +167,8 @@ export const FOUNDER_SCHEMA = Object.freeze<readonly FounderFieldDefinition[]>([
     match: true,
     aliases: ['age'],
     normalizer: 'integer',
-  },
-  {
+  }),
+  freezeDefinition({
     key: 'education',
     path: 'education',
     label: 'Education',
@@ -176,8 +183,8 @@ export const FOUNDER_SCHEMA = Object.freeze<readonly FounderFieldDefinition[]>([
     match: true,
     aliases: ['education', 'background', 'degree', 'study'],
     normalizer: 'unicode-text',
-  },
-  {
+  }),
+  freezeDefinition({
     key: 'role',
     path: 'role',
     label: 'Role',
@@ -192,5 +199,5 @@ export const FOUNDER_SCHEMA = Object.freeze<readonly FounderFieldDefinition[]>([
     match: true,
     aliases: ['function', 'role'],
     normalizer: 'unicode-text',
-  },
+  }),
 ])
