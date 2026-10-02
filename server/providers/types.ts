@@ -1,4 +1,5 @@
-export type ProviderId = 'openai' | 'anthropic' | 'xai'
+export type { ProviderId } from '../../src/shared/providerIds.js'
+import type { ProviderId } from '../../src/shared/providerIds.js'
 
 export interface ProviderCapabilities {
   searchIntent: boolean

@@ -7,7 +7,11 @@ import type { FastifyInstance } from 'fastify'
 import { normalizeFounders } from '../src/shared/founder.js'
 import { createServer } from './app.js'
 import { createDatabase, type SqliteDatabase } from './database.js'
-import { createConfiguredProviders } from './providers/configured.js'
+import {
+  createProviderAdapter,
+  createRuntimeProviders,
+} from './providers/configured.js'
+import { ProviderError } from './providers/types.js'
 import { DinnerRepository } from './repositories/dinners.js'
 import { FounderRepository } from './repositories/founders.js'
 import { WebResultsRepository } from './repositories/webResults.js'
@@ -118,7 +122,10 @@ export async function startServer(
     const founderRepository = new FounderRepository(database)
     founderRepository.saveAll(loadFounders())
     const webResultsRepository = new WebResultsRepository(database)
-    const providers = createConfiguredProviders(environment)
+    const providers = createRuntimeProviders(
+      environment,
+      credentialVault,
+    )
     const enrichmentService = createEnrichmentService({
       founderRepository,
       webResultsRepository,
@@ -141,6 +148,27 @@ export async function startServer(
         providers,
       }),
       credentialVault,
+      credentialValidator: async (provider, secret) => {
+        try {
+          await createProviderAdapter(
+            provider,
+            secret.reveal(),
+            environment,
+          ).validateCredential()
+          enrichmentService.invalidateProviderValidation(provider)
+          return { ok: true }
+        } catch (error) {
+          if (error instanceof ProviderError) {
+            if (error.code === 'invalid_credential') {
+              return { ok: false, reason: 'invalid' }
+            }
+            if (error.code === 'rate_limited') {
+              return { ok: false, reason: 'rate_limited' }
+            }
+          }
+          return { ok: false, reason: 'unavailable' }
+        }
+      },
       dinnerService,
       exportService: new ExportService({
         dinners: dinnerService,

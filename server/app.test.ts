@@ -495,6 +495,62 @@ describe('createServer', () => {
     await server.close()
   })
 
+  it('validates a stored credential with the real adapter and uses it immediately', async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input)
+      return new Response(
+        JSON.stringify(
+          url.endsWith('/models?limit=1')
+            ? { data: [] }
+            : {
+                output_text: JSON.stringify({
+                  text: '',
+                  dimensions: [],
+                }),
+              },
+        ),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        },
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const server = await startServer(
+      runtimeEnvironment('credential-adapter', {
+        FOUNDER_APP_MASTER_KEY: MASTER_KEY,
+      }),
+    )
+
+    try {
+      const save = await server.inject({
+        method: 'PUT',
+        url: '/api/v2/providers/openai/credential',
+        payload: { secret: STORED_SECRET },
+      })
+      const interpretation = await server.inject({
+        method: 'POST',
+        url: '/api/v2/ai/interpret/search',
+        payload: {
+          provider: 'openai',
+          input: 'all founders',
+        },
+      })
+
+      expect(save.statusCode).toBe(200)
+      expect(save.body).not.toContain(STORED_SECRET)
+      expect(interpretation.statusCode).toBe(200)
+      expect(interpretation.json()).toMatchObject({
+        ok: true,
+        data: { status: 'interpreted' },
+      })
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    } finally {
+      await server.close()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it.each([
     ['not base64', 'not-a-key!'],
     ['the wrong length', Buffer.alloc(16, 1).toString('base64')],

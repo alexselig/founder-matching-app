@@ -73,6 +73,7 @@ export interface EnrichmentProgress {
 
 export interface EnrichmentService {
   validateProvider(provider: ProviderId): Promise<void>
+  invalidateProviderValidation(provider: ProviderId): void
   enrichFounder(
     founderId: string,
     options: EnrichFounderOptions,
@@ -727,6 +728,9 @@ export function createEnrichmentService(
 
   return {
     validateProvider,
+    invalidateProviderValidation(provider) {
+      providerValidations.delete(provider)
+    },
     enrichFounder,
     enrichAllFounders,
     resolveFounderIds,

@@ -1,7 +1,10 @@
 import { z } from 'zod'
 
 import type { Founder } from './founder.js'
+import { ProviderIdSchema } from './providerIds.js'
 import { FOUNDER_SCHEMA } from './schemaRegistry.js'
+
+export { ProviderIdSchema, type ProviderId } from './providerIds.js'
 
 export const appVersion = 'v2'
 export const FOUNDER_LIST_MAX_LIMIT = 1000
@@ -132,13 +135,6 @@ export const FounderListResponseSchema = createApiEnvelopeSchema(
 export const FounderDetailResponseSchema = createApiEnvelopeSchema(
   FounderResponseSchema,
 )
-
-export const ProviderIdSchema = z.enum([
-  'openai',
-  'anthropic',
-  'xai',
-])
-export type ProviderId = z.infer<typeof ProviderIdSchema>
 
 export const ProviderCapabilitiesSchema = z
   .object({

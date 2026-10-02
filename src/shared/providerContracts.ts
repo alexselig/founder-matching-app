@@ -1,10 +1,16 @@
 import { z } from 'zod'
 
 import { createApiEnvelopeSchema } from './contracts.js'
+import {
+  ProviderIdSchema,
+  type ProviderId,
+} from './providerIds.js'
 
-export const PROVIDER_IDS = ['openai', 'anthropic', 'xai'] as const
-export const ProviderIdSchema = z.enum(PROVIDER_IDS)
-export type ProviderId = z.infer<typeof ProviderIdSchema>
+export {
+  PROVIDER_IDS,
+  ProviderIdSchema,
+  type ProviderId,
+} from './providerIds.js'
 
 export const PROVIDER_LABELS: Readonly<Record<ProviderId, string>> = {
   openai: 'OpenAI',
