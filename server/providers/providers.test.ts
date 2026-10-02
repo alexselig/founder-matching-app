@@ -230,6 +230,63 @@ describe('provider adapters', () => {
     expect(results[2]!.snippet).not.toContain('Ada Founder')
   })
 
+  it('uses the preceding claim when xAI annotation offsets span an inline citation marker', async () => {
+    const claim = 'Ada Founder leads Analytical Engines.'
+    const marker = '[[1]](https://profiles.test/ada)'
+    const text = `${claim} ${marker}`
+    const markerStart = text.indexOf(marker)
+    const transport = vi.fn(async () =>
+      jsonResponse({
+        output: [
+          {
+            type: 'message',
+            content: [
+              {
+                type: 'output_text',
+                text,
+                annotations: [
+                  {
+                    type: 'url_citation',
+                    url: 'https://profiles.test/ada',
+                    title: 'Profile source',
+                    start_index: markerStart,
+                    end_index: markerStart + marker.length,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    )
+    const provider = createXaiProvider({
+      apiKey: 'xai-secret',
+      model: 'xai-test-model',
+      transport,
+    })
+
+    const results = await provider.searchWeb({
+      founderId: 'founder-1',
+      context: {
+        name: 'Ada Founder',
+        company: 'Analytical Engines',
+        companyVertical: 'B2B Software -> Analytics',
+        role: 'CEO',
+        education: 'Mathematics',
+        cohortGroup: 'W26',
+        cohortSection: 'A',
+      },
+      query: '"Ada Founder" "Analytical Engines"',
+    })
+
+    expect(results).toEqual([
+      expect.objectContaining({
+        url: 'https://profiles.test/ada',
+        snippet: claim,
+      }),
+    ])
+  })
+
   it('uses the official Anthropic SDK with Claude Opus 4.8', async () => {
     const create = vi.fn(async () => ({
       content: [

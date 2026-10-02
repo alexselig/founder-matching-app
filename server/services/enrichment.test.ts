@@ -223,6 +223,66 @@ describe('web enrichment service', () => {
     },
   )
 
+  it('turns xAI inline-marker citations into identity-matched evidence', async () => {
+    const founder = founders[0]!
+    const claim = `${founder.name} leads ${founder.company}.`
+    const marker = '[[1]](https://profiles.test/founder)'
+    const text = `${claim} ${marker}`
+    const markerStart = text.indexOf(marker)
+    const transport = vi.fn(async () =>
+      new Response(JSON.stringify({
+        output: [
+          {
+            type: 'message',
+            content: [
+              {
+                type: 'output_text',
+                text,
+                annotations: [
+                  {
+                    type: 'url_citation',
+                    url: 'https://profiles.test/founder',
+                    title: 'Profile source',
+                    start_index: markerStart,
+                    end_index: markerStart + marker.length,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+    const service = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [
+        createXaiProvider({
+          apiKey: 'xai-secret',
+          model: 'xai-test-model',
+          transport,
+        }),
+      ],
+      now: () => new Date('2026-10-01T12:00:00.000Z'),
+      createId: () => 'xai-inline-marker',
+    })
+
+    const result = await service.enrichFounder(founder.id, {
+      provider: 'xai',
+    })
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        classification: 'both',
+        snippet: claim,
+        url: 'https://profiles.test/founder',
+      }),
+    ])
+  })
+
   it('reuses a non-stale query fingerprint without appending history', async () => {
     const searchWeb = vi.fn(async () => baseResults)
     const service = createEnrichmentService({
@@ -245,6 +305,54 @@ describe('web enrichment service', () => {
     expect(second.runId).toBe(first.runId)
     expect(searchWeb).toHaveBeenCalledTimes(1)
     expect(webResultsRepository.listRuns(founders[0]!.id)).toHaveLength(1)
+  })
+
+  it('reuses prior fresh evidence after a failed forced refresh', async () => {
+    let calls = 0
+    let id = 0
+    const searchWeb = vi.fn(async () => {
+      calls += 1
+      if (calls === 2) {
+        throw new ProviderError(
+          'unavailable',
+          'provider unavailable',
+        )
+      }
+      return baseResults
+    })
+    const service = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [fakeProvider(searchWeb)],
+      now: () => new Date('2026-10-01T12:00:00.000Z'),
+      createId: () => `run-cache-after-failure-${++id}`,
+      retry: {
+        maxAttempts: 1,
+        baseDelayMs: 1,
+        maxDelayMs: 1,
+      },
+    })
+
+    const successful = await service.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+    })
+    const failed = await service.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+      forceRefresh: true,
+    })
+    const reused = await service.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+    })
+
+    expect(failed.status).toBe('failed')
+    expect(reused).toMatchObject({
+      cached: true,
+      runId: successful.runId,
+      status: 'complete',
+    })
+    expect(reused.items).toEqual(successful.items)
+    expect(searchWeb).toHaveBeenCalledTimes(2)
+    expect(webResultsRepository.listRuns(founders[0]!.id)).toHaveLength(2)
   })
 
   it('refreshes stale evidence by appending a new run', async () => {
@@ -475,6 +583,78 @@ describe('web enrichment service', () => {
       failureService.validateProvider('openai'),
     ).rejects.toMatchObject({ code: 'invalid_credential' })
     expect(validateFailure).toHaveBeenCalledTimes(1)
+  })
+
+  it('deduplicates in-flight validation and retries a transient failure with backoff', async () => {
+    let attempts = 0
+    const sleep = vi.fn(async () => undefined)
+    const validateCredential = vi.fn(async () => {
+      attempts += 1
+      if (attempts === 1) {
+        throw new ProviderError(
+          'unavailable',
+          'provider unavailable',
+          { retryable: true },
+        )
+      }
+    })
+    const provider = fakeProvider(async () => baseResults)
+    provider.validateCredential = validateCredential
+    const service = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [provider],
+      sleep,
+      retry: {
+        maxAttempts: 3,
+        baseDelayMs: 60_000,
+        maxDelayMs: 120_000,
+      },
+    })
+
+    await Promise.all([
+      service.validateProvider('openai'),
+      service.validateProvider('openai'),
+    ])
+    await service.validateProvider('openai')
+
+    expect(validateCredential).toHaveBeenCalledTimes(2)
+    expect(sleep.mock.calls).toEqual([[30_000]])
+  })
+
+  it('evicts an exhausted retryable validation so a later batch can recover', async () => {
+    let attempts = 0
+    const validateCredential = vi.fn(async () => {
+      attempts += 1
+      if (attempts === 1) {
+        throw new ProviderError(
+          'unavailable',
+          'provider unavailable',
+          { retryable: true },
+        )
+      }
+    })
+    const provider = fakeProvider(async () => baseResults)
+    provider.validateCredential = validateCredential
+    const service = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [provider],
+      retry: {
+        maxAttempts: 1,
+        baseDelayMs: 1,
+        maxDelayMs: 1,
+      },
+    })
+
+    await expect(
+      service.validateProvider('openai'),
+    ).rejects.toMatchObject({ retryable: true })
+    await expect(
+      service.validateProvider('openai'),
+    ).resolves.toBeUndefined()
+
+    expect(validateCredential).toHaveBeenCalledTimes(2)
   })
 
   it('never allows configured retry delays to exceed thirty seconds', async () => {
