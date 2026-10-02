@@ -1,0 +1,63 @@
+{
+  "fixtureVersion": 1,
+  "seed": "founder-demo-fixtures-v1",
+  "generatedAt": "2026-10-01T20:00:00.000Z",
+  "synthetic": true,
+  "networkCallsRequired": false,
+  "authoritativeRecordsUsed": false,
+  "files": {
+    "manifest.json": "Scenario catalog, counts, screenshot uses, and safety declarations.",
+    "founders.json": "160 synthetic raw founder records compatible with normalizeFounders().",
+    "web-evidence.json": "Source-local provider-shaped evidence and explicit demo states.",
+    "seating-plans.json": "Versioned Task 8-compatible seating-plan states."
+  },
+  "counts": {
+    "founders": 160,
+    "evidenceRecords": 160,
+    "evidenceResults": 416,
+    "seatingPlans": 4,
+    "seatingPlanVersions": 15
+  },
+  "scenarios": [
+    {
+      "id": "founder-cohort",
+      "description": "A 160-founder synthetic cohort with varied schema fields and opaque demo IDs.",
+      "screenshotUses": [
+        "Search zero state",
+        "Search results — Grid view",
+        "Search results — List view",
+        "Search no-results recovery",
+        "Seating Plan configuration"
+      ]
+    },
+    {
+      "id": "web-evidence",
+      "description": "Fresh, stale, no-results, unsupported, and provider-failure evidence without network calls.",
+      "screenshotUses": [
+        "Founder web evidence",
+        "AI integration — API key setup and validated provider state",
+        "Rules conflict/recovery"
+      ]
+    },
+    {
+      "id": "saved-seating-plans",
+      "description": "Three-, five-, uneven-five-, and twenty-table histories with complete assignments.",
+      "screenshotUses": [
+        "Seating Plans populated index",
+        "Table view",
+        "Analysis view",
+        "Generate 2 Alternatives comparison",
+        "Saved plan version history/reopen",
+        "Export options/success",
+        "Responsive mobile Tables view"
+      ]
+    }
+  ],
+  "safety": {
+    "idPrefix": "demo-",
+    "reservedDomainSuffix": ".example",
+    "containsSecrets": false,
+    "containsRealProviderPayloads": false,
+    "containsRealFounderRecords": false
+  }
+}
