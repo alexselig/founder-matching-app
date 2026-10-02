@@ -140,6 +140,10 @@ export function SearchPage({
       return
     }
     const compiled = compileSearchText(text, founders)
+    if (!isSearchActive(compiled)) {
+      returnToDiscovery('No searchable criteria recognized. Founder discovery shown')
+      return
+    }
     setSession((previous) => ({
       ...previous,
       active: true,

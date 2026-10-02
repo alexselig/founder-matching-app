@@ -365,6 +365,15 @@ describe('SearchPage no-results recovery', () => {
     expectZeroQueryDiscovery()
   })
 
+  it('returns to discovery when submitted text contains no searchable criteria', () => {
+    renderSearch()
+    search('founders')
+
+    expectZeroQueryDiscovery()
+    expect(liveRegion()).toHaveTextContent('No searchable criteria recognized. Founder discovery shown')
+    expect(JSON.parse(sessionStorage.getItem('founder-v2-search-state') ?? '{}')).toMatchObject({ active: false })
+  })
+
   it('describes the applied dimensions once the failed search has been edited', () => {
     renderSearch()
     search('engineers in fintech from Lantern age 50')
