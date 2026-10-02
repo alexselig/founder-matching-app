@@ -20,6 +20,12 @@ export function FounderAttributes({ founder, id, hidden }: { founder: Founder; i
           </div>
         ))}
       </dl>
+      <a
+        className="v2-evidence-link"
+        href={`/v2/founders/${encodeURIComponent(founder.id)}/evidence`}
+      >
+        Review Web Search evidence →
+      </a>
     </div>
   )
 }

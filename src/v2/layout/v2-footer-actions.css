@@ -20,6 +20,21 @@
   font-weight: 800;
   text-decoration: none;
 }
+
+.v2-footer-demo {
+  border: 0;
+  border-left: 1px solid var(--v2-rule, #d8d4cb);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0 16px;
+  cursor: pointer;
+}
+
+.v2-footer-demo[aria-pressed='true'] {
+  color: #0f6f66;
+  font-weight: 700;
+}
 .v2-footer-actions > span { display: flex; align-items: center; padding: 0 16px; border-left: 1px solid var(--line); color: var(--ink-muted); font-size: 10px; font-weight: 800; }
 .v2-footer-actions > .v2-footer-secondary-dark { background: var(--ink); color: white; }
 .v2-footer-actions > .v2-footer-primary { min-width: 86px; background: var(--v2-blue); color: white; }

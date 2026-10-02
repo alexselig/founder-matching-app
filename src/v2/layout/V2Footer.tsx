@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import type { AccountRole } from '../search/accountState'
+import { readDemoMode, setDemoMode } from '../demoMode'
 import '../search/v2-chrome.css'
 import './v2-footer-actions.css'
 
@@ -24,6 +25,12 @@ export function V2Footer({ aiStatus = '+ AI Disabled', role = 'admin', onExport,
   ]
     .filter(Boolean)
     .join(' ')
+  const demoMode = readDemoMode()
+
+  function toggleDemoMode() {
+    setDemoMode(!demoMode)
+    window.location.assign('/v2')
+  }
 
   return (
     <footer className={footerClass}>
@@ -34,7 +41,18 @@ export function V2Footer({ aiStatus = '+ AI Disabled', role = 'admin', onExport,
         V2
       </a>
       <div className={aiTone ? `v2-footer-ai v2-footer-ai-${aiTone}` : 'v2-footer-ai'}>{aiStatus}</div>
-      <div aria-hidden="true" />
+      {role === 'admin' ? (
+        <button
+          type="button"
+          className="v2-footer-demo"
+          aria-pressed={demoMode}
+          onClick={toggleDemoMode}
+        >
+          Demo mode {demoMode ? 'On' : 'Off'}
+        </button>
+      ) : (
+        <div aria-hidden="true" />
+      )}
       {hasActions && <div className="v2-footer-actions">{actions}</div>}
       {!hasActions && onExport && (
         <button type="button" className="v2-footer-export" onClick={onExport}>

@@ -1,0 +1,48 @@
+.v2-evidence-shell main { padding-bottom: 64px; background: #fff; }
+.v2-evidence-heading { display: grid; grid-template-columns: minmax(380px, .9fr) 1fr; align-items: center; min-height: 150px; border-bottom: 1px solid #e3e5e9; }
+.v2-evidence-heading > div { align-self: stretch; display: flex; flex-direction: column; justify-content: center; padding: 24px 32px; color: #fff; background: #2f5bea; }
+.v2-evidence-heading span { font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.v2-evidence-heading h1 { max-width: 520px; margin: 10px 0 0; font: 800 34px/.95 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-evidence-heading > p { max-width: 700px; padding: 24px 32px; color: #5b5f66; line-height: 1.5; }
+.v2-evidence-workspace { display: grid; grid-template-columns: minmax(320px, .55fr) minmax(580px, 1fr); }
+.v2-evidence-founder { border-right: 1px solid #e3e5e9; background: #f5f3ee; }
+.v2-evidence-identity { display: flex; gap: 15px; align-items: center; padding: 24px; border-bottom: 1px solid #e3e5e9; }
+.v2-evidence-identity > span { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: #141414; font-weight: 800; }
+.v2-evidence-identity h2, .v2-evidence-identity p { margin: 0; }
+.v2-evidence-separation { padding: 16px 24px; border-left: 5px solid #f26522; background: #fff3ed; }
+.v2-evidence-separation strong { display: block; margin-bottom: 5px; }
+.v2-evidence-separation p { margin: 0; color: #5b5f66; font-size: 12px; line-height: 1.4; }
+.v2-evidence-fact { min-height: 58px; display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 12px; padding: 10px 24px; border-bottom: 1px solid #e3e5e9; }
+.v2-evidence-fact span { color: #5b5f66; font-size: 11px; font-weight: 700; }
+.v2-evidence-status { min-height: 72px; display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 14px; padding: 14px 28px; border-bottom: 1px solid #e3e5e9; color: #137769; background: #edf8f5; }
+.v2-evidence-stale .v2-evidence-status { color: #a65b12; background: #fff8e7; }
+.v2-evidence-unsupported .v2-evidence-status, .v2-evidence-no_results .v2-evidence-status, .v2-evidence-provider_failure .v2-evidence-status { color: #141414; background: #f5f3ee; }
+.v2-evidence-status-icon { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-weight: 800; }
+.v2-evidence-status strong, .v2-evidence-status span { display: block; }
+.v2-evidence-status span { margin-top: 3px; color: #5b5f66; font-size: 12px; }
+.v2-evidence-count { min-width: 112px; padding-left: 18px; border-left: 1px solid #d8d4cb; text-align: right; }
+.v2-evidence-count strong { font: 800 25px/1 "League Spartan", sans-serif; }
+.v2-evidence-count span { font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.v2-evidence-list { margin: 0; padding: 0; list-style: none; }
+.v2-evidence-list li { display: grid; grid-template-columns: 64px 1fr; border-bottom: 1px solid #e3e5e9; }
+.v2-evidence-rank { padding-top: 20px; border-right: 1px solid #e3e5e9; color: #5b5f66; background: #f5f3ee; text-align: center; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.v2-evidence-rank strong { display: block; margin-top: 5px; color: #141414; font: 800 24px/1 "League Spartan", sans-serif; }
+.v2-evidence-list article { padding: 18px 24px 20px; }
+.v2-evidence-classification, .v2-evidence-stale { display: inline-flex; min-height: 23px; align-items: center; padding: 0 8px; border: 1px solid #2f5bea; color: #2f5bea; background: #eef2ff; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.v2-evidence-stale { margin-left: 8px; border-color: #f26522; color: #a64a1b; background: #fff3ed; }
+.v2-evidence-list h2 { margin: 10px 0 5px; font-size: 18px; }
+.v2-evidence-list article > a { color: #2f5bea; font-size: 12px; overflow-wrap: anywhere; }
+.v2-evidence-list article > p { color: #5b5f66; font-size: 13px; line-height: 1.5; }
+.v2-evidence-list dl { display: grid; grid-template-columns: repeat(4, 1fr); margin: 15px 0 0; border-top: 1px solid #e3e5e9; }
+.v2-evidence-list dl div { padding: 10px 10px 0 0; }
+.v2-evidence-list dt { color: #5b5f66; font-size: 9px; text-transform: uppercase; }
+.v2-evidence-list dd { margin: 3px 0 0; font-size: 11px; font-weight: 700; }
+.v2-evidence-empty { min-height: 420px; display: grid; place-content: center; justify-items: center; padding: 40px; text-align: center; }
+.v2-evidence-empty > b { width: 54px; height: 54px; display: grid; place-items: center; border: 1px solid #141414; border-radius: 50%; font-size: 24px; }
+.v2-evidence-empty h2 { margin-bottom: 0; }
+.v2-evidence-empty p { max-width: 480px; color: #5b5f66; line-height: 1.5; }
+.v2-evidence-link { display: inline-block; margin-top: 14px; color: #2f5bea; font-weight: 800; }
+@media (max-width: 900px) {
+  .v2-evidence-heading, .v2-evidence-workspace { grid-template-columns: 1fr; }
+  .v2-evidence-founder { border-right: 0; }
+}

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import rawFounders from '../../founders.json'
-import { normalizeFounders, type Founder } from '../../shared/founder'
+import type { Founder } from '../../shared/founder'
 import { V2Footer } from '../layout/V2Footer'
 import { V2Header } from '../layout/V2Header'
 import {
@@ -49,7 +48,7 @@ export interface SeatingPlanSummary {
 
 export interface SeatingPlansPageProps {
   readonly plans?: readonly SeatingPlanSummary[]
-  readonly founders?: readonly Founder[]
+  readonly founders: readonly Founder[]
   /** Reopen a plan at a version. Defaults to navigating to `/v2/dinner?plan=…&version=…`. */
   readonly onOpenPlan?: (planId: string, version: number) => void
   /** Permanently delete a plan and all versions. Delete controls are disabled when omitted. */
@@ -75,8 +74,6 @@ interface PendingDelete {
   readonly plan: SeatingPlanSummary
   readonly busy: boolean
 }
-
-const DEFAULT_FOUNDERS: readonly Founder[] = normalizeFounders(rawFounders)
 
 const STATUS_LABELS: Readonly<Record<SeatingPlanStatus, string>> = {
   ready: 'Ready',
@@ -147,7 +144,7 @@ function versionRows(plan: SeatingPlanSummary, now: Date): VersionRow[] {
 
 export function SeatingPlansPage({
   plans = [],
-  founders = DEFAULT_FOUNDERS,
+  founders,
   onOpenPlan,
   onDeletePlan,
   navigate = (path) => window.location.assign(path),

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
-import rawFounders from '../../founders.json'
-import { normalizeFounders, type Founder } from '../../shared/founder'
+import type { Founder } from '../../shared/founder'
 import { V2Footer } from '../layout/V2Footer'
 import { V2Header } from '../layout/V2Header'
 import {
@@ -57,8 +56,6 @@ import './dinner-alternatives.css'
 import './dinner-export.css'
 import './dinner.css'
 import './dinner-header.css'
-
-const DEFAULT_FOUNDERS: readonly Founder[] = normalizeFounders(rawFounders)
 
 /** Setup inputs the coordinator can persist as an unfinished draft. */
 export interface DinnerDraft {
@@ -122,7 +119,7 @@ export interface DinnerAiBridge {
 }
 
 export interface DinnerPageProps {
-  readonly founders?: readonly Founder[]
+  readonly founders: readonly Founder[]
   /** `window.location.search`; carries the Founder Search cohort handoff. */
   readonly search?: string
   readonly sessionStore?: Pick<Storage, 'getItem'>
@@ -191,7 +188,7 @@ function readHandoff(search: string, store: Pick<Storage, 'getItem'> | undefined
 }
 
 export function DinnerPage({
-  founders = DEFAULT_FOUNDERS,
+  founders,
   search = '',
   sessionStore,
   engine = defaultDinnerEngine,

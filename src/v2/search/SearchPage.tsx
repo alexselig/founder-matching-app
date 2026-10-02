@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
 
-import rawFounders from '../../founders.json'
-import { normalizeFounders, type Founder } from '../../shared/founder'
+import type { Founder } from '../../shared/founder'
 import { V2Footer } from '../layout/V2Footer'
 import { V2Header } from '../layout/V2Header'
 import {
@@ -45,12 +44,12 @@ import { SearchToolbar } from './SearchToolbar'
 import { ZeroQueryDiscovery } from './ZeroQueryDiscovery'
 import './search.css'
 
-const DEFAULT_FOUNDERS: readonly Founder[] = normalizeFounders(rawFounders)
-
 export interface SearchPageProps {
-  founders?: readonly Founder[]
+  founders: readonly Founder[]
   navigate?: (url: string) => void
   exportResults?: (results: readonly SearchResult[]) => void
+  aiStatus?: string
+  aiTone?: 'enabled' | 'issue' | 'off'
 }
 
 function defaultNavigate(url: string) {
@@ -82,9 +81,11 @@ function describeDimensions(query: StructuredSearchQuery) {
 }
 
 export function SearchPage({
-  founders = DEFAULT_FOUNDERS,
+  founders,
   navigate = defaultNavigate,
   exportResults = downloadSearchResultsCsv,
+  aiStatus,
+  aiTone,
 }: SearchPageProps) {
   const [role, setRole] = useState<AccountRole>(() => readAccountRole(browserLocalStorage()))
   const [currentFounderId] = useState(() => readCurrentFounderId(browserLocalStorage(), founders))
@@ -312,6 +313,8 @@ export function SearchPage({
       </main>
       <V2Footer
         role={role}
+        aiStatus={aiStatus}
+        aiTone={aiTone}
         onExport={hasResults ? handleExport : undefined}
         onCreateDinner={hasResults ? handleCreateDinner : undefined}
       />
