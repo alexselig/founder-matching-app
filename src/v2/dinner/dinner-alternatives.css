@@ -1,0 +1,106 @@
+/* Generated alternatives (alternatives review v6). Ported from the approved mock; every selector is namespaced. */
+
+.v2-alt-setup { min-height: 0; overflow: auto; border-right: 1px solid var(--line); background: var(--surface); }
+.v2-alt-setup-title { padding: 20px 24px; border-bottom: 1px solid var(--line); background: var(--v2-orange); }
+.v2-alt-eyebrow { font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.v2-alt-setup-title h1 { margin: 7px 0 0; font: 800 30px/.95 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-alt-setup-section { padding: 17px 20px; border-bottom: 1px solid var(--line); }
+.v2-alt-setup-section h2 { margin: 0 0 12px; font: 800 14px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-alt-scope-row { display: flex; justify-content: space-between; align-items: end; padding: 8px 0; border-top: 1px solid var(--line); }
+.v2-alt-scope-row:first-of-type { border-top: 0; padding-top: 0; }
+.v2-alt-scope-row strong { display: block; font: 800 22px/1 "League Spartan", sans-serif; }
+.v2-alt-scope-row span { display: block; margin-top: 3px; color: var(--ink-muted); font-size: 11px; }
+.v2-alt-criteria-list { border-top: 1px solid var(--line); }
+.v2-alt-criterion { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.v2-alt-criterion strong, .v2-alt-criterion small { display: block; }
+.v2-alt-criterion strong { font-size: 12px; }
+.v2-alt-criterion small { margin-top: 2px; color: var(--ink-muted); font-size: 10px; }
+.v2-alt-criterion b { align-self: center; color: var(--v2-blue); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; }
+.v2-alt-rule { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 7px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.35; }
+.v2-alt-rule::before { content: "✓"; color: #17634d; font-weight: 800; }
+.v2-alt-lock-note { margin: 12px 0 0; padding: 10px; border-left: 4px solid var(--v2-blue); background: #eef2ff; font-size: 11px; line-height: 1.4; }
+.v2-alt-workspace { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface-alt); overflow: hidden; }
+.v2-alt-workspace-head { border-bottom: 1px solid var(--line); background: var(--surface); }
+.v2-alt-headline { padding: 16px 22px; }
+.v2-alt-headline h2 { margin: 5px 0 4px; font: 800 27px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-alt-headline p { margin: 0; color: var(--ink-muted); font-size: 12px; }
+.v2-alt-comparison { min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(285px, 1fr)); gap: 1px; padding: 1px; overflow: auto; background: var(--line); }
+.v2-alt-solution { min-width: 0; display: flex; flex-direction: column; background: var(--surface); position: relative; }
+.v2-alt-solution::before { content: ""; position: absolute; inset: 0 0 auto; height: 0; background: var(--v2-blue); transition: height 160ms ease; }
+.v2-alt-solution.v2-alt-selected::before { height: 5px; }
+.v2-alt-solution-head { min-height: 118px; padding: 18px 18px 14px; border-bottom: 1px solid var(--line); }
+.v2-alt-solution-kicker { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.v2-alt-solution-kicker span { color: var(--ink-muted); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.v2-alt-solution-kicker b { padding: 5px 7px; border: 1px solid var(--line-strong); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
+.v2-alt-solution.v2-alt-selected .v2-alt-solution-kicker b { border-color: var(--v2-blue); background: var(--v2-blue); color: #fff; }
+.v2-alt-solution h3 { margin: 10px 0 4px; font: 800 24px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-alt-solution-head p { margin: 0; color: var(--ink-muted); font-size: 11px; line-height: 1.35; }
+.v2-alt-hero-metrics { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
+.v2-alt-hero-metric { padding: 12px 10px; border-right: 1px solid var(--line); }
+.v2-alt-hero-metric:last-child { border-right: 0; }
+.v2-alt-hero-metric strong { display: block; font: 800 24px/1 "League Spartan", sans-serif; }
+.v2-alt-hero-metric span { display: block; margin-top: 4px; color: var(--ink-muted); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.v2-alt-hero-metric.v2-alt-watch strong { color: #9a5b00; }
+.v2-alt-metric-section { padding: 15px 18px; border-bottom: 1px solid var(--line); }
+.v2-alt-section-title { display: flex; justify-content: space-between; margin-bottom: 11px; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.v2-alt-section-title span:last-child { color: var(--ink-muted); }
+.v2-alt-measure { display: grid; grid-template-columns: 104px minmax(70px, 1fr) 26px 35px; gap: 7px; align-items: center; margin-top: 9px; font-size: 10px; font-weight: 700; }
+.v2-alt-bar { height: 7px; background: #e7e5df; }
+.v2-alt-bar i { display: block; height: 100%; background: var(--v2-blue); }
+.v2-alt-measure > b { text-align: right; font-size: 11px; }
+.v2-alt-delta { text-align: right; color: var(--ink-muted); font-size: 9px; font-weight: 800; }
+.v2-alt-delta.v2-alt-up { color: #17634d; }
+.v2-alt-delta.v2-alt-down { color: #b42318; }
+.v2-alt-delta.v2-alt-neutral { color: var(--ink-muted); }
+.v2-alt-tradeoffs { min-height: 112px; padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--surface-alt); }
+.v2-alt-tradeoffs h4 { margin: 0 0 8px; font: 800 13px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-alt-tradeoffs ul { margin: 0; padding: 0; list-style: none; }
+.v2-alt-tradeoffs li { display: grid; grid-template-columns: 13px minmax(0, 1fr); gap: 6px; margin-top: 5px; font-size: 10px; line-height: 1.35; }
+.v2-alt-tradeoffs li::before { content: "→"; font-weight: 800; }
+.v2-alt-tradeoffs .v2-alt-gain::before { content: "+"; color: #17634d; }
+.v2-alt-tradeoffs .v2-alt-cost::before { content: "−"; color: #b42318; }
+.v2-alt-changes { padding: 13px 18px 14px; border-bottom: 1px solid var(--line); }
+.v2-alt-changes summary { display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.v2-alt-changes summary::-webkit-details-marker { display: none; }
+.v2-alt-changes summary::after { content: "＋"; color: var(--v2-blue); font-size: 14px; }
+.v2-alt-changes[open] summary::after { content: "−"; }
+.v2-alt-change-list { margin-top: 10px; border-top: 1px solid var(--line); }
+.v2-alt-change-row { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 10px; line-height: 1.35; }
+.v2-alt-change-row b { color: var(--v2-blue); }
+.v2-alt-solution-action { display: grid; grid-template-columns: 1fr; min-height: 46px; border-bottom: 1px solid var(--line); }
+.v2-alt-select-solution { display: flex; align-items: center; gap: 10px; padding: 0 16px; border: 0; background: var(--surface); font-weight: 800; text-align: left; }
+.v2-alt-select-solution:hover { background: #eef2ff; }
+.v2-alt-selection-check { width: 19px; height: 19px; flex: 0 0 19px; display: grid; place-items: center; border: 2px solid var(--line-strong); background: var(--surface); color: transparent; font-size: 13px; line-height: 1; }
+.v2-alt-solution.v2-alt-selected .v2-alt-select-solution { background: #eef2ff; }
+.v2-alt-solution.v2-alt-selected .v2-alt-selection-check { border-color: var(--v2-blue); background: var(--v2-blue); color: #fff; }
+.v2-alt-comparison-actions { min-height: 58px; display: flex; align-items: stretch; justify-content: space-between; border-top: 1px solid var(--line); background: var(--surface); }
+.v2-alt-selection-copy { display: flex; align-items: center; gap: 12px; padding: 0 20px; font-size: 11px; }
+.v2-alt-selection-copy b { font: 800 15px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-alt-selection-copy span { color: var(--ink-muted); }
+.v2-alt-action-buttons { display: flex; }
+.v2-alt-action-buttons button { min-width: 170px; border: 0; border-left: 1px solid var(--line); background: var(--surface); font-weight: 800; }
+.v2-alt-action-buttons .v2-alt-primary { min-width: 220px; background: var(--v2-blue); color: #fff; }
+.v2-alt-confirmed { min-height: 0; flex: 1; display: grid; place-items: center; padding: 32px; overflow: auto; }
+.v2-alt-confirmation-card { width: min(720px, 100%); display: grid; grid-template-columns: 150px minmax(0, 1fr); border: 1px solid var(--line-strong); background: var(--surface); }
+.v2-alt-confirmation-mark { display: grid; place-items: center; background: var(--v2-blue); color: #fff; font: 800 58px/1 "League Spartan", sans-serif; }
+.v2-alt-confirmation-content { padding: 30px; }
+.v2-alt-confirmation-content h2 { margin: 8px 0 8px; font: 800 34px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-alt-confirmation-content p { max-width: 54ch; margin: 0; color: var(--ink-muted); font-size: 13px; line-height: 1.5; }
+.v2-alt-confirmation-metrics { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 22px; border: 1px solid var(--line); }
+.v2-alt-confirmation-metrics div { padding: 12px; border-right: 1px solid var(--line); }
+.v2-alt-confirmation-metrics div:last-child { border-right: 0; }
+.v2-alt-confirmation-metrics strong { display: block; font: 800 23px/1 "League Spartan", sans-serif; }
+.v2-alt-confirmation-metrics span { display: block; margin-top: 5px; color: var(--ink-muted); font-size: 8px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.v2-alt-confirmation-actions { display: flex; margin-top: 20px; }
+.v2-alt-confirmation-actions button { min-height: 42px; padding: 0 16px; border: 1px solid var(--line-strong); background: var(--surface); font-weight: 800; }
+.v2-alt-confirmation-actions button + button { border-left: 0; background: var(--ink); color: #fff; }
+@container dinner (max-width: 1100px) {
+  .v2-alt-comparison { grid-template-columns: repeat(3, 310px); }
+}
+@container dinner (max-width: 800px) {
+  .v2-alt-setup { border-right: 0; }
+  .v2-alt-comparison { grid-template-columns: 1fr; overflow: visible; }
+  .v2-alt-workspace { overflow: visible; }
+  .v2-alt-confirmation-card { grid-template-columns: 1fr; }
+  .v2-alt-confirmation-mark { min-height: 100px; }
+}

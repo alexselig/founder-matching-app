@@ -1,0 +1,24 @@
+/* Responsive V2 header for the Dinner workbench and Seating Plans, ported from the twenty-table responsive
+   review v4 header rules. The shared chrome stays desktop-first; these overrides are scoped to the two shells. */
+
+@media (max-width: 900px) {
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-topbar { grid-template-columns: 190px 1fr 190px; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-brand { padding: 0 18px; font-size: 20px; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-brand .v2-version { font-size: 20px; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-nav-item { padding: 0 13px; font-size: 11px; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-profile-trigger { padding: 0 13px; }
+}
+
+@media (max-width: 560px) {
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-topbar { grid-template-columns: 1fr 116px; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-brand { gap: 10px; border-right: 0; font-size: 18px; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-brand .v2-version { font-size: 18px; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-nav { display: none; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-profile { grid-column: 2; min-width: 0; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-profile-trigger { gap: 8px; padding: 0 10px; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-profile-avatar { width: 30px; height: 30px; flex-basis: 30px; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-profile small,
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-chevron { display: none; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-profile strong { display: block; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+  :is(.v2-dinner-shell, .v2-plans-shell) .v2-profile-trigger > span:not([class]) { min-width: 0; }
+}
