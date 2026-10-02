@@ -10,12 +10,12 @@
 | 6. Dinner engine | Complete | `v2/task-6-dinner-engine` | `fd6099c` | 44/44 dinner tests; full integrated suite; lint; client/server build; reviewer signoff |
 | 7. Dinner workbench | Complete | `v2/task-7-dinner-ui` | `e1f9553` | Approved setup, recovery, Tables, Analysis, alternatives, archive, and responsive layouts |
 | 8. Secure persistence and exports | Complete | `v2/task-8-server` | `239e687` | Encrypted credentials, append-only dinner versions, recovery snapshots, and CSV/JSON exports |
-| 9. Release verification | Complete | `v2/task-1-foundation` | `7f93b1b` | 529 tests; lint; client/server build; built-only smoke; 2 Playwright E2E tests; 16-screen synthetic storyboard |
+| 9. Release verification | Complete | `main` | `3efc54b` | 529 tests; lint; client/server build; built-only smoke; 2 Playwright E2E tests; 16-screen synthetic storyboard; GitHub Pages live |
 
-## Integration branch
+## Release
 
-- Current integration commit: `7f93b1b`
-- Active integration worktree: `.worktrees/v2-task-1-foundation`
+- Main merge commit: `3efc54b`
+- Public showcase: https://alexselig.github.io/founder-matching-app/
 - Integrated through Tasks 1–9.
 - Task 1 shared health, routing, and server boundaries passed review.
 - Task 2 founder contracts, schema registry, deterministic scale fixtures, and provider-shaped web samples passed review.
@@ -28,3 +28,4 @@
 - Runtime coordinator loads production APIs by default and public-safe deterministic fixtures only in admin Demo mode.
 - AI provider setup and founder evidence review use approved designs and server-backed contracts.
 - Integrated verification: 529/529 tests, lint, client/server build, built-only 574-founder startup smoke, 2/2 Playwright E2E tests, manual browser QA, and 16 public-safe screenshots.
+- GitHub Pages serves the showcase from `main` `/docs`; the page and screenshot assets return HTTP 200.
