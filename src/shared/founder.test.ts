@@ -46,6 +46,59 @@ describe('founder normalization', () => {
     })
   })
 
+  it('preserves authoritative IDs and names while normalizing derived and designated fields', () => {
+    const source = {
+      Id: '  founder   001  ',
+      Name: 'Zoë\u00a0Ng',
+      Group: ' 3 ',
+      'Group Section': ' 3I ',
+      'Company vertical': ' B2B   Software -> Infrastructure ',
+      Company: ' Example   Co ',
+      Age: 31,
+      Education: ' Computer   Science ',
+      Role: ' Engineering ',
+    }
+
+    const [founder] = normalizeFounders([source])
+
+    expect(founder).toMatchObject({
+      id: source.Id,
+      name: source.Name,
+      cohortGroup: '3',
+      cohortSection: '3I',
+      companyVertical: 'B2B Software -> Infrastructure',
+      companyVerticalLevels: ['B2B Software', 'Infrastructure'],
+      company: 'Example Co',
+      age: 31,
+      education: 'Computer Science',
+      role: 'Engineering',
+      searchName: 'zoe ng',
+    })
+    expect(founder?.raw).toEqual(source)
+    expect(founder?.raw.Id).toBe(source.Id)
+    expect(founder?.raw.Name).toBe(source.Name)
+  })
+
+  it.each([
+    ['Id', ' \t '],
+    ['Name', '\u00a0'],
+  ] as const)('rejects an empty authoritative %s value', (key, value) => {
+    const source = {
+      Id: 'founder-1',
+      Name: 'Founder One',
+      Group: '3',
+      'Group Section': '3I',
+      'Company vertical': 'B2B Software and Services',
+      Company: 'Example Co',
+      Age: 31,
+      Education: 'Computer Science',
+      Role: 'Engineering',
+      [key]: value,
+    }
+
+    expect(() => normalizeFounders([source])).toThrow(`missing ${key}`)
+  })
+
   it('exposes schema metadata for all nine source fields', () => {
     expect(FOUNDER_SCHEMA).toHaveLength(9)
     expect(FOUNDER_SCHEMA.map((field) => field.source)).toEqual([

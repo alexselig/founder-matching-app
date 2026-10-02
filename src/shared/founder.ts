@@ -48,7 +48,7 @@ function requireRecord(value: unknown, index: number): Record<string, unknown> {
   return value as Record<string, unknown>
 }
 
-function requireString(
+function requireSourceString(
   row: Record<string, unknown>,
   key: keyof RawFounder,
   index: number,
@@ -58,11 +58,18 @@ function requireString(
     throw new Error(`Founder record ${index + 1} is missing ${String(key)}`)
   }
 
-  const normalized = normalizeText(field)
-  if (!normalized) {
+  if (!normalizeText(field)) {
     throw new Error(`Founder record ${index + 1} is missing ${String(key)}`)
   }
-  return normalized
+  return field
+}
+
+function requireNormalizedSourceString(
+  row: Record<string, unknown>,
+  key: keyof RawFounder,
+  index: number,
+) {
+  return normalizeText(requireSourceString(row, key, index))
 }
 
 function requireAge(row: Record<string, unknown>, index: number) {
@@ -86,27 +93,27 @@ export function normalizeFounders(input: unknown): Founder[] {
 
   return input.map((entry, index) => {
     const row = requireRecord(entry, index)
-    const id = requireString(row, 'Id', index)
+    const id = requireSourceString(row, 'Id', index)
 
     if (seenIds.has(id)) {
       throw new Error(`Duplicate founder ID ${id}`)
     }
     seenIds.add(id)
 
-    const name = requireString(row, 'Name', index)
-    const companyVertical = requireString(row, 'Company vertical', index)
+    const name = requireSourceString(row, 'Name', index)
+    const companyVertical = requireNormalizedSourceString(row, 'Company vertical', index)
 
     return {
       id,
       name,
-      cohortGroup: requireString(row, 'Group', index),
-      cohortSection: requireString(row, 'Group Section', index),
+      cohortGroup: requireNormalizedSourceString(row, 'Group', index),
+      cohortSection: requireNormalizedSourceString(row, 'Group Section', index),
       companyVertical,
       companyVerticalLevels: companyVertical.split('->').map((level) => normalizeText(level)).filter(Boolean),
-      company: requireString(row, 'Company', index),
+      company: requireNormalizedSourceString(row, 'Company', index),
       age: requireAge(row, index),
-      education: requireString(row, 'Education', index),
-      role: requireString(row, 'Role', index),
+      education: requireNormalizedSourceString(row, 'Education', index),
+      role: requireNormalizedSourceString(row, 'Role', index),
       searchName: normalizeSearchText(name),
       raw: buildRawRecord(row),
     }

@@ -203,7 +203,12 @@ describe('scale fixtures', () => {
   })
 
   it('rejects unknown runtime scenario values', () => {
-    expect(() => buildScaleFixture(founders, 'six-tables' as ScaleScenario)).toThrow(
+    const buildFromUntypedInput = buildScaleFixture as (
+      inputFounders: Founder[],
+      scenario: string,
+    ) => Founder[]
+
+    expect(() => buildFromUntypedInput(founders, 'six-tables')).toThrow(
       'Unknown scale scenario: six-tables',
     )
   })

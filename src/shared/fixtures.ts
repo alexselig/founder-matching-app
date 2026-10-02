@@ -255,7 +255,8 @@ function assertVariationRequirementsCanBeMet(
   }
 }
 
-export function buildScaleFixture(founders: Founder[], scenario: ScaleScenario | string): Founder[] {
+export function buildScaleFixture(founders: Founder[], scenario: ScaleScenario): Founder[]
+export function buildScaleFixture(founders: Founder[], scenario: string): Founder[] {
   assertScaleScenario(scenario)
   const targetCount = SCENARIO_COUNTS[scenario]
 
