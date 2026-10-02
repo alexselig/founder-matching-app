@@ -9,7 +9,11 @@ import {
   type DatabaseOptions,
   type SqliteDatabase,
 } from '../database.js'
-import { DinnerRepository } from './dinners.js'
+import {
+  DinnerRepository,
+  type DinnerConfiguration,
+  type DinnerVersion,
+} from './dinners.js'
 import { RepositoryError } from './errors.js'
 import { FounderRepository } from './founders.js'
 import {
@@ -48,6 +52,23 @@ function makeRun(
         company: index % 2 === 0,
       },
     })),
+  }
+}
+
+function makeDinnerConfiguration(): DinnerConfiguration {
+  return {
+    id: 'dinner-1',
+    name: 'Founder Dinner',
+    founderIds: founders.slice(0, 24).map((founder) => founder.id),
+    configuration: {
+      tableCount: 3,
+      seatsPerTable: 8,
+      criteria: [],
+      rules: [],
+      locks: [],
+    },
+    createdAt: '2026-10-01T12:00:00.000Z',
+    updatedAt: '2026-10-01T12:00:00.000Z',
   }
 }
 
@@ -145,6 +166,61 @@ describe('SQLite repositories', () => {
     expect(storedFounder).toEqual(sourceFounder)
     expect(storedFounder).not.toHaveProperty('webResults')
     expect(storedFounder).not.toHaveProperty('web_results')
+  })
+
+  it.each([
+    {
+      label: 'null collection',
+      input: null,
+    },
+    {
+      label: 'non-array collection',
+      input: { founder: founders[0] },
+    },
+    {
+      label: 'null founder object',
+      input: [null],
+    },
+  ])('rejects a malformed founder $label as invalid_data', ({ input }) => {
+    expectRepositoryError(
+      () =>
+        founderRepository.saveAll(
+          input as unknown as readonly Founder[],
+        ),
+      'invalid_data',
+    )
+  })
+
+  it('validates every required founder field before persistence', () => {
+    const requiredFields = [
+      'id',
+      'name',
+      'cohortGroup',
+      'cohortSection',
+      'companyVertical',
+      'companyVerticalLevels',
+      'company',
+      'age',
+      'education',
+      'role',
+      'searchName',
+      'raw',
+    ] as const
+
+    for (const field of requiredFields) {
+      const malformed = {
+        ...founders[0]!,
+      } as unknown as Record<string, unknown>
+      delete malformed[field]
+
+      expectRepositoryError(
+        () =>
+          founderRepository.saveAll([
+            malformed as unknown as Founder,
+          ]),
+        'invalid_data',
+      )
+    }
   })
 
   it('returns a not_found error for an unknown founder', () => {
@@ -348,21 +424,75 @@ describe('SQLite repositories', () => {
     )
   })
 
-  it('persists saved dinner configurations with append-only versions', () => {
-    const configuration = {
-      id: 'dinner-1',
-      name: 'Founder Dinner',
-      founderIds: founders.slice(0, 24).map((founder) => founder.id),
+  it.each([
+    {
+      label: 'null configuration',
+      configuration: null,
+    },
+    {
+      label: 'non-object configuration',
+      configuration: 'dinner',
+    },
+    {
+      label: 'missing founder IDs',
       configuration: {
-        tableCount: 3,
-        seatsPerTable: 8,
-        criteria: [],
-        rules: [],
-        locks: [],
+        ...makeDinnerConfiguration(),
+        founderIds: undefined,
       },
-      createdAt: '2026-10-01T12:00:00.000Z',
-      updatedAt: '2026-10-01T12:00:00.000Z',
-    }
+    },
+    {
+      label: 'missing configuration payload',
+      configuration: (() => {
+        const configuration = {
+          ...makeDinnerConfiguration(),
+        } as unknown as Record<string, unknown>
+        delete configuration.configuration
+        return configuration
+      })(),
+    },
+  ])(
+    'rejects malformed dinner $label as invalid_data',
+    ({ configuration }) => {
+      expectRepositoryError(
+        () =>
+          dinnerRepository.saveConfiguration(
+            configuration as unknown as DinnerConfiguration,
+          ),
+        'invalid_data',
+      )
+    },
+  )
+
+  it.each([
+    {
+      label: 'null version',
+      version: null,
+    },
+    {
+      label: 'non-object version',
+      version: 'version',
+    },
+    {
+      label: 'missing snapshot',
+      version: {
+        id: 'dinner-1-v1',
+        configurationId: 'dinner-1',
+        version: 1,
+        createdAt: '2026-10-01T12:01:00.000Z',
+      },
+    },
+  ])('rejects malformed dinner $label as invalid_data', ({ version }) => {
+    expectRepositoryError(
+      () =>
+        dinnerRepository.appendVersion(
+          version as unknown as DinnerVersion,
+        ),
+      'invalid_data',
+    )
+  })
+
+  it('persists saved dinner configurations with append-only versions', () => {
+    const configuration = makeDinnerConfiguration()
 
     dinnerRepository.saveConfiguration(configuration)
     dinnerRepository.appendVersion({

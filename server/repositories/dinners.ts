@@ -64,13 +64,126 @@ function parseJson(value: string, label: string): unknown {
   }
 }
 
-function assertTimestamp(value: string, label: string) {
-  if (!value || Number.isNaN(Date.parse(value))) {
+function assertRequiredString(
+  value: unknown,
+  label: string,
+): asserts value is string {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new RepositoryError(
+      `${label} is required`,
+      'invalid_data',
+    )
+  }
+}
+
+function assertTimestamp(
+  value: unknown,
+  label: string,
+): asserts value is string {
+  if (
+    typeof value !== 'string' ||
+    !value ||
+    Number.isNaN(Date.parse(value))
+  ) {
     throw new RepositoryError(
       `${label} must be a valid timestamp`,
       'invalid_data',
     )
   }
+}
+
+function assertDinnerConfiguration(
+  value: unknown,
+): asserts value is DinnerConfiguration {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new RepositoryError(
+      'Dinner configuration must be an object',
+      'invalid_data',
+    )
+  }
+
+  const configuration = value as Record<string, unknown>
+  assertRequiredString(
+    configuration.id,
+    'Dinner configuration ID',
+  )
+  assertRequiredString(
+    configuration.name,
+    'Dinner configuration name',
+  )
+
+  if (
+    !Array.isArray(configuration.founderIds) ||
+    !configuration.founderIds.every(
+      (founderId) =>
+        typeof founderId === 'string' && founderId.length > 0,
+    )
+  ) {
+    throw new RepositoryError(
+      'Dinner founder IDs must be non-empty strings',
+      'invalid_data',
+    )
+  }
+
+  if (
+    !Object.hasOwn(configuration, 'configuration') ||
+    configuration.configuration === undefined
+  ) {
+    throw new RepositoryError(
+      'Dinner configuration payload is required',
+      'invalid_data',
+    )
+  }
+
+  assertTimestamp(
+    configuration.createdAt,
+    'Dinner creation time',
+  )
+  assertTimestamp(
+    configuration.updatedAt,
+    'Dinner update time',
+  )
+}
+
+function assertDinnerVersion(
+  value: unknown,
+): asserts value is DinnerVersion {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new RepositoryError(
+      'Dinner version must be an object',
+      'invalid_data',
+    )
+  }
+
+  const version = value as Record<string, unknown>
+  assertRequiredString(version.id, 'Dinner version ID')
+  assertRequiredString(
+    version.configurationId,
+    'Dinner configuration ID',
+  )
+
+  if (
+    typeof version.version !== 'number' ||
+    !Number.isInteger(version.version) ||
+    version.version < 1
+  ) {
+    throw new RepositoryError(
+      'Dinner version must be a positive integer',
+      'invalid_data',
+    )
+  }
+
+  if (!Object.hasOwn(version, 'snapshot') || version.snapshot === undefined) {
+    throw new RepositoryError(
+      'Dinner version snapshot is required',
+      'invalid_data',
+    )
+  }
+
+  assertTimestamp(
+    version.createdAt,
+    'Dinner version creation time',
+  )
 }
 
 function rowToConfiguration(
@@ -118,30 +231,14 @@ export class DinnerRepository {
   constructor(private readonly database: SqliteDatabase) {}
 
   saveConfiguration(configuration: DinnerConfiguration): void {
-    if (!configuration.id || !configuration.name) {
-      throw new RepositoryError(
-        'Dinner configuration ID and name are required',
-        'invalid_data',
-      )
-    }
-    if (
-      !Array.isArray(configuration.founderIds) ||
-      !configuration.founderIds.every(
-        (founderId) => typeof founderId === 'string' && founderId.length > 0,
-      )
-    ) {
-      throw new RepositoryError(
-        'Dinner founder IDs must be non-empty strings',
-        'invalid_data',
-      )
-    }
-    assertTimestamp(
-      configuration.createdAt,
-      'Dinner creation time',
+    assertDinnerConfiguration(configuration)
+    const founderIdsJson = encodeJson(
+      configuration.founderIds,
+      'Dinner founder IDs',
     )
-    assertTimestamp(
-      configuration.updatedAt,
-      'Dinner update time',
+    const configurationJson = encodeJson(
+      configuration.configuration,
+      'Dinner configuration',
     )
 
     try {
@@ -164,14 +261,8 @@ export class DinnerRepository {
         .run(
           configuration.id,
           configuration.name,
-          encodeJson(
-            configuration.founderIds,
-            'Dinner founder IDs',
-          ),
-          encodeJson(
-            configuration.configuration,
-            'Dinner configuration',
-          ),
+          founderIdsJson,
+          configurationJson,
           configuration.createdAt,
           configuration.updatedAt,
         )
@@ -216,18 +307,11 @@ export class DinnerRepository {
   }
 
   appendVersion(version: DinnerVersion): void {
-    if (
-      !version.id ||
-      !version.configurationId ||
-      !Number.isInteger(version.version) ||
-      version.version < 1
-    ) {
-      throw new RepositoryError(
-        'Dinner version ID, configuration ID, and positive version are required',
-        'invalid_data',
-      )
-    }
-    assertTimestamp(version.createdAt, 'Dinner version creation time')
+    assertDinnerVersion(version)
+    const snapshotJson = encodeJson(
+      version.snapshot,
+      'Dinner version snapshot',
+    )
 
     try {
       const configuration = this.database
@@ -257,7 +341,7 @@ export class DinnerRepository {
           version.id,
           version.configurationId,
           version.version,
-          encodeJson(version.snapshot, 'Dinner version snapshot'),
+          snapshotJson,
           version.createdAt,
         )
     } catch (error) {
