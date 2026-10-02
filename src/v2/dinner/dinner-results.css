@@ -1,0 +1,222 @@
+/* Generated Tables and Analysis workspace (twenty-table responsive review v4). Ported from the approved mock; every selector is namespaced. */
+
+.v2-dinner-eyebrow { font-size: 10px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.v2-dinner-setup { min-height: 0; overflow: auto; border-right: 1px solid var(--line); background: white; }
+.v2-dinner-setup-title { padding: 19px 22px; border-bottom: 1px solid var(--line); background: var(--v2-orange); }
+.v2-dinner-setup-title h1 { margin: 6px 0 0; font: 800 29px/.95 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-dinner-setup-section { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.v2-dinner-setup-section h2 { margin: 0 0 12px; font: 800 14px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-dinner-scope-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); }
+.v2-dinner-scope-stat { padding: 12px; background: var(--surface-alt); }
+.v2-dinner-scope-stat strong { display: block; font: 800 25px/1 "League Spartan", sans-serif; }
+.v2-dinner-scope-stat span { display: block; margin-top: 4px; color: var(--ink-muted); font-size: 10px; }
+.v2-dinner-brief { margin: 0; color: var(--ink-muted); font-size: 12px; font-weight: 600; line-height: 1.45; }
+.v2-dinner-criterion { padding: 10px 0; border-top: 1px solid var(--line); }
+.v2-dinner-criterion:first-of-type { border-top: 0; }
+.v2-dinner-criterion-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 800; }
+.v2-dinner-criterion-head b { color: var(--v2-blue); font-size: 10px; text-transform: uppercase; }
+.v2-dinner-criterion small { display: block; margin-top: 3px; color: var(--ink-muted); font-size: 10px; }
+.v2-dinner-rule { display: flex; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.35; }
+.v2-dinner-rule::before { content: "✓"; color: #17634d; font-weight: 800; }
+.v2-dinner-setup-link { width: 100%; min-height: 36px; margin-top: 11px; border: 1px solid var(--line-strong); background: white; font-size: 11px; font-weight: 800; }
+.v2-dinner-workspace { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; background: var(--surface-alt); }
+.v2-dinner-work-head { display: grid; grid-template-columns: minmax(220px, 1fr) repeat(4, minmax(82px, 112px)); border-bottom: 1px solid var(--line); background: white; }
+.v2-dinner-work-title { min-width: 0; padding: 16px 20px; }
+.v2-dinner-work-title h2 { overflow: hidden; margin: 5px 0 0; font: 800 25px/1 "League Spartan", sans-serif; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.v2-dinner-metric { padding: 13px 12px; border-left: 1px solid var(--line); }
+.v2-dinner-metric strong { display: block; font: 800 24px/1 "League Spartan", sans-serif; }
+.v2-dinner-metric span { display: block; margin-top: 5px; color: var(--ink-muted); font-size: 8px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.v2-dinner-metric.v2-dinner-alert strong { color: #9a5b00; }
+.v2-dinner-work-tools { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 8px 14px; border-bottom: 1px solid var(--line); background: white; }
+.v2-dinner-tool-left, .v2-dinner-tool-right, .v2-dinner-segmented, .v2-dinner-density { display: flex; align-items: center; }
+.v2-dinner-tool-left, .v2-dinner-tool-right { gap: 14px; }
+.v2-dinner-segmented button, .v2-dinner-density button { min-height: 32px; padding: 0 12px; border: 1px solid var(--line-strong); border-right: 0; background: white; font-size: 10px; font-weight: 800; }
+.v2-dinner-segmented button:last-child, .v2-dinner-density button:last-child { border-right: 1px solid var(--line-strong); }
+.v2-dinner-segmented .v2-dinner-active, .v2-dinner-density .v2-dinner-active { background: var(--ink); color: white; }
+.v2-dinner-density-label { margin-right: 7px; color: var(--ink-muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.v2-dinner-legend { display: flex; align-items: center; gap: 8px; color: var(--ink-muted); font-size: 9px; font-weight: 800; }
+.v2-dinner-legend span { display: flex; align-items: center; gap: 4px; }
+.v2-dinner-legend i, .v2-dinner-mini-dot { width: 9px; height: 9px; border: 1px solid rgba(20,20,20,.08); border-radius: 50%; }
+.v2-dinner-strong-bg { background: #dcefe7; }
+.v2-dinner-good-bg { background: #e6ebff; }
+.v2-dinner-watch-bg { background: #fff1d6; }
+.v2-dinner-risk-bg { background: #fde4e1; }
+.v2-dinner-threshold { display: flex; align-items: center; gap: 7px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.v2-dinner-threshold input { width: 86px; accent-color: var(--v2-blue); }
+.v2-dinner-table-workspace { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+.v2-dinner-table-index { display: grid; grid-template-columns: 132px minmax(0, 1fr); border-bottom: 1px solid var(--line); background: white; }
+.v2-dinner-index-head { display: flex; flex-direction: column; justify-content: center; padding: 12px 14px; border-right: 1px solid var(--line); background: white; }
+.v2-dinner-index-head strong { display: block; font: 800 15px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-dinner-index-head span { display: block; margin-top: 4px; color: var(--ink-muted); font-size: 9px; }
+.v2-dinner-index-grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); }
+.v2-dinner-index-button { position: relative; min-height: 34px; display: grid; place-items: center; padding: 0; border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: white; }
+.v2-dinner-index-button:nth-child(10n) { border-right: 0; }
+.v2-dinner-index-button:nth-child(n+11) { border-bottom: 0; }
+.v2-dinner-index-button:hover { background: var(--surface-alt); }
+.v2-dinner-index-button.v2-dinner-active { box-shadow: inset 0 -3px var(--v2-blue); background: #f5f7ff; color: var(--v2-blue); }
+.v2-dinner-index-button strong { font: 800 12px/1 "League Spartan", sans-serif; }
+.v2-dinner-index-button::after { position: absolute; top: 5px; right: 6px; width: 6px; height: 6px; border-radius: 50%; content: ""; }
+.v2-dinner-index-button.v2-dinner-has-watch::after { background: #9a5b00; }
+.v2-dinner-index-button.v2-dinner-has-risk::after { background: #b42318; }
+.v2-dinner-tables-scroll { min-width: 0; min-height: 0; overflow: auto; scroll-behavior: smooth; }
+.v2-dinner-focus-strip { display: none; align-items: center; justify-content: space-between; min-height: 44px; padding: 7px 12px; border-bottom: 1px solid var(--line); background: white; }
+.v2-dinner-focus-strip button { min-height: 29px; padding: 0 10px; border: 1px solid var(--line-strong); background: white; font-size: 10px; font-weight: 800; }
+.v2-dinner-focus-label { text-align: center; }
+.v2-dinner-focus-label strong { display: block; font: 800 14px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-dinner-focus-label span { display: block; margin-top: 3px; color: var(--ink-muted); font-size: 9px; }
+.v2-dinner-tables { display: grid; grid-template-columns: repeat(3, minmax(250px, 1fr)); gap: 1px; padding: 1px 1px 74px; background: var(--line); }
+.v2-dinner-table-card { min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: white; scroll-margin-top: 8px; }
+.v2-dinner-table-card.v2-dinner-focused { outline: 3px solid var(--v2-blue); outline-offset: -3px; }
+.v2-dinner-table-head { grid-column: 1 / -1; display: flex; align-items: start; justify-content: space-between; gap: 10px; padding: 12px 13px; border-bottom: 1px solid var(--line); }
+.v2-dinner-table-head h3 { margin: 4px 0 0; font: 800 17px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-dinner-table-score { text-align: right; }
+.v2-dinner-table-score strong { display: block; color: #17634d; font: 800 20px/1 "League Spartan", sans-serif; }
+.v2-dinner-table-score.v2-dinner-watch strong { color: #9a5b00; }
+.v2-dinner-table-score.v2-dinner-risk strong { color: #b42318; }
+.v2-dinner-table-score span { color: var(--ink-muted); font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.v2-dinner-seat { min-width: 0; display: grid; grid-template-columns: 26px minmax(0, 1fr) 29px; align-items: center; gap: 8px; padding: 7px 11px; border-bottom: 1px solid var(--line); }
+.v2-dinner-seat:nth-child(even) { border-right: 1px solid var(--line); }
+.v2-dinner-seat-avatar { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; font-size: 8px; font-weight: 800; }
+.v2-dinner-seat-copy { min-width: 0; }
+.v2-dinner-seat-copy strong, .v2-dinner-seat-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v2-dinner-seat-copy strong { font-size: 10px; }
+.v2-dinner-seat-copy small { margin-top: 2px; color: var(--ink-muted); font-size: 8px; }
+.v2-dinner-fit { font: 800 11px/1 "League Spartan", sans-serif; text-align: right; }
+.v2-dinner-fit.v2-dinner-watch { color: #9a5b00; }
+.v2-dinner-fit.v2-dinner-risk { color: #b42318; }
+.v2-dinner-table-foot { grid-column: 1 / -1; min-height: 33px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 11px; background: var(--surface-alt); font-size: 9px; font-weight: 800; }
+.v2-dinner-table-foot .v2-dinner-warning { color: #9a5b00; }
+.v2-dinner-table-foot .v2-dinner-risk { color: #b42318; }
+.v2-dinner-lock { padding: 0; border: 0; background: transparent; font-size: 9px; font-weight: 800; }
+.v2-dinner-more-seats { display: none; }
+.v2-dinner-tables.v2-dinner-comfortable { grid-template-columns: repeat(2, minmax(310px, 1fr)); }
+.v2-dinner-tables.v2-dinner-comfortable .v2-dinner-seat { grid-template-columns: 32px minmax(0, 1fr) 34px; padding: 9px 13px; }
+.v2-dinner-tables.v2-dinner-comfortable .v2-dinner-seat-avatar { width: 32px; height: 32px; font-size: 9px; }
+.v2-dinner-tables.v2-dinner-comfortable .v2-dinner-seat-copy strong { font-size: 11px; }
+.v2-dinner-tables.v2-dinner-comfortable .v2-dinner-seat-copy small { font-size: 9px; }
+.v2-dinner-analysis { display: none; min-height: 0; overflow: auto; padding: 1px 1px 74px; background: var(--line); }
+.v2-dinner-analysis.v2-dinner-visible { display: block; }
+.v2-dinner-table-insights { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 1px; background: var(--line); border-bottom: 1px solid var(--line); }
+.v2-dinner-insight-card { min-height: 170px; padding: 15px 18px; background: white; }
+.v2-dinner-insight-card h3, .v2-dinner-visual-card h3, .v2-dinner-analysis-tables h3 { margin: 0 0 10px; font: 800 15px/1 "League Spartan", sans-serif; text-transform: uppercase; }
+.v2-dinner-objective-row { display: grid; grid-template-columns: 105px minmax(0, 1fr) 28px; align-items: center; gap: 10px; margin: 8px 0; font-size: 11px; font-weight: 700; }
+.v2-dinner-objective-bar { height: 8px; background: #e7e5df; }
+.v2-dinner-objective-bar i { display: block; height: 100%; background: var(--v2-blue); }
+.v2-dinner-watch-row { display: grid; grid-template-columns: minmax(0, 1fr) 30px; align-items: center; gap: 9px; padding: 7px 0; border-top: 1px solid var(--line); }
+.v2-dinner-watch-row strong { display: block; font-size: 11px; }
+.v2-dinner-watch-row small { display: block; margin-top: 2px; color: var(--ink-muted); font-size: 10px; }
+.v2-dinner-recommendation { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.35; }
+.v2-dinner-recommendation b { display: block; }
+.v2-dinner-recommendation button { min-height: 26px; padding: 0 9px; border: 1px solid var(--line-strong); background: white; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.v2-dinner-recommendation button:hover { background: var(--ink); color: white; }
+.v2-dinner-recommendation button:disabled { border-color: #17634d; background: #dcefe7; color: #17634d; }
+.v2-dinner-analysis-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; }
+.v2-dinner-analysis-stat { padding: 17px; background: white; }
+.v2-dinner-analysis-stat strong { display: block; font: 800 24px/1 "League Spartan", sans-serif; }
+.v2-dinner-analysis-stat span { display: block; margin-top: 5px; color: var(--ink-muted); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.v2-dinner-analysis-visuals { display: grid; grid-template-columns: 1fr 2fr; gap: 1px; margin-top: 1px; background: var(--line); }
+.v2-dinner-visual-card { min-height: 210px; padding: 18px 20px; background: white; }
+.v2-dinner-distribution { height: 145px; display: flex; align-items: end; justify-content: space-around; gap: 12px; }
+.v2-dinner-distribution-item { flex: 1; text-align: center; font-size: 10px; font-weight: 800; }
+.v2-dinner-distribution-item i { display: block; width: 100%; margin-bottom: 7px; }
+.v2-dinner-distribution-item b { display: block; font-size: 14px; }
+.v2-dinner-role-legend { display: flex; flex-wrap: wrap; gap: 13px; margin-bottom: 13px; color: var(--ink-muted); font-size: 10px; font-weight: 800; }
+.v2-dinner-role-legend span { display: flex; align-items: center; gap: 5px; }
+.v2-dinner-role-legend i { width: 9px; height: 9px; }
+.v2-dinner-role-makeup-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; }
+.v2-dinner-makeup-row { display: grid; grid-template-columns: 55px minmax(0, 1fr); align-items: center; gap: 10px; margin: 8px 0; font-size: 10px; font-weight: 800; }
+.v2-dinner-role-bar { display: flex; height: 14px; }
+.v2-dinner-role-eng { background: #3559e8; }
+.v2-dinner-role-sales { background: #2b7a78; }
+.v2-dinner-role-design { background: #c7a36b; }
+.v2-dinner-role-ops { background: var(--v2-orange); }
+.v2-dinner-analysis-tables { padding: 18px 20px; border-top: 1px solid var(--line); background: white; }
+.v2-dinner-heatmap-heading { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+.v2-dinner-heatmap-heading h3 { margin: 0; }
+.v2-dinner-heat-instruction { margin-right: auto; color: var(--ink-muted); font-size: 10px; font-weight: 700; }
+.v2-dinner-heat-legend { display: flex; gap: 12px; color: var(--ink-muted); font-size: 10px; font-weight: 800; }
+.v2-dinner-heat-legend span { display: flex; align-items: center; gap: 5px; }
+.v2-dinner-heat-legend i { width: 10px; height: 10px; border: 1px solid rgba(0,0,0,.08); border-radius: 50%; }
+.v2-dinner-heatmap-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; border: 1px solid var(--line); background: var(--line); }
+.v2-dinner-heat-column { min-width: 0; background: white; }
+.v2-dinner-heat-column-head { display: flex; justify-content: space-between; padding: 9px; border-bottom: 1px solid var(--line); background: var(--surface-alt); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.v2-dinner-heat-column-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 5px; padding: 11px 7px; }
+.v2-dinner-heat-person { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 4px; border: 0; background: transparent; font-size: 9px; text-align: center; cursor: grab; }
+.v2-dinner-heat-person:active { cursor: grabbing; }
+.v2-dinner-heat-person.v2-dinner-dragging { opacity: .35; }
+.v2-dinner-heat-person.v2-dinner-drop-target .v2-dinner-heat-dot { outline: 3px solid var(--v2-blue); outline-offset: 2px; }
+.v2-dinner-heat-person > span:last-child { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.v2-dinner-heat-dot { width: 43px; height: 43px; display: grid; place-items: center; border: 1px solid rgba(17,17,17,.12); border-radius: 50%; font-size: 10px; font-weight: 800; }
+/* Between the reference's 1440 and 768 frames, three 250px cards leave ~55px for founder names; use its two-card grid. */
+@container dinner (max-width: 1180px) {
+  .v2-dinner-tables { grid-template-columns: repeat(2, minmax(250px, 1fr)); }
+}
+@container dinner (max-width: 900px) {
+  .v2-dinner-setup { display: grid; grid-template-columns: 180px 1fr auto; overflow: visible; border-right: 0; border-bottom: 1px solid var(--line); }
+  .v2-dinner-setup-title { padding: 15px 17px; border-right: 1px solid var(--line); border-bottom: 0; }
+  .v2-dinner-setup-title h1 { font-size: 22px; }
+  .v2-dinner-setup-section { display: none; }
+  .v2-dinner-setup-section:first-of-type { display: flex; align-items: center; padding: 10px 14px; border-bottom: 0; }
+  .v2-dinner-scope-pair { min-width: 250px; }
+  .v2-dinner-setup-link { width: 110px; min-height: 100%; margin: 0; border-width: 0 0 0 1px; }
+  .v2-dinner-workspace { grid-template-rows: auto auto minmax(0, 1fr); }
+  .v2-dinner-work-head { grid-template-columns: minmax(190px, 1fr) repeat(4, 76px); }
+  .v2-dinner-work-title { padding: 13px 15px; }
+  .v2-dinner-work-title h2 { font-size: 20px; }
+  .v2-dinner-metric { padding: 11px 9px; }
+  .v2-dinner-metric strong { font-size: 20px; }
+  .v2-dinner-work-tools { padding: 7px 10px; }
+  .v2-dinner-legend { display: none; }
+  .v2-dinner-table-workspace { grid-template-rows: 78px minmax(0, 1fr); }
+  .v2-dinner-table-index { display: block; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid var(--line); }
+  .v2-dinner-index-head { display: none; }
+  .v2-dinner-index-grid { width: 620px; height: 77px; grid-template-columns: repeat(10, 62px); }
+  .v2-dinner-index-button { min-height: 38px; border-right: 1px solid var(--line); }
+  .v2-dinner-focus-strip { display: flex; }
+  .v2-dinner-tables { grid-template-columns: repeat(2, minmax(250px, 1fr)); }
+  .v2-dinner-tables.v2-dinner-comfortable { grid-template-columns: repeat(2, minmax(280px, 1fr)); }
+  .v2-dinner-table-card { display: block; }
+  .v2-dinner-seat:nth-child(even) { border-right: 0; }
+  .v2-dinner-table-insights { grid-template-columns: 1fr 1fr; }
+  .v2-dinner-insight-card:last-child { grid-column: 1 / -1; }
+  .v2-dinner-analysis-visuals { grid-template-columns: 1fr; }
+  .v2-dinner-heatmap-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container dinner (max-width: 560px) {
+  .v2-dinner-setup { display: none; }
+  .v2-dinner-work-head { grid-template-columns: minmax(0, 1fr) 64px 64px; }
+  .v2-dinner-work-title { padding: 11px 12px; }
+  .v2-dinner-work-title .v2-dinner-eyebrow { display: none; }
+  .v2-dinner-work-title h2 { margin: 0; font-size: 17px; white-space: normal; }
+  .v2-dinner-metric { display: none; }
+  .v2-dinner-metric:first-of-type, .v2-dinner-metric.v2-dinner-alert { display: block; padding: 10px 7px; }
+  .v2-dinner-metric strong { font-size: 19px; }
+  .v2-dinner-metric span { font-size: 7px; }
+  .v2-dinner-work-tools { min-height: 47px; gap: 6px; padding: 6px 8px; }
+  .v2-dinner-tool-left, .v2-dinner-tool-right { gap: 6px; }
+  .v2-dinner-density, .v2-dinner-threshold { display: none; }
+  .v2-dinner-segmented button { min-height: 30px; padding: 0 10px; }
+  .v2-dinner-table-workspace { grid-template-rows: 48px minmax(0, 1fr); }
+  .v2-dinner-index-grid { width: max-content; height: 47px; display: flex; }
+  .v2-dinner-index-button { width: 48px; min-height: 47px; border-bottom: 0; }
+  .v2-dinner-index-button:nth-child(10n) { border-right: 1px solid var(--line); }
+  .v2-dinner-focus-strip { min-height: 42px; }
+  .v2-dinner-tables, .v2-dinner-tables.v2-dinner-comfortable { display: block; padding-bottom: 62px; background: white; }
+  .v2-dinner-table-card { display: none; }
+  .v2-dinner-table-card.v2-dinner-focused { display: block; outline: 0; }
+  .v2-dinner-table-head { padding: 13px 14px; }
+  .v2-dinner-table-head h3 { font-size: 19px; }
+  .v2-dinner-seat, .v2-dinner-tables.v2-dinner-comfortable .v2-dinner-seat { grid-template-columns: 34px minmax(0, 1fr) 36px; padding: 9px 14px; }
+  .v2-dinner-seat-avatar, .v2-dinner-tables.v2-dinner-comfortable .v2-dinner-seat-avatar { width: 34px; height: 34px; font-size: 9px; }
+  .v2-dinner-seat-copy strong, .v2-dinner-tables.v2-dinner-comfortable .v2-dinner-seat-copy strong { font-size: 12px; }
+  .v2-dinner-seat-copy small, .v2-dinner-tables.v2-dinner-comfortable .v2-dinner-seat-copy small { font-size: 9px; }
+  .v2-dinner-fit { font-size: 13px; }
+  .v2-dinner-table-foot { min-height: 38px; padding: 8px 14px; font-size: 10px; }
+  .v2-dinner-analysis-summary { grid-template-columns: repeat(2, 1fr); }
+  .v2-dinner-analysis-stat { padding: 13px; }
+  .v2-dinner-table-insights { grid-template-columns: 1fr; }
+  .v2-dinner-insight-card:last-child { grid-column: auto; }
+  .v2-dinner-role-makeup-grid { grid-template-columns: 1fr; }
+  .v2-dinner-heatmap-heading { align-items: flex-start; flex-direction: column; gap: 7px; }
+  .v2-dinner-heatmap-grid { grid-template-columns: 1fr; }
+}

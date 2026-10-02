@@ -1,0 +1,43 @@
+/* Page-level footer command group (twenty-table responsive review v4 footer). Additive to v2-chrome.css; only applies with the actions prop. */
+
+.v2-footer.v2-footer-with-actions { grid-template-columns: 48px 48px minmax(184px, auto) minmax(0, 1fr) auto; }
+.v2-footer .v2-footer-ai-enabled { color: #17634d; }
+.v2-footer .v2-footer-ai-issue { color: #b42318; }
+.v2-footer .v2-footer-ai-off { color: var(--ink-muted); }
+.v2-footer > .v2-footer-actions { display: flex; align-items: stretch; justify-content: flex-end; border-right: 0; }
+.v2-footer-actions > button,
+.v2-footer-actions > a {
+  min-width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: white;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.v2-footer-actions > span { display: flex; align-items: center; padding: 0 16px; border-left: 1px solid var(--line); color: var(--ink-muted); font-size: 10px; font-weight: 800; }
+.v2-footer-actions > .v2-footer-secondary-dark { background: var(--ink); color: white; }
+.v2-footer-actions > .v2-footer-primary { min-width: 86px; background: var(--v2-blue); color: white; }
+.v2-footer-actions > button:disabled { background: #deddd8; color: #9b9da2; cursor: not-allowed; }
+
+@media (max-width: 900px) {
+  .v2-footer.v2-footer-with-actions { grid-template-columns: 48px 48px 0 minmax(0, 1fr) auto; }
+  .v2-footer.v2-footer-with-actions .v2-footer-ai { visibility: hidden; overflow: hidden; padding: 0; border: 0; }
+  .v2-footer-actions > button, .v2-footer-actions > a { padding: 0 12px; }
+}
+
+@media (max-width: 560px) {
+  .v2-footer.v2-footer-with-actions { grid-template-columns: 0 48px 0 0 minmax(0, 1fr); }
+  .v2-footer.v2-footer-with-actions > .v2-version-link:first-child,
+  .v2-footer.v2-footer-with-actions > div[aria-hidden="true"] { visibility: hidden; overflow: hidden; border: 0; }
+  .v2-footer-actions { min-width: 0; overflow-x: auto; }
+  .v2-footer-actions > button:nth-of-type(-n+2):not(:last-of-type) { display: none; }
+  .v2-footer-actions > span { display: none; }
+  .v2-footer-actions > button, .v2-footer-actions > a { padding: 0 10px; font-size: 9px; }
+  .v2-footer-actions > .v2-footer-primary { min-width: 72px; }
+}

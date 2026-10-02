@@ -1,0 +1,68 @@
+/* Export confirm, progress, success and failure states (export review v4). Ported from the approved mock; every selector is namespaced. */
+
+.v2-export-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.v2-export-context-stats { display: grid; grid-template-columns: repeat(3, 1fr); }
+.v2-export-context-stats div { min-height: 72px; padding: 14px 16px; border-right: 1px solid var(--line); }
+.v2-export-context-stats div:last-child { border-right: 0; }
+.v2-export-context-stats small, .v2-export-context-stats strong { display: block; }
+.v2-export-context-stats small { margin-bottom: 7px; color: var(--ink-muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.v2-export-context-stats strong { font-size: 12px; line-height: 1.25; }
+.v2-export-export-panel { width: min(660px, 100%); border: 1px solid var(--ink); background: var(--surface); }
+.v2-export-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding: 23px 24px 20px; border-bottom: 1px solid var(--line); }
+.v2-export-panel-head h2 { margin: 6px 0 5px; font: 800 29px/.95 "League Spartan", "Avenir Next", system-ui, sans-serif; text-transform: uppercase; }
+.v2-export-panel-head p { margin: 0; color: var(--ink-muted); font-size: 12px; line-height: 1.4; }
+.v2-export-close { width: 34px; height: 34px; flex: 0 0 34px; padding: 0; border: 1px solid var(--line-strong); background: var(--surface); font-size: 21px; line-height: 1; }
+.v2-export-panel-body { padding: 20px 24px 24px; }
+.v2-export-section-heading { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 10px; }
+.v2-export-section-heading strong { font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.v2-export-section-heading span { color: var(--ink-muted); font-size: 10px; }
+.v2-export-scope-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.v2-export-scope-option { position: relative; min-height: 106px; display: block; padding: 15px 16px 13px 42px; border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; }
+.v2-export-scope-option:has(input:checked) { border-color: var(--v2-blue); border-bottom-width: 4px; background: #eef2ff; }
+.v2-export-scope-option input { position: absolute; top: 17px; left: 16px; width: 15px; height: 15px; accent-color: var(--v2-blue); }
+.v2-export-scope-option strong, .v2-export-scope-option span, .v2-export-scope-option small { display: block; }
+.v2-export-scope-option strong { font-size: 13px; }
+.v2-export-scope-option span { margin-top: 7px; color: var(--ink-muted); font-size: 11px; line-height: 1.35; }
+.v2-export-scope-option small { margin-top: 8px; color: var(--v2-blue); font-size: 9px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.v2-export-current-view-summary { margin-bottom: 20px; border: 1px solid var(--line-strong); border-left: 4px solid var(--v2-blue); background: #eef2ff; }
+.v2-export-current-view-summary > strong { display: block; padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.v2-export-current-view-summary .v2-export-context-stats { background: var(--surface); }
+.v2-export-option-row { display: grid; grid-template-columns: 1fr 160px; border: 1px solid var(--line-strong); }
+.v2-export-detail-option { position: relative; min-height: 74px; display: block; padding: 14px 18px 12px 46px; cursor: pointer; }
+.v2-export-detail-option input { position: absolute; top: 16px; left: 17px; width: 16px; height: 16px; accent-color: var(--v2-blue); }
+.v2-export-detail-option strong, .v2-export-detail-option span { display: block; }
+.v2-export-detail-option strong { font-size: 12px; }
+.v2-export-detail-option span { margin-top: 5px; color: var(--ink-muted); font-size: 10px; line-height: 1.35; }
+.v2-export-format { padding: 14px 16px; border-left: 1px solid var(--line); background: var(--surface-alt); }
+.v2-export-format small, .v2-export-format strong { display: block; }
+.v2-export-format small { margin-bottom: 7px; color: var(--ink-muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.v2-export-format strong { font-size: 13px; }
+.v2-export-privacy-note { margin-top: 12px; padding: 11px 13px; border-left: 4px solid var(--v2-orange); background: #fff3ed; font-size: 10px; line-height: 1.45; }
+.v2-export-privacy-note strong { display: block; margin-bottom: 3px; font-size: 10px; }
+.v2-export-panel-actions { min-height: 58px; display: flex; align-items: stretch; justify-content: flex-end; border-top: 1px solid var(--line); }
+.v2-export-panel-actions button { min-width: 124px; padding: 0 20px; border: 0; border-left: 1px solid var(--line); background: var(--surface); font-size: 11px; font-weight: 800; }
+.v2-export-panel-actions .v2-export-primary { color: #fff; background: var(--v2-blue); }
+.v2-export-state-body { min-height: 390px; display: flex; flex-direction: column; justify-content: center; padding: 42px 46px; }
+.v2-export-state-mark { width: 56px; height: 56px; display: grid; place-items: center; margin-bottom: 22px; border: 1px solid var(--ink); color: #fff; background: var(--v2-blue); font: 800 25px/1 "League Spartan", sans-serif; }
+.v2-export-state-mark.v2-export-success { background: #17634d; }
+.v2-export-state-mark.v2-export-failure { background: #b43a2f; }
+.v2-export-state-body h2 { margin: 0 0 9px; font: 800 31px/.96 "League Spartan", "Avenir Next", system-ui, sans-serif; text-transform: uppercase; }
+.v2-export-state-body > p { max-width: 500px; margin: 0; color: var(--ink-muted); font-size: 13px; line-height: 1.5; }
+.v2-export-progress-track { height: 10px; margin: 28px 0 12px; border: 1px solid var(--ink); overflow: hidden; background: var(--surface); }
+.v2-export-progress-track span { display: block; width: 34%; height: 100%; background: var(--v2-blue); animation: v2-export-pending 1.5s ease-in-out infinite alternate; }
+@keyframes v2-export-pending {
+  from { transform: translateX(-20%); }
+  to { transform: translateX(215%); }
+}
+.v2-export-progress-meta { display: flex; justify-content: space-between; color: var(--ink-muted); font-size: 10px; font-weight: 700; }
+.v2-export-progress-meta strong { color: var(--ink); }
+.v2-export-file-card { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 13px; margin-top: 27px; padding: 14px 16px; border: 1px solid var(--line-strong); background: var(--surface-alt); }
+.v2-export-file-icon { width: 42px; height: 42px; display: grid; place-items: center; color: #fff; background: var(--v2-orange); font-size: 10px; font-weight: 800; }
+.v2-export-file-card strong, .v2-export-file-card small { display: block; }
+.v2-export-file-card strong { font-size: 12px; }
+.v2-export-file-card small { margin-top: 4px; color: var(--ink-muted); font-size: 10px; }
+.v2-export-file-card > span:last-child { color: #17634d; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.v2-export-error-detail { margin-top: 24px; padding: 13px 15px; border-left: 4px solid #b43a2f; background: #fff2f0; font-size: 11px; line-height: 1.45; }
+.v2-export-preserved { display: grid; grid-template-columns: 1fr auto; gap: 16px; margin-top: 12px; padding: 12px 15px; border: 1px solid var(--line-strong); font-size: 10px; }
+.v2-export-preserved strong { display: block; margin-bottom: 3px; font-size: 11px; }
+.v2-export-preserved span:last-child { align-self: center; color: var(--v2-blue); font-weight: 800; text-transform: uppercase; }
