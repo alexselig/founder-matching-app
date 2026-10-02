@@ -483,6 +483,78 @@ describe('SQLite repositories', () => {
     ).toBe(zero.id)
   })
 
+  it('uses insertion order when enrichment runs share a retrieved timestamp', () => {
+    const founderId = founders[0]!.id
+    const retrievedAt = '2026-10-01T12:00:00.000Z'
+    const firstEvidence = makeRun(
+      founderId,
+      'z-evidence-first',
+      retrievedAt,
+    )
+    firstEvidence.queryFingerprint = 'same-time-fingerprint'
+    const secondEvidence = makeRun(
+      founderId,
+      'a-evidence-second',
+      retrievedAt,
+    )
+    secondEvidence.queryFingerprint = 'same-time-fingerprint'
+    const firstZero = makeRun(
+      founderId,
+      'z-zero-first',
+      retrievedAt,
+    )
+    firstZero.queryFingerprint = 'same-time-fingerprint'
+    firstZero.status = 'complete'
+    firstZero.results = []
+    const secondZero = makeRun(
+      founderId,
+      'a-zero-second',
+      retrievedAt,
+    )
+    secondZero.queryFingerprint = 'same-time-fingerprint'
+    secondZero.status = 'complete'
+    secondZero.results = []
+
+    for (const run of [
+      firstEvidence,
+      secondEvidence,
+      firstZero,
+      secondZero,
+    ]) {
+      webResultsRepository.appendRun(run)
+    }
+
+    expect(
+      webResultsRepository.listRuns(founderId).map((run) => run.id),
+    ).toEqual([
+      secondZero.id,
+      firstZero.id,
+      secondEvidence.id,
+      firstEvidence.id,
+    ])
+    expect(
+      new Set(
+        webResultsRepository
+          .latest(founderId)
+          .map((result) => result.runId),
+      ),
+    ).toEqual(new Set([secondEvidence.id]))
+    expect(
+      webResultsRepository.findLatestByFingerprint(
+        founderId,
+        'same-time-fingerprint',
+        'fixture',
+      )?.id,
+    ).toBe(secondEvidence.id)
+    expect(
+      webResultsRepository.findLatestCompletedZeroByFingerprint(
+        founderId,
+        'same-time-fingerprint',
+        'fixture',
+      )?.id,
+    ).toBe(secondZero.id)
+  })
+
   it('returns empty enrichment collections only for existing founders without runs', () => {
     const founderId = founders[0]!.id
 
