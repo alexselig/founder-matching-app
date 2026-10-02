@@ -694,6 +694,12 @@ export class WebResultsRepository {
              WHERE founder_id = ?
                AND query_fingerprint = ?
                AND provider = ?
+               AND status IN ('complete', 'partial')
+               AND EXISTS (
+                 SELECT 1
+                 FROM web_results
+                 WHERE web_results.run_id = web_enrichment_runs.id
+               )
              ORDER BY retrieved_at DESC, id DESC
              LIMIT 1`,
         )

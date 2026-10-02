@@ -440,6 +440,29 @@ export function createEnrichmentService(
   )
   const providerValidations = new Map<ProviderId, Promise<void>>()
 
+  async function validateWithRetry(provider: ProviderAdapter) {
+    let lastError: ProviderError | undefined
+    for (let attempt = 1; attempt <= retry.maxAttempts; attempt += 1) {
+      try {
+        await provider.validateCredential()
+        return
+      } catch (error) {
+        lastError = normalizedProviderError(error)
+        if (
+          !lastError.retryable ||
+          attempt >= retry.maxAttempts
+        ) {
+          throw lastError
+        }
+        await sleep(delayForAttempt(attempt, lastError, retry))
+      }
+    }
+    throw (
+      lastError ??
+      new ProviderError('unavailable', 'Provider validation failed')
+    )
+  }
+
   function validateProvider(providerId: ProviderId) {
     const cached = providerValidations.get(providerId)
     if (cached) return cached
@@ -454,10 +477,20 @@ export function createEnrichmentService(
       )
     }
 
-    const validation = Promise.resolve()
-      .then(() => provider.validateCredential())
+    let validation: Promise<void>
+    validation = validateWithRetry(provider)
       .catch((error: unknown) => {
-        throw normalizedProviderError(error)
+        const providerError = normalizedProviderError(error)
+        const permanentInvalidCredential =
+          providerError.code === 'invalid_credential' &&
+          !providerError.retryable
+        if (
+          !permanentInvalidCredential &&
+          providerValidations.get(providerId) === validation
+        ) {
+          providerValidations.delete(providerId)
+        }
+        throw providerError
       })
     providerValidations.set(providerId, validation)
     return validation

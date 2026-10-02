@@ -432,4 +432,55 @@ describe('enrichment and interpretation routes', () => {
       },
     })
   })
+
+  it('reports a latest completed zero-result attempt while retaining older evidence', async () => {
+    const founderRepository = new FounderRepository(database)
+    const webResultsRepository = new WebResultsRepository(database)
+    let id = 0
+    const successfulService = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [provider()],
+      now: () => new Date('2026-10-01T12:00:00.000Z'),
+      createId: () => `result-${++id}`,
+    })
+    await successfulService.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+    })
+
+    const emptyProvider = provider()
+    emptyProvider.searchWeb = async () => []
+    const emptyService = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [emptyProvider],
+      now: () => new Date('2026-10-01T13:00:00.000Z'),
+      createId: () => `no-result-${++id}`,
+    })
+    await emptyService.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+      forceRefresh: true,
+    })
+
+    const response = await server.inject({
+      method: 'GET',
+      url: `/api/v2/founders/${encodeURIComponent(founders[0]!.id)}/web-results`,
+    })
+
+    expect(response.json()).toMatchObject({
+      ok: true,
+      data: {
+        status: 'no_results',
+        items: [{ title: expect.any(String) }],
+        latestRun: {
+          status: 'complete',
+          resultCount: 1,
+        },
+        latestAttempt: {
+          status: 'complete',
+          resultCount: 0,
+        },
+      },
+    })
+  })
 })

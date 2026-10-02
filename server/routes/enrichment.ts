@@ -175,6 +175,9 @@ export const enrichmentRoutes: FastifyPluginAsync<
             ? 'provider_failure'
             : latestAttempt?.status === 'partial'
               ? 'unsupported'
+              : latestAttempt?.status === 'complete' &&
+                  latestAttempt.results.length === 0
+                ? 'no_results'
               : items.length === 0
                 ? 'no_results'
                 : stale

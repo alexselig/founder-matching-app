@@ -16,11 +16,24 @@ function asRecordArray(value: unknown): Record<string, unknown>[] {
   return Array.isArray(value) ? value.filter(isRecord) : []
 }
 
-function meaningfulText(value: string) {
-  const withoutMarkers = value
-    .replace(/\[(?:\d+|source|citation)\]/gi, '')
+function withoutCitationMarkers(value: string) {
+  return value
+    .replace(
+      /\[\[?[^\]\n]+\]?\]\(\s*(?:https?:\/\/|www\.)[^)\n]+\)/giu,
+      ' ',
+    )
+    .replace(/【\s*\d+[^】]*】/gu, ' ')
+    .replace(
+      /\[\[?\s*(?:\^?\d+|source|citation)[^\]\n]*\]?\]/giu,
+      ' ',
+    )
+    .replace(/https?:\/\/\S+/giu, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+function meaningfulText(value: string) {
+  const withoutMarkers = withoutCitationMarkers(value)
   return /[\p{L}\p{N}]/u.test(withoutMarkers) && withoutMarkers.length >= 12
 }
 
@@ -47,6 +60,20 @@ function sentenceNear(text: string, start: number, end: number) {
   return preceding?.text
 }
 
+function precedingClaim(text: string, start: number) {
+  const prefix = text.slice(0, start).trim()
+  if (!prefix) return undefined
+  const paragraph =
+    prefix
+      .split(/\n\s*\n/)
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .at(-1) ?? prefix
+  const cleaned = withoutCitationMarkers(paragraph)
+  if (!meaningfulText(cleaned)) return undefined
+  return sentenceSegments(cleaned).at(-1)?.text ?? cleaned
+}
+
 function citationText(
   text: string,
   annotation: CitationAnnotation,
@@ -71,11 +98,14 @@ function citationText(
     end <= text.length
   ) {
     const span = text.slice(start, end).trim()
-    if (meaningfulText(span)) return span
-    return sentenceNear(text, start, end)
+    const cleaned = withoutCitationMarkers(span)
+    if (meaningfulText(cleaned)) return cleaned
+    return precedingClaim(text, start) ?? sentenceNear(text, start, end)
   }
 
-  if (annotationCount === 1 && meaningfulText(text)) return text.trim()
+  if (annotationCount === 1 && meaningfulText(text)) {
+    return withoutCitationMarkers(text)
+  }
   return undefined
 }
 
