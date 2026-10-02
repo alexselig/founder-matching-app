@@ -1,5 +1,5 @@
 .v2-evidence-scrim { position: fixed; inset: 0; z-index: 80; background: rgba(17, 17, 17, .32); animation: v2-evidence-fade .16s ease-out; }
-.v2-evidence-drawer { position: fixed; z-index: 81; top: 16px; right: 16px; bottom: 16px; width: min(540px, calc(100vw - 32px)); display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); overflow: hidden; border: 1px solid #111; background: #fff; animation: v2-evidence-enter .2s ease-out; }
+.v2-evidence-drawer { position: fixed; z-index: 81; top: 0; right: 0; width: min(540px, 100vw); max-width: 100vw; height: 100vh; height: 100dvh; max-height: 100dvh; display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); overflow: hidden; border: 0; border-left: 1px solid #111; background: #fff; animation: v2-evidence-enter .2s ease-out; }
 .v2-evidence-drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; border-bottom: 1px solid #e3e5e9; background: #fbfaf7; }
 .v2-evidence-identity { min-width: 0; display: flex; gap: 12px; align-items: center; }
 .v2-evidence-identity > span { width: 42px; height: 42px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; color: #fff; background: #111; font-size: 11px; font-weight: 800; }
@@ -41,9 +41,14 @@
 @keyframes v2-evidence-enter { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes v2-evidence-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (max-width: 640px) {
-  .v2-evidence-drawer { top: 0; right: 0; bottom: 0; width: 100vw; border-width: 0 0 0 1px; }
+  .v2-evidence-drawer { width: 100vw; border-left: 0; }
   .v2-evidence-title { min-height: 78px; }
   .v2-evidence-title h2 { font-size: 24px; }
+}
+@media (max-height: 700px) {
+  .v2-evidence-drawer-head { padding-block: 10px; }
+  .v2-evidence-title { min-height: 68px; padding-block: 12px; }
+  .v2-evidence-status { min-height: 56px; padding-block: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .v2-evidence-scrim, .v2-evidence-drawer { animation: none; }
