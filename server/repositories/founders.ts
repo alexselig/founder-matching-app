@@ -4,6 +4,10 @@ import {
   RepositoryError,
   throwRepositoryFailure,
 } from './errors.js'
+import {
+  assertDenseArray,
+  assertNoSparseArrays,
+} from './validation.js'
 
 interface FounderRow {
   id: string
@@ -78,7 +82,18 @@ function assertFounder(
   assertRequiredString(founder.searchName, 'Founder search name')
 
   if (
-    !Array.isArray(founder.companyVerticalLevels) ||
+    !Array.isArray(founder.companyVerticalLevels)
+  ) {
+    throw new RepositoryError(
+      'Founder company vertical levels must be an array',
+      'invalid_data',
+    )
+  }
+  assertDenseArray(
+    founder.companyVerticalLevels,
+    'Founder company vertical levels',
+  )
+  if (
     !founder.companyVerticalLevels.every(
       (level) => typeof level === 'string' && level.trim().length > 0,
     )
@@ -113,6 +128,8 @@ function assertFounder(
 }
 
 function requireJson(value: unknown, label: string) {
+  assertNoSparseArrays(value, label)
+
   try {
     const encoded = JSON.stringify(value)
     if (encoded === undefined) {
@@ -200,12 +217,7 @@ export class FounderRepository {
   constructor(private readonly database: SqliteDatabase) {}
 
   saveAll(founders: readonly Founder[]): void {
-    if (!Array.isArray(founders)) {
-      throw new RepositoryError(
-        'Founders must be an array',
-        'invalid_data',
-      )
-    }
+    assertDenseArray(founders, 'Founders')
 
     const ids = new Set<string>()
     const parameters = founders.map((founder, index) => {

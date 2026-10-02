@@ -8,9 +8,12 @@ import {
   type DatabaseStatus,
   type HealthResponse,
 } from '../src/shared/contracts.js'
+import type { FounderRepository } from './repositories/founders.js'
+import { founderRoutes } from './routes/founders.js'
 
 export interface ServerOptions {
   databaseStatus: () => DatabaseStatus
+  founderRepository: FounderRepository
   staticRoot?: string
 }
 
@@ -52,6 +55,10 @@ export function createServer(options: ServerOptions): FastifyInstance {
 
   server.get('/healthz', async (): Promise<HealthResponse> => {
     return getHealthResponse()
+  })
+
+  server.register(founderRoutes, {
+    repository: options.founderRepository,
   })
 
   server.setNotFoundHandler((request, reply) => {

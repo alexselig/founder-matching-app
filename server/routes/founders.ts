@@ -2,61 +2,40 @@ import {
   type FastifyPluginAsync,
   type FastifyReply,
 } from 'fastify'
-import { z } from 'zod'
 
-import type { Founder } from '../../src/shared/founder.js'
+import {
+  ApiFailureEnvelopeSchema,
+  FounderDetailResponseSchema,
+  FounderListQuerySchema,
+  FounderListResponseSchema,
+  FounderParamsSchema,
+  type ApiEnvelope,
+  type FounderListData,
+  type FounderListQuery,
+} from '../../src/shared/contracts.js'
 import {
   FounderRepository,
   type FounderListOptions,
 } from '../repositories/founders.js'
 import { RepositoryError } from '../repositories/errors.js'
 
-export type ApiEnvelope<T> =
-  | { ok: true; data: T }
-  | {
-      ok: false
-      error: {
-        code: string
-        message: string
-        details?: unknown
-      }
-    }
-
-export interface FounderListData {
-  items: Founder[]
-  total: number
-  limit: number
-  offset: number
-}
-
 export interface FounderRoutesOptions {
   repository: FounderRepository
 }
-
-const FounderListQuerySchema = z
-  .object({
-    limit: z.coerce.number().int().min(1).max(1000).default(574),
-    offset: z.coerce.number().int().min(0).default(0),
-  })
-  .strict()
-
-const FounderParamsSchema = z.object({
-  id: z.string().min(1),
-})
 
 function errorEnvelope(
   code: string,
   message: string,
   details?: unknown,
 ): ApiEnvelope<never> {
-  return {
+  return ApiFailureEnvelopeSchema.parse({
     ok: false,
     error: {
       code,
       message,
       ...(details === undefined ? {} : { details }),
     },
-  }
+  })
 }
 
 function sendRepositoryError(
@@ -76,7 +55,7 @@ function sendRepositoryError(
 }
 
 function listOptions(
-  query: z.infer<typeof FounderListQuerySchema>,
+  query: FounderListQuery,
 ): FounderListOptions {
   return {
     limit: query.limit,
@@ -110,10 +89,10 @@ export const founderRoutes: FastifyPluginAsync<
         offset: parsedQuery.data.offset,
       }
 
-      return {
+      return FounderListResponseSchema.parse({
         ok: true,
         data,
-      } satisfies ApiEnvelope<FounderListData>
+      })
     } catch (error) {
       if (error instanceof RepositoryError) {
         return sendRepositoryError(reply, error)
@@ -144,10 +123,10 @@ export const founderRoutes: FastifyPluginAsync<
     }
 
     try {
-      return {
+      return FounderDetailResponseSchema.parse({
         ok: true,
         data: options.repository.get(parsedParams.data.id),
-      } satisfies ApiEnvelope<Founder>
+      })
     } catch (error) {
       if (error instanceof RepositoryError) {
         return sendRepositoryError(reply, error)
