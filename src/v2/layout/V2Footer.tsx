@@ -52,6 +52,7 @@ export function V2Footer({ aiStatus = '+ AI Disabled', role = 'admin', onExport,
         className="v2-footer-demo"
         aria-label="Demo mode"
         aria-checked={demoMode}
+        aria-describedby="v2-demo-mode-description"
         onClick={toggleDemoMode}
       >
         <span>Demo mode</span>
@@ -59,6 +60,9 @@ export function V2Footer({ aiStatus = '+ AI Disabled', role = 'admin', onExport,
           <span className="v2-footer-demo-thumb" />
         </span>
         <strong>{demoMode ? 'On' : 'Off'}</strong>
+        <span id="v2-demo-mode-description" className="v2-footer-demo-callout" role="tooltip">
+          Explore the app with fictitious founder data and sample seating history.
+        </span>
       </button>
       {hasActions && <div className="v2-footer-actions">{actions}</div>}
       {!hasActions && onExport && (

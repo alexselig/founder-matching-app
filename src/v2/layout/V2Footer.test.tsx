@@ -18,6 +18,8 @@ describe('V2Footer', () => {
     expect(demoToggle.getAttribute('aria-checked')).toBe('false')
     expect(demoToggle.querySelector('.v2-footer-demo-track')).toBeTruthy()
     expect(demoToggle.textContent).toContain('Off')
+    expect(screen.getByRole('tooltip').textContent).toContain('fictitious founder data')
+    expect(demoToggle.getAttribute('aria-describedby')).toBe('v2-demo-mode-description')
     expect(container.querySelector('.v2-footer-ai')!.nextElementSibling).toBe(demoToggle)
     fireEvent.click(screen.getByRole('button', { name: 'Export Results' }))
     expect(onExport).toHaveBeenCalledOnce()
