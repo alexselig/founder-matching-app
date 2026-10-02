@@ -15,6 +15,8 @@ import {
 
 export const DEFAULT_MAX_ITERATIONS = 5
 export const DEFAULT_MAX_COMPARISONS = 50_000
+export const DEFAULT_COMPARISON_FOUNDER_BUDGET = 8_000_000
+export const MIN_DEFAULT_COMPARISONS = 5_000
 export const INITIAL_ASSIGNMENT_NODE_LIMIT = 250_000
 
 export interface DinnerLock {
@@ -77,6 +79,7 @@ export interface PreparedDinnerRequest {
   readonly effectiveLocks: readonly DinnerLock[]
   readonly components: readonly Component[]
   readonly minimumRules: readonly Extract<HardRule, { type: 'field-count' }>[]
+  readonly maximumRules: readonly Extract<HardRule, { type: 'field-count' }>[]
   readonly founderById: ReadonlyMap<string, Founder>
   readonly scoreCache: PairwiseScoreCache
 }
@@ -165,6 +168,19 @@ export function capacities(founderCount: number, tableCount: number): number[] {
   return Array.from(
     { length: tableCount },
     (_, tableIndex) => base + (tableIndex < remainder ? 1 : 0),
+  )
+}
+
+export function defaultComparisonBudget(founderCount: number) {
+  if (!Number.isInteger(founderCount) || founderCount <= 0) {
+    throw new Error('Founder count must be a positive integer')
+  }
+  return Math.min(
+    DEFAULT_MAX_COMPARISONS,
+    Math.max(
+      MIN_DEFAULT_COMPARISONS,
+      Math.floor(DEFAULT_COMPARISON_FOUNDER_BUDGET / founderCount),
+    ),
   )
 }
 
@@ -380,7 +396,11 @@ function inputConflicts(
     }
     if (
       rule.max !== undefined &&
-      matchingFounderIds.length > rule.max * request.tableCount
+      matchingFounderIds.length >
+        tableCapacities.reduce(
+          (total, capacity) => total + Math.min(capacity, rule.max!),
+          0,
+        )
     ) {
       conflicts.push(
         ruleConflict(
@@ -588,9 +608,13 @@ export function prepareDinnerRequest(request: DinnerRequest): PreparedDinnerRequ
     (rule): rule is Extract<HardRule, { type: 'field-count' }> =>
       rule.type === 'field-count' && rule.min !== undefined,
   )
+  const maximumRules = rules.filter(
+    (rule): rule is Extract<HardRule, { type: 'field-count' }> =>
+      rule.type === 'field-count' && rule.max !== undefined,
+  )
   const components = [...componentResult.components].sort((left, right) => {
-    const minimumMatchCount = (component: Component) =>
-      minimumRules.reduce(
+    const constrainedMatchCount = (component: Component) =>
+      [...minimumRules, ...maximumRules].reduce(
         (count, rule) =>
           count +
           matchingCount(
@@ -603,7 +627,7 @@ export function prepareDinnerRequest(request: DinnerRequest): PreparedDinnerRequ
     return (
       Number(right.fixedTableIndex !== undefined) -
         Number(left.fixedTableIndex !== undefined) ||
-      minimumMatchCount(right) - minimumMatchCount(left) ||
+      constrainedMatchCount(right) - constrainedMatchCount(left) ||
       right.founderIds.length - left.founderIds.length ||
       left.id.localeCompare(right.id)
     )
@@ -617,6 +641,7 @@ export function prepareDinnerRequest(request: DinnerRequest): PreparedDinnerRequ
     effectiveLocks,
     components,
     minimumRules,
+    maximumRules,
     founderById,
     scoreCache: buildPairwiseScores(request.founders, request.criteria),
   }
@@ -705,7 +730,7 @@ function candidateTableIndexes(
   return prepared.capacities
     .map((_, tableIndex) => tableIndex)
     .sort((left, right) => {
-      const deficitScore = (tableIndex: number) =>
+      const minimumDeficitScore = (tableIndex: number) =>
         prepared.minimumRules.reduce((score, rule) => {
           const componentMatches = matchingCount(
             component.founderIds,
@@ -722,7 +747,37 @@ function candidateTableIndexes(
           )
           return score + Math.max(0, rule.min! - currentMatches)
         }, 0)
-      return deficitScore(right) - deficitScore(left) || left - right
+      const maximumCapacityScore = (tableIndex: number) =>
+        prepared.maximumRules.reduce((score, rule) => {
+          const componentMatches = matchingCount(
+            component.founderIds,
+            prepared.founderById,
+            rule,
+          )
+          const currentMatches = matchingCount(
+            tables[tableIndex] ?? [],
+            prepared.founderById,
+            rule,
+          )
+          const remainingCapacity =
+            prepared.capacities[tableIndex]! - (tables[tableIndex]?.length ?? 0)
+          const allowedBefore = Math.min(
+            remainingCapacity,
+            Math.max(0, rule.max! - currentMatches),
+          )
+          const allowedAfter = Math.min(
+            remainingCapacity - component.founderIds.length,
+            Math.max(0, rule.max! - currentMatches - componentMatches),
+          )
+          return componentMatches > 0
+            ? score + allowedBefore
+            : score - Math.max(0, allowedBefore - allowedAfter)
+        }, 0)
+      return (
+        minimumDeficitScore(right) - minimumDeficitScore(left) ||
+        maximumCapacityScore(right) - maximumCapacityScore(left) ||
+        left - right
+      )
     })
 }
 
@@ -761,6 +816,43 @@ function minimumsRemainPossible(
       totalShortfall += shortfall
     }
     if (remainingMatches < totalShortfall) {
+      return false
+    }
+  }
+  return true
+}
+
+function maximumsRemainPossible(
+  tables: readonly (readonly string[])[],
+  remainingComponents: readonly Component[],
+  prepared: PreparedRequest,
+) {
+  for (const rule of prepared.maximumRules) {
+    const remainingMatches = remainingComponents.reduce(
+      (count, component) =>
+        count +
+        matchingCount(
+          component.founderIds,
+          prepared.founderById,
+          rule,
+        ),
+      0,
+    )
+    let remainingAllowedSlots = 0
+    for (let tableIndex = 0; tableIndex < tables.length; tableIndex += 1) {
+      const table = tables[tableIndex]!
+      const currentMatches = matchingCount(
+        table,
+        prepared.founderById,
+        rule,
+      )
+      const remainingCapacity = prepared.capacities[tableIndex]! - table.length
+      remainingAllowedSlots += Math.min(
+        remainingCapacity,
+        Math.max(0, rule.max! - currentMatches),
+      )
+    }
+    if (remainingMatches > remainingAllowedSlots) {
       return false
     }
   }
@@ -973,7 +1065,11 @@ function initialAssignment(prepared: PreparedRequest) {
         continue
       }
       table.push(...component.founderIds)
-      if (minimumsRemainPossible(tables, remaining, prepared) && assign(componentIndex + 1)) {
+      if (
+        minimumsRemainPossible(tables, remaining, prepared) &&
+        maximumsRemainPossible(tables, remaining, prepared) &&
+        assign(componentIndex + 1)
+      ) {
         return true
       }
       table.splice(table.length - component.founderIds.length)
@@ -1166,7 +1262,7 @@ function improveAssignment(
   const maxComparisons =
     options.maxComparisons ??
     prepared.request.maxComparisons ??
-    DEFAULT_MAX_COMPARISONS
+    defaultComparisonBudget(prepared.request.founders.length)
   let comparisons = 0
   let iterations = 0
   let converged = false
