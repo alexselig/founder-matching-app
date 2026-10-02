@@ -29,7 +29,9 @@ export type HardRuleInput =
   | (RuleBase & {
       readonly type: 'field-count'
       readonly field: string
-      readonly value: string | number
+      readonly value?: string | number
+      readonly minValue?: string | number
+      readonly maxValue?: string | number
       readonly min?: number
       readonly max?: number
     })
@@ -59,7 +61,9 @@ export type HardRule =
   | (RuleBase & {
       readonly type: 'field-count'
       readonly field: FounderFieldKey
-      readonly value: string | number
+      readonly value?: string | number
+      readonly minValue?: number
+      readonly maxValue?: number
       readonly min?: number
       readonly max?: number
     })
@@ -218,7 +222,138 @@ function resolveField(value: string) {
       (name) => normalizeName(name) === token,
     ),
   )
-  return matches.length === 1 ? matches[0]!.key : undefined
+  return matches.length === 1 ? matches[0] : undefined
+}
+
+function parseFiniteNumber(value: string | number | undefined) {
+  if (value === undefined || (typeof value === 'string' && value.trim() === '')) {
+    return undefined
+  }
+  const parsed = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function compileFieldCountMatcher(
+  input: Extract<HardRuleInput, { type: 'field-count' }>,
+  founders: readonly Founder[],
+  field: (typeof FOUNDER_SCHEMA)[number],
+): {
+  matcher?: Pick<
+    Extract<HardRule, { type: 'field-count' }>,
+    'value' | 'minValue' | 'maxValue'
+  >
+  conflict?: RuleConflict
+} {
+  const hasExactValue = input.value !== undefined
+  const hasRange = input.minValue !== undefined || input.maxValue !== undefined
+  if (hasExactValue === hasRange) {
+    return {
+      conflict: conflict(
+        [input.id],
+        [],
+        `Rule ${input.id} must provide either one exact value or a numeric range`,
+      ),
+    }
+  }
+
+  if (field.kind === 'number') {
+    if (hasExactValue) {
+      const value = parseFiniteNumber(input.value)
+      if (value === undefined) {
+        return {
+          conflict: conflict(
+            [input.id],
+            [],
+            `Rule ${input.id} has an invalid numeric value for ${field.label}`,
+          ),
+        }
+      }
+      const matchingFounderIds = founders
+        .filter((founder) => founder[field.key] === value)
+        .map((founder) => founder.id)
+      if (!matchingFounderIds.length) {
+        return {
+          conflict: conflict(
+            [input.id],
+            [],
+            `Rule ${input.id} value ${String(input.value)} matches no founder`,
+          ),
+        }
+      }
+      return {
+        matcher: { value, minValue: undefined, maxValue: undefined },
+      }
+    }
+
+    const minValue = parseFiniteNumber(input.minValue)
+    const maxValue = parseFiniteNumber(input.maxValue)
+    if (
+      (input.minValue !== undefined && minValue === undefined) ||
+      (input.maxValue !== undefined && maxValue === undefined) ||
+      (minValue !== undefined && maxValue !== undefined && minValue > maxValue)
+    ) {
+      return {
+        conflict: conflict(
+          [input.id],
+          [],
+          `Rule ${input.id} has an invalid numeric range for ${field.label}`,
+        ),
+      }
+    }
+    const matchingFounderIds = founders
+      .filter((founder) => {
+        const value = founder[field.key]
+        return (
+          typeof value === 'number' &&
+          (minValue === undefined || value >= minValue) &&
+          (maxValue === undefined || value <= maxValue)
+        )
+      })
+      .map((founder) => founder.id)
+    if (!matchingFounderIds.length) {
+      return {
+        conflict: conflict(
+          [input.id],
+          [],
+          `Rule ${input.id} numeric range matches no founder`,
+        ),
+      }
+    }
+    return {
+      matcher: { value: undefined, minValue, maxValue },
+    }
+  }
+
+  if (hasRange) {
+    return {
+      conflict: conflict(
+        [input.id],
+        [],
+        `Rule ${input.id} numeric ranges require a number field`,
+      ),
+    }
+  }
+  const requestedValue = normalizeName(String(input.value))
+  const canonicalValues = [
+    ...new Set(founders.map((founder) => String(founder[field.key]))),
+  ].filter((value) => normalizeName(value) === requestedValue)
+  if (!canonicalValues.length) {
+    return {
+      conflict: conflict(
+        [input.id],
+        [],
+        `Rule ${input.id} value ${String(input.value)} matches no founder`,
+      ),
+    }
+  }
+  canonicalValues.sort()
+  return {
+    matcher: {
+      value: canonicalValues[0],
+      minValue: undefined,
+      maxValue: undefined,
+    },
+  }
 }
 
 function compileRule(
@@ -275,7 +410,23 @@ function compileRule(
           ],
         }
       }
-      return { rule: Object.freeze({ ...input, field }), conflicts: [] }
+      const compiledMatcher = compileFieldCountMatcher(input, founders, field)
+      if (compiledMatcher.conflict || !compiledMatcher.matcher) {
+        return {
+          conflicts: compiledMatcher.conflict ? [compiledMatcher.conflict] : [],
+        }
+      }
+      return {
+        rule: Object.freeze({
+          id: input.id,
+          type: input.type,
+          field: field.key,
+          ...compiledMatcher.matcher,
+          min: input.min,
+          max: input.max,
+        }),
+        conflicts: [],
+      }
     }
     case 'fixed-table-size':
       return Number.isInteger(input.size) && input.size > 0
@@ -509,14 +660,31 @@ export function compileHardRules(
   })
 }
 
+export function founderMatchesFieldCountRule(
+  founder: Founder,
+  rule: Extract<HardRule, { type: 'field-count' }>,
+) {
+  const founderValue = founder[rule.field]
+  if (rule.value !== undefined) {
+    return founderValue === rule.value
+  }
+  return (
+    typeof founderValue === 'number' &&
+    (rule.minValue === undefined || founderValue >= rule.minValue) &&
+    (rule.maxValue === undefined || founderValue <= rule.maxValue)
+  )
+}
+
 function matchingCount(
   table: TableLike,
   founderById: ReadonlyMap<string, Founder>,
-  field: FounderFieldKey,
-  value: string | number,
+  rule: Extract<HardRule, { type: 'field-count' }>,
 ) {
   return table.founderIds.filter(
-    (founderId) => founderById.get(founderId)?.[field] === value,
+    (founderId) => {
+      const founder = founderById.get(founderId)
+      return founder ? founderMatchesFieldCountRule(founder, rule) : false
+    },
   ).length
 }
 
@@ -598,7 +766,7 @@ export function findRuleViolations(
         break
       case 'field-count':
         tables.forEach((table, tableIndex) => {
-          const count = matchingCount(table, founderById, rule.field, rule.value)
+          const count = matchingCount(table, founderById, rule)
           if (
             (rule.min !== undefined && count < rule.min) ||
             (rule.max !== undefined && count > rule.max)
