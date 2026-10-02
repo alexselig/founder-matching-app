@@ -32,6 +32,19 @@ function requireCredential(secret: string) {
   }
 }
 
+function retryAfterMs(value: string | null | undefined) {
+  const retryAfter = value?.trim()
+  if (!retryAfter) return undefined
+  const seconds = Number(retryAfter)
+  if (Number.isFinite(seconds)) {
+    return Math.max(0, seconds * 1000)
+  }
+  const timestamp = Date.parse(retryAfter)
+  return Number.isNaN(timestamp)
+    ? undefined
+    : Math.max(0, timestamp - Date.now())
+}
+
 function mapAnthropicError(error: unknown): ProviderError {
   if (error instanceof Anthropic.AuthenticationError) {
     return new ProviderError(
@@ -41,18 +54,14 @@ function mapAnthropicError(error: unknown): ProviderError {
     )
   }
   if (error instanceof Anthropic.RateLimitError) {
-    const retryAfter = error.headers?.get('retry-after')
-    const seconds = retryAfter === undefined
-      ? Number.NaN
-      : Number(retryAfter)
     return new ProviderError(
       'rate_limited',
       'Anthropic rate limited the request',
       {
         retryable: true,
-        retryAfterMs: Number.isFinite(seconds)
-          ? Math.max(0, seconds * 1000)
-          : undefined,
+        retryAfterMs: retryAfterMs(
+          error.headers?.get('retry-after'),
+        ),
         cause: error,
       },
     )
@@ -214,10 +223,9 @@ export function createAnthropicProvider(
   return {
     id: 'anthropic',
     capabilities,
-    async validateCredential(secret) {
-      requireCredential(secret)
+    async validateCredential() {
       try {
-        await clientFactory(secret).models.retrieve(ANTHROPIC_MODEL)
+        await clientFactory(options.apiKey).models.retrieve(ANTHROPIC_MODEL)
       } catch (error) {
         throw mapAnthropicError(error)
       }

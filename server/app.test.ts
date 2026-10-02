@@ -2,7 +2,7 @@ import path from 'node:path'
 import { readFileSync } from 'node:fs'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import {
   FounderDetailResponseSchema,
@@ -39,6 +39,7 @@ let enrichmentRunManager: ReturnType<
 let aiInterpretationService: ReturnType<
   typeof createAiInterpretationService
 >
+const providerValidation = vi.fn(async () => undefined)
 
 beforeAll(async () => {
   await rm(staticRoot, { recursive: true, force: true })
@@ -62,7 +63,7 @@ beforeAll(async () => {
       webSearch: true,
       citations: true,
     },
-    validateCredential: async () => undefined,
+    validateCredential: providerValidation,
     parseSearch: async () => ({ text: '', dimensions: [] }),
     parseDinnerCriteria: async () => ({
       criteria: [
@@ -301,6 +302,22 @@ describe('createServer', () => {
       },
     })
 
+    await server.close()
+  })
+
+  it('validates a configured provider at the production route before starting its first batch', async () => {
+    const server = createServer(serverOptions())
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v2/enrichment/runs',
+      payload: {
+        provider: 'openai',
+        founderIds: [founders[0]!.id],
+      },
+    })
+
+    expect(response.statusCode).toBe(202)
+    expect(providerValidation).toHaveBeenCalledTimes(1)
     await server.close()
   })
 

@@ -5,12 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { normalizeFounders } from '../../src/shared/founder.js'
 import { createDatabase, type SqliteDatabase } from '../database.js'
+import { createAnthropicProvider } from '../providers/anthropic.js'
+import { createOpenAIProvider } from '../providers/openai.js'
 import type {
   ProviderAdapter,
   ProviderWebResult,
   WebSearchQuery,
 } from '../providers/types.js'
 import { ProviderError } from '../providers/types.js'
+import { createXaiProvider } from '../providers/xai.js'
 import { FounderRepository } from '../repositories/founders.js'
 import { WebResultsRepository } from '../repositories/webResults.js'
 import { createEnrichmentService } from './enrichment.js'
@@ -133,6 +136,93 @@ describe('web enrichment service', () => {
     expect(webResultsRepository.listRuns(founders[0]!.id)).toHaveLength(1)
   })
 
+  it.each([
+    {
+      providerId: 'openai' as const,
+      createProvider: (transport: typeof fetch) =>
+        createOpenAIProvider({
+          apiKey: 'openai-secret',
+          model: 'openai-test-model',
+          transport,
+        }),
+    },
+    {
+      providerId: 'xai' as const,
+      createProvider: (transport: typeof fetch) =>
+        createXaiProvider({
+          apiKey: 'xai-secret',
+          model: 'xai-test-model',
+          transport,
+        }),
+    },
+  ])(
+    'uses source-local $providerId citations for identity ranking',
+    async ({ providerId, createProvider }) => {
+      const founder = founders[0]!
+      const founderSentence =
+        `${founder.name} leads ${founder.company}.`
+      const companySentence =
+        `${founder.company} announced a new product.`
+      const text = `${founderSentence} ${companySentence}`
+      const transport = vi.fn(async () =>
+        new Response(JSON.stringify({
+          output: [
+            {
+              type: 'message',
+              content: [
+                {
+                  type: 'output_text',
+                  text,
+                  annotations: [
+                    {
+                      type: 'url_citation',
+                      url: 'https://profiles.test/founder',
+                      title: `${founder.name} profile`,
+                      start_index: 0,
+                      end_index: founderSentence.length,
+                    },
+                    {
+                      type: 'url_citation',
+                      url: 'https://news.test/company',
+                      title: `${founder.company} news`,
+                      start_index: founderSentence.length + 1,
+                      end_index: text.length,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
+      const service = createEnrichmentService({
+        founderRepository,
+        webResultsRepository,
+        providers: [createProvider(transport)],
+        now: () => new Date('2026-10-01T12:00:00.000Z'),
+        createId: () => `${providerId}-local-citations`,
+      })
+
+      const result = await service.enrichFounder(founder.id, {
+        provider: providerId,
+      })
+
+      expect(result.items).toHaveLength(2)
+      expect(result.items[0]).toMatchObject({
+        url: 'https://profiles.test/founder',
+        classification: 'both',
+      })
+      expect(result.items[1]).toMatchObject({
+        url: 'https://news.test/company',
+        classification: 'company',
+      })
+      expect(result.items[1]!.snippet).not.toContain(founder.name)
+    },
+  )
+
   it('reuses a non-stale query fingerprint without appending history', async () => {
     const searchWeb = vi.fn(async () => baseResults)
     const service = createEnrichmentService({
@@ -219,6 +309,172 @@ describe('web enrichment service', () => {
     expect(result.status).toBe('complete')
     expect(attempts).toBe(3)
     expect(sleep.mock.calls).toEqual([[20_000], [30_000]])
+  })
+
+  it('uses exponential backoff for xAI when Retry-After is absent', async () => {
+    let attempts = 0
+    const sleep = vi.fn(async () => undefined)
+    const founder = founders[0]!
+    const transport = vi.fn(async () => {
+      attempts += 1
+      if (attempts === 1) {
+        return new Response('{}', {
+          status: 429,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({
+        output: [
+          {
+            content: [
+              {
+                text: `${founder.name} leads ${founder.company}.`,
+                annotations: [
+                  {
+                    type: 'url_citation',
+                    url: 'https://profiles.test/founder',
+                    title: `${founder.name} profile`,
+                    start_index: 0,
+                    end_index:
+                      `${founder.name} leads ${founder.company}.`.length,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    })
+    const service = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [
+        createXaiProvider({
+          apiKey: 'xai-secret',
+          model: 'xai-test-model',
+          transport,
+        }),
+      ],
+      now: () => new Date('2026-10-01T12:00:00.000Z'),
+      createId: () => 'xai-retry-run',
+      sleep,
+      retry: {
+        maxAttempts: 2,
+        baseDelayMs: 1250,
+        maxDelayMs: 30_000,
+      },
+    })
+
+    await service.enrichFounder(founder.id, {
+      provider: 'xai',
+    })
+
+    expect(sleep).toHaveBeenCalledWith(1250)
+  })
+
+  it('uses exponential backoff for Anthropic when Retry-After is absent', async () => {
+    const founder = founders[0]!
+    const sleep = vi.fn(async () => undefined)
+    let attempts = 0
+    const provider = createAnthropicProvider({
+      apiKey: 'anthropic-secret',
+      clientFactory: () => ({
+        messages: {
+          create: vi.fn(async () => {
+            attempts += 1
+            if (attempts === 1) {
+              throw new (await import('@anthropic-ai/sdk')).default.RateLimitError(
+                429,
+                {},
+                'rate limited',
+                new Headers(),
+              )
+            }
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `${founder.name} leads ${founder.company}.`,
+                  citations: [
+                    {
+                      type: 'web_search_result_location',
+                      url: 'https://profiles.test/founder',
+                      title: `${founder.name} profile`,
+                      cited_text:
+                        `${founder.name} leads ${founder.company}.`,
+                      encrypted_index: 'opaque',
+                    },
+                  ],
+                },
+              ],
+              stop_reason: 'end_turn',
+            }
+          }),
+        },
+        models: { retrieve: vi.fn() },
+      }),
+    })
+    const service = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [provider],
+      now: () => new Date('2026-10-01T12:00:00.000Z'),
+      createId: () => 'anthropic-retry-run',
+      sleep,
+      retry: {
+        maxAttempts: 2,
+        baseDelayMs: 1500,
+        maxDelayMs: 30_000,
+      },
+    })
+
+    await service.enrichFounder(founder.id, {
+      provider: 'anthropic',
+    })
+
+    expect(sleep).toHaveBeenCalledWith(1500)
+  })
+
+  it('caches successful and failed provider validation without searching', async () => {
+    const validateSuccess = vi.fn(async () => undefined)
+    const successful = fakeProvider(async () => baseResults)
+    successful.validateCredential = validateSuccess
+    const successService = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [successful],
+    })
+
+    await Promise.all([
+      successService.validateProvider('openai'),
+      successService.validateProvider('openai'),
+    ])
+    expect(validateSuccess).toHaveBeenCalledTimes(1)
+
+    const validateFailure = vi.fn(async () => {
+      throw new ProviderError(
+        'invalid_credential',
+        'OpenAI rejected the configured credential',
+      )
+    })
+    const failed = fakeProvider(async () => baseResults)
+    failed.validateCredential = validateFailure
+    const failureService = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [failed],
+    })
+
+    await expect(
+      failureService.validateProvider('openai'),
+    ).rejects.toMatchObject({ code: 'invalid_credential' })
+    await expect(
+      failureService.validateProvider('openai'),
+    ).rejects.toMatchObject({ code: 'invalid_credential' })
+    expect(validateFailure).toHaveBeenCalledTimes(1)
   })
 
   it('never allows configured retry delays to exceed thirty seconds', async () => {

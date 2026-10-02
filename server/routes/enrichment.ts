@@ -173,8 +173,7 @@ export const enrichmentRoutes: FastifyPluginAsync<
         const status: FounderWebResultsData['status'] =
           latestAttempt?.status === 'failed'
             ? 'provider_failure'
-            : latestAttempt?.status === 'partial' &&
-                items.length === 0
+            : latestAttempt?.status === 'partial'
               ? 'unsupported'
               : items.length === 0
                 ? 'no_results'
@@ -228,7 +227,7 @@ export const enrichmentRoutes: FastifyPluginAsync<
     }
 
     try {
-      const batch = options.runManager.create(parsed.data)
+      const batch = await options.runManager.create(parsed.data)
       return reply.code(202).send(
         EnrichmentBatchResponseSchema.parse({
           ok: true,
@@ -239,7 +238,7 @@ export const enrichmentRoutes: FastifyPluginAsync<
       if (error instanceof ProviderError) {
         return reply.code(400).send(
           errorEnvelope(
-            'provider_unavailable',
+            error.code,
             error.message,
           ),
         )

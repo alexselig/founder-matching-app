@@ -72,6 +72,7 @@ export interface EnrichmentProgress {
 }
 
 export interface EnrichmentService {
+  validateProvider(provider: ProviderId): Promise<void>
   enrichFounder(
     founderId: string,
     options: EnrichFounderOptions,
@@ -90,7 +91,9 @@ export interface EnrichmentRunManagerOptions {
 }
 
 export interface EnrichmentRunManager {
-  create(request: CreateEnrichmentRunRequest): EnrichmentBatch
+  create(
+    request: CreateEnrichmentRunRequest,
+  ): Promise<EnrichmentBatch>
   get(id: string): EnrichmentBatch | undefined
 }
 
@@ -435,6 +438,30 @@ export function createEnrichmentService(
   const providers = new Map(
     options.providers.map((provider) => [provider.id, provider]),
   )
+  const providerValidations = new Map<ProviderId, Promise<void>>()
+
+  function validateProvider(providerId: ProviderId) {
+    const cached = providerValidations.get(providerId)
+    if (cached) return cached
+
+    const provider = providers.get(providerId)
+    if (!provider) {
+      return Promise.reject(
+        new ProviderError(
+          'unavailable',
+          `Provider ${providerId} is not configured`,
+        ),
+      )
+    }
+
+    const validation = Promise.resolve()
+      .then(() => provider.validateCredential())
+      .catch((error: unknown) => {
+        throw normalizedProviderError(error)
+      })
+    providerValidations.set(providerId, validation)
+    return validation
+  }
 
   async function searchWithRetry(
     provider: ProviderAdapter,
@@ -657,6 +684,7 @@ export function createEnrichmentService(
   }
 
   return {
+    validateProvider,
     enrichFounder,
     enrichAllFounders,
     resolveFounderIds,
@@ -720,13 +748,8 @@ export function createEnrichmentRunManager(
   }
 
   return {
-    create(request) {
-      if (!options.service.hasProvider(request.provider)) {
-        throw new ProviderError(
-          'unavailable',
-          `Provider ${request.provider} is not configured`,
-        )
-      }
+    async create(request) {
+      await options.service.validateProvider(request.provider)
       const founderIds = options.service.resolveFounderIds(
         request.founderIds,
       )

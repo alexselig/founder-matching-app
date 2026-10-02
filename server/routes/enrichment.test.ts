@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import Fastify, { type FastifyInstance } from 'fastify'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   EnrichmentBatchResponseSchema,
@@ -279,6 +279,53 @@ describe('enrichment and interpretation routes', () => {
     })
   })
 
+  it('rejects an invalid bulk credential once before searches or history writes', async () => {
+    const founderRepository = new FounderRepository(database)
+    const webResultsRepository = new WebResultsRepository(database)
+    const validateCredential = vi.fn(async () => {
+      throw new ProviderError(
+        'invalid_credential',
+        'OpenAI rejected the configured credential',
+      )
+    })
+    const searchWeb = vi.fn(async () => [])
+    const invalidProvider = provider()
+    invalidProvider.validateCredential = validateCredential
+    invalidProvider.searchWeb = searchWeb
+    const service = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [invalidProvider],
+    })
+    const invalidServer = Fastify()
+    await invalidServer.register(enrichmentRoutes, {
+      repository: webResultsRepository,
+      runManager: createEnrichmentRunManager({ service }),
+    })
+
+    for (let request = 0; request < 2; request += 1) {
+      const response = await invalidServer.inject({
+        method: 'POST',
+        url: '/api/v2/enrichment/runs',
+        payload: { provider: 'openai' },
+      })
+      expect(response.statusCode).toBe(400)
+      expect(response.json()).toMatchObject({
+        ok: false,
+        error: {
+          code: 'invalid_credential',
+        },
+      })
+    }
+
+    expect(validateCredential).toHaveBeenCalledTimes(1)
+    expect(searchWeb).not.toHaveBeenCalled()
+    expect(
+      webResultsRepository.listRuns(founders[0]!.id),
+    ).toEqual([])
+    await invalidServer.close()
+  })
+
   it('exposes a failed provider attempt without erasing prior successful evidence', async () => {
     const founderRepository = new FounderRepository(database)
     const webResultsRepository = new WebResultsRepository(database)
@@ -323,6 +370,64 @@ describe('enrichment and interpretation routes', () => {
         items: [{ title: expect.any(String) }],
         latestAttempt: {
           status: 'failed',
+        },
+      },
+    })
+  })
+
+  it('reports the latest unsupported attempt while returning older successful evidence', async () => {
+    const founderRepository = new FounderRepository(database)
+    const webResultsRepository = new WebResultsRepository(database)
+    let id = 0
+    const successfulService = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [provider()],
+      now: () => new Date('2026-10-01T12:00:00.000Z'),
+      createId: () => `supported-${++id}`,
+    })
+    await successfulService.enrichFounder(founders[2]!.id, {
+      provider: 'openai',
+    })
+
+    const unsupportedProvider = provider()
+    unsupportedProvider.searchWeb = async (query) => [
+      {
+        title: `${query.context.company} summary`,
+        url: 'https://unsupported.test/summary',
+        snippet: 'Summary without source-local provenance.',
+        provenance: 'summary_only',
+      },
+    ]
+    const unsupportedService = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [unsupportedProvider],
+      now: () => new Date('2026-10-01T13:00:00.000Z'),
+      createId: () => `unsupported-${++id}`,
+    })
+    await unsupportedService.enrichFounder(founders[2]!.id, {
+      provider: 'openai',
+      forceRefresh: true,
+    })
+
+    const response = await server.inject({
+      method: 'GET',
+      url: `/api/v2/founders/${encodeURIComponent(founders[2]!.id)}/web-results`,
+    })
+
+    expect(response.json()).toMatchObject({
+      ok: true,
+      data: {
+        status: 'unsupported',
+        items: [{ title: expect.any(String) }],
+        latestRun: {
+          status: 'complete',
+          resultCount: 1,
+        },
+        latestAttempt: {
+          status: 'partial',
+          resultCount: 0,
         },
       },
     })

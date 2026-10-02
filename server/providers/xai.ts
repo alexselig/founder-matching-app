@@ -4,6 +4,7 @@ import {
   type ProviderWebResult,
   type WebSearchQuery,
 } from './types.js'
+import { responseAnnotationResults } from './citations.js'
 
 type FetchTransport = typeof fetch
 
@@ -36,6 +37,19 @@ function requireCredential(secret: string) {
   }
 }
 
+function retryAfterMs(value: string | null | undefined) {
+  const retryAfter = value?.trim()
+  if (!retryAfter) return undefined
+  const seconds = Number(retryAfter)
+  if (Number.isFinite(seconds)) {
+    return Math.max(0, seconds * 1000)
+  }
+  const timestamp = Date.parse(retryAfter)
+  return Number.isNaN(timestamp)
+    ? undefined
+    : Math.max(0, timestamp - Date.now())
+}
+
 function providerHttpError(response: Response) {
   if (response.status === 401 || response.status === 403) {
     return new ProviderError(
@@ -44,15 +58,14 @@ function providerHttpError(response: Response) {
     )
   }
   if (response.status === 429) {
-    const seconds = Number(response.headers.get('retry-after'))
     return new ProviderError(
       'rate_limited',
       'xAI rate limited the request',
       {
         retryable: true,
-        retryAfterMs: Number.isFinite(seconds)
-          ? Math.max(0, seconds * 1000)
-          : undefined,
+        retryAfterMs: retryAfterMs(
+          response.headers.get('retry-after'),
+        ),
       },
     )
   }
@@ -144,20 +157,24 @@ function interpretationInstruction(
 }
 
 function citationResults(body: unknown): ProviderWebResult[] {
-  if (!isRecord(body)) {
-    return []
-  }
-  const text =
-    typeof body.output_text === 'string' ? body.output_text : ''
-  const results: ProviderWebResult[] = []
+  const results = responseAnnotationResults(
+    body,
+    'xAI web source',
+    'xAI URL citation.',
+  )
+  if (!isRecord(body)) return results
+
+  const seen = new Set(results.map((result) => result.url))
   const citations = Array.isArray(body.citations) ? body.citations : []
 
   for (const citation of citations) {
     if (typeof citation === 'string') {
+      if (seen.has(citation)) continue
+      seen.add(citation)
       results.push({
-        title: new URL(citation).hostname,
+        title: 'xAI web source',
         url: citation,
-        snippet: text || 'xAI web search citation.',
+        snippet: 'xAI URL citation.',
         provenance: 'citation',
       })
       continue
@@ -166,18 +183,27 @@ function citationResults(body: unknown): ProviderWebResult[] {
       isRecord(citation) &&
       typeof citation.url === 'string'
     ) {
+      if (seen.has(citation.url)) continue
+      seen.add(citation.url)
+      const title =
+        typeof citation.title === 'string' && citation.title.trim()
+          ? citation.title.trim()
+          : 'xAI web source'
+      const localText = [
+        citation.snippet,
+        citation.text,
+        citation.cited_text,
+        title === 'xAI web source' ? undefined : title,
+      ].find((value): value is string =>
+        typeof value === 'string' && Boolean(value.trim()),
+      )
       results.push({
         ...(typeof citation.id === 'string' ? { id: citation.id } : {}),
-        title:
-          typeof citation.title === 'string'
-            ? citation.title
-            : new URL(citation.url).hostname,
+        title,
         url: citation.url,
-        snippet:
-          typeof citation.snippet === 'string'
-            ? citation.snippet
-            : text || 'xAI web search citation.',
+        snippet: localText?.trim() ?? 'xAI URL citation.',
         provenance: 'citation',
+        rawMetadata: citation,
       })
     }
   }
@@ -258,8 +284,8 @@ export function createXaiProvider(
   return {
     id: 'xai',
     capabilities,
-    async validateCredential(secret) {
-      await request('/models', { method: 'GET' }, secret)
+    async validateCredential() {
+      await request('/models', { method: 'GET' })
     },
     parseSearch: (input) => interpret('search', input),
     parseDinnerCriteria: (input) =>
