@@ -12,8 +12,12 @@ describe('V2 shared responsive shell', () => {
     const phone = css.slice(css.indexOf('@media (max-width: 620px)'))
 
     expect(tablet).toMatch(/\.v2-topbar \{[^}]*min-width: 0/)
+    expect(tablet).toMatch(/\.v2-topbar \{[^}]*grid-template-columns: 190px minmax\(0, 1fr\) 318px/)
     expect(phone).toMatch(/\.v2-topbar \{[^}]*grid-template-rows: 64px 48px/)
+    expect(phone).toMatch(/\.v2-topbar \{[^}]*grid-template-columns: minmax\(0, 1fr\) 240px/)
     expect(phone).toMatch(/\.v2-nav \{[^}]*grid-column: 1 \/ -1/)
+    expect(phone).not.toMatch(/\.v2-profile-avatar \{[^}]*width: 30px/)
+    expect(phone).not.toMatch(/\.v2-profile small,[^{]*\.v2-chevron \{[^}]*display: none/)
   })
 
   it('keeps the mobile footer inside the safe area', () => {
@@ -30,6 +34,7 @@ describe('V2 responsive routes', () => {
 
     expect(tablet).toMatch(/\.v2-hero \{[^}]*grid-template-columns: 1fr/)
     expect(tablet).toMatch(/\.v2-founder-grid \{[^}]*grid-template-columns: repeat\(2/)
+    expect(tablet).toMatch(/\.v2-recommendation-columns \{[^}]*grid-template-columns: 1fr/)
     expect(phone).toMatch(/\.v2-recommendation-columns \{[^}]*grid-template-columns: 1fr/)
     expect(phone).toMatch(/\.v2-founder-grid \{[^}]*grid-template-columns: 1fr/)
     expect(phone).toMatch(/\.v2-picker \{[^}]*width: calc\(100vw - 32px\)/)
@@ -48,6 +53,13 @@ describe('V2 responsive routes', () => {
   it('keeps the web-results action as a flat text button', () => {
     const evidence = readV2('evidence/founder-evidence.css')
     expect(evidence).toMatch(/\.v2-evidence-link \{[^}]*appearance: none;[^}]*border: 0;[^}]*box-shadow: none;[^}]*background: transparent/)
+  })
+
+  it('matches web-result typography to the zero-query recommendation scale', () => {
+    const evidence = readV2('evidence/founder-evidence.css')
+    expect(evidence).toMatch(/\.v2-evidence-identity strong \{[^}]*15px/)
+    expect(evidence).toMatch(/\.v2-evidence-identity p \{[^}]*font-size: 12px/)
+    expect(evidence).toMatch(/\.v2-evidence-list article > p \{[^}]*font-size: 14px/)
   })
 })
 
