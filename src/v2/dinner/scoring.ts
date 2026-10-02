@@ -12,9 +12,12 @@ export interface NumericRange {
   readonly max: number
 }
 
+export const MISSING_PAIR_COMPONENT = Symbol('missing-pair-component')
+export type PairwiseComponentScore = number | typeof MISSING_PAIR_COMPONENT
+
 export interface PairwiseScoreCache {
   readonly founderIds: ReadonlySet<string>
-  readonly components: ReadonlyMap<string, ReadonlyMap<string, number | null>>
+  readonly components: ReadonlyMap<string, ReadonlyMap<string, PairwiseComponentScore>>
 }
 
 function isMissing(value: unknown) {
@@ -50,6 +53,24 @@ function hierarchy(value: unknown) {
   return values.map((entry) => String(entry).trim().toLocaleLowerCase()).filter(Boolean)
 }
 
+function categoricalEquals(left: unknown, right: unknown): boolean {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((value, index) => categoricalEquals(value, right[index]))
+    )
+  }
+  if (left instanceof Set || right instanceof Set) {
+    if (!(left instanceof Set) || !(right instanceof Set) || left.size !== right.size) {
+      return false
+    }
+    return [...left].every((value) => right.has(value))
+  }
+  return Object.is(left, right)
+}
+
 function similarity(
   operator: CriterionOperator,
   left: unknown,
@@ -58,7 +79,7 @@ function similarity(
 ) {
   switch (operator) {
     case 'categorical':
-      return left === right ? 1 : 0
+      return categoricalEquals(left, right) ? 1 : 0
     case 'jaccard': {
       const leftSet = normalizedSet(left)
       const rightSet = normalizedSet(right)
@@ -146,6 +167,12 @@ function baseComponent(
   criterion: Criterion,
   range?: NumericRange,
 ) {
+  const leftValue = criterionValue(left, criterion)
+  const rightValue = criterionValue(right, criterion)
+  if (isMissing(leftValue) || isMissing(rightValue)) {
+    return MISSING_PAIR_COMPONENT
+  }
+
   if (
     criterion.field === 'cohortSection' &&
     left.cohortSection !== right.cohortSection &&
@@ -160,10 +187,10 @@ function baseComponent(
       objective: 'similarity',
       missingValuePolicy: criterion.missingValuePolicy,
     },
-    criterionValue(left, criterion),
-    criterionValue(right, criterion),
+    leftValue,
+    rightValue,
     range,
-  )
+  )!
 }
 
 export function buildPairwiseScores(
@@ -181,12 +208,12 @@ export function buildPairwiseScores(
   const ranges = new Map(
     criteria.criteria.map((criterion) => [criterion.id, numericRange(founders, criterion)]),
   )
-  const components = new Map<string, ReadonlyMap<string, number | null>>()
+  const components = new Map<string, ReadonlyMap<string, PairwiseComponentScore>>()
   for (let leftIndex = 0; leftIndex < founders.length; leftIndex += 1) {
     for (let rightIndex = leftIndex + 1; rightIndex < founders.length; rightIndex += 1) {
       const left = founders[leftIndex]!
       const right = founders[rightIndex]!
-      const scores = new Map<string, number | null>()
+      const scores = new Map<string, PairwiseComponentScore>()
       for (const criterion of criteria.criteria) {
         scores.set(
           criterion.id,
@@ -227,8 +254,11 @@ export function scoreFounderPair(
     if (!criterion.enabled) {
       continue
     }
-    const component = components.get(criterion.id)
-    if (component === null || component === undefined) {
+    if (!components.has(criterion.id)) {
+      throw new Error(`Missing cached component for criterion ${criterion.id}`)
+    }
+    const component = components.get(criterion.id)!
+    if (component === MISSING_PAIR_COMPONENT) {
       if (criterion.missingValuePolicy === 'zero') {
         totalWeight += criterion.weight
       }
