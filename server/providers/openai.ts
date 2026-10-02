@@ -5,6 +5,7 @@ import {
   type WebSearchQuery,
 } from './types.js'
 import { responseAnnotationResults } from './citations.js'
+import { validateResponsesSearchEnvelope } from './responses.js'
 
 type FetchTransport = typeof fetch
 
@@ -259,9 +260,10 @@ export function createOpenAIProvider(
           ].join('\n'),
         }),
       })
+      const envelope = validateResponsesSearchEnvelope(body, 'OpenAI')
       const citations = annotationResults(body)
       if (citations.length > 0) return citations
-      const summary = optionalOutputText(body)
+      const summary = envelope.text ?? envelope.refusal
       return summary
         ? [
             {

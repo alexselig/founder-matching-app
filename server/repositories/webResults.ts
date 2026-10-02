@@ -614,7 +614,7 @@ export class WebResultsRepository {
                FROM web_results
                WHERE web_results.run_id = web_enrichment_runs.id
              )
-           ORDER BY retrieved_at DESC, id DESC
+           ORDER BY retrieved_at DESC, web_enrichment_runs.rowid DESC
            LIMIT 1`,
         )
         .get(founderId) as { id: string } | undefined
@@ -650,7 +650,7 @@ export class WebResultsRepository {
              raw_provider_metadata_json
            FROM web_enrichment_runs
            WHERE founder_id = ?
-           ORDER BY retrieved_at DESC, id DESC`,
+           ORDER BY retrieved_at DESC, web_enrichment_runs.rowid DESC`,
         )
         .all(founderId) as WebRunRow[]
 
@@ -700,7 +700,7 @@ export class WebResultsRepository {
                  FROM web_results
                  WHERE web_results.run_id = web_enrichment_runs.id
                )
-             ORDER BY retrieved_at DESC, id DESC
+             ORDER BY retrieved_at DESC, web_enrichment_runs.rowid DESC
              LIMIT 1`,
         )
         .get(
@@ -753,7 +753,7 @@ export class WebResultsRepository {
                  FROM web_results
                  WHERE web_results.run_id = web_enrichment_runs.id
                )
-             ORDER BY retrieved_at DESC, id DESC
+             ORDER BY retrieved_at DESC, web_enrichment_runs.rowid DESC
              LIMIT 1`,
         )
         .get(
@@ -830,7 +830,7 @@ export class WebResultsRepository {
            raw_provider_metadata_json
          FROM web_results
          WHERE run_id = ?
-         ORDER BY rank`,
+         ORDER BY rank ASC, web_results.rowid ASC`,
       )
       .all(runId) as WebResultRow[]
 

@@ -501,7 +501,7 @@ describe('provider adapters', () => {
           apiKey: 'openai-secret',
           model: 'openai-test-model',
           transport: vi.fn(async () =>
-            jsonResponse({ output: [] }),
+            jsonResponse({ status: 'completed', output: [] }),
           ),
         }),
     },
@@ -512,7 +512,7 @@ describe('provider adapters', () => {
           apiKey: 'xai-secret',
           model: 'xai-test-model',
           transport: vi.fn(async () =>
-            jsonResponse({ output: [] }),
+            jsonResponse({ status: 'completed', output: [] }),
           ),
         }),
     },
@@ -534,6 +534,152 @@ describe('provider adapters', () => {
           query: '"Ada Founder" "Analytical Engines"',
         }),
       ).resolves.toEqual([])
+    },
+  )
+
+  it.each([
+    {
+      provider: 'OpenAI',
+      create: (body: unknown) =>
+        createOpenAIProvider({
+          apiKey: 'openai-secret',
+          model: 'openai-test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+    },
+    {
+      provider: 'xAI',
+      create: (body: unknown) =>
+        createXaiProvider({
+          apiKey: 'xai-secret',
+          model: 'xai-test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+    },
+  ])(
+    'rejects a malformed $provider 200 envelope',
+    async ({ create }) => {
+      await expect(
+        create({ unexpected: true }).searchWeb({
+          founderId: 'founder-1',
+          context: {
+            name: 'Ada Founder',
+            company: 'Analytical Engines',
+            companyVertical: 'B2B Software -> Analytics',
+            role: 'CEO',
+            education: 'Mathematics',
+            cohortGroup: 'W26',
+            cohortSection: 'A',
+          },
+          query: '"Ada Founder" "Analytical Engines"',
+        }),
+      ).rejects.toMatchObject({
+        code: 'invalid_response',
+      })
+    },
+  )
+
+  it.each([
+    {
+      provider: 'OpenAI',
+      create: (body: unknown) =>
+        createOpenAIProvider({
+          apiKey: 'openai-secret',
+          model: 'openai-test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+    },
+    {
+      provider: 'xAI',
+      create: (body: unknown) =>
+        createXaiProvider({
+          apiKey: 'xai-secret',
+          model: 'xai-test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+    },
+  ])(
+    'rejects an incomplete $provider 200 envelope',
+    async ({ create }) => {
+      await expect(
+        create({
+          status: 'incomplete',
+          incomplete_details: { reason: 'max_output_tokens' },
+          output: [],
+        }).searchWeb({
+          founderId: 'founder-1',
+          context: {
+            name: 'Ada Founder',
+            company: 'Analytical Engines',
+            companyVertical: 'B2B Software -> Analytics',
+            role: 'CEO',
+            education: 'Mathematics',
+            cohortGroup: 'W26',
+            cohortSection: 'A',
+          },
+          query: '"Ada Founder" "Analytical Engines"',
+        }),
+      ).rejects.toMatchObject({
+        code: 'invalid_response',
+      })
+    },
+  )
+
+  it.each([
+    {
+      provider: 'OpenAI',
+      create: (body: unknown) =>
+        createOpenAIProvider({
+          apiKey: 'openai-secret',
+          model: 'openai-test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+    },
+    {
+      provider: 'xAI',
+      create: (body: unknown) =>
+        createXaiProvider({
+          apiKey: 'xai-secret',
+          model: 'xai-test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+    },
+  ])(
+    'maps a refusal-only $provider response to summary-only evidence',
+    async ({ create }) => {
+      await expect(
+        create({
+          status: 'completed',
+          output: [
+            {
+              type: 'message',
+              content: [
+                {
+                  type: 'refusal',
+                  refusal: 'Unable to complete this web search.',
+                },
+              ],
+            },
+          ],
+        }).searchWeb({
+          founderId: 'founder-1',
+          context: {
+            name: 'Ada Founder',
+            company: 'Analytical Engines',
+            companyVertical: 'B2B Software -> Analytics',
+            role: 'CEO',
+            education: 'Mathematics',
+            cohortGroup: 'W26',
+            cohortSection: 'A',
+          },
+          query: '"Ada Founder" "Analytical Engines"',
+        }),
+      ).resolves.toEqual([
+        expect.objectContaining({
+          provenance: 'summary_only',
+          snippet: 'Unable to complete this web search.',
+        }),
+      ])
     },
   )
 

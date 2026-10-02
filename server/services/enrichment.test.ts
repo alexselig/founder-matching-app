@@ -464,6 +464,109 @@ describe('web enrichment service', () => {
     expect(webResultsRepository.listRuns(founders[0]!.id)).toHaveLength(2)
   })
 
+  it.each([
+    {
+      providerId: 'openai' as const,
+      createProvider: (transport: typeof fetch) =>
+        createOpenAIProvider({
+          apiKey: 'openai-secret',
+          model: 'openai-test-model',
+          transport,
+        }),
+    },
+    {
+      providerId: 'xai' as const,
+      createProvider: (transport: typeof fetch) =>
+        createXaiProvider({
+          apiKey: 'xai-secret',
+          model: 'xai-test-model',
+          transport,
+        }),
+    },
+  ])(
+    'does not cache invalid or refusal-only $provider responses but caches a valid empty search',
+    async ({ providerId, createProvider }) => {
+      const bodies = [
+        { unexpected: true },
+        {
+          status: 'completed',
+          output: [
+            {
+              type: 'message',
+              content: [
+                {
+                  type: 'refusal',
+                  refusal: 'Unable to complete this web search.',
+                },
+              ],
+            },
+          ],
+        },
+        { status: 'completed', output: [] },
+      ]
+      const transport = vi.fn(async () =>
+        new Response(JSON.stringify(bodies.shift()), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
+      let id = 0
+      const service = createEnrichmentService({
+        founderRepository,
+        webResultsRepository,
+        providers: [createProvider(transport)],
+        now: () => new Date('2026-10-01T12:00:00.000Z'),
+        createId: () => `${providerId}-envelope-${++id}`,
+        retry: {
+          maxAttempts: 1,
+          baseDelayMs: 1,
+          maxDelayMs: 1,
+        },
+      })
+
+      const malformed = await service.enrichFounder(founders[0]!.id, {
+        provider: providerId,
+      })
+      const refused = await service.enrichFounder(founders[0]!.id, {
+        provider: providerId,
+      })
+      const empty = await service.enrichFounder(founders[0]!.id, {
+        provider: providerId,
+      })
+      const cached = await service.enrichFounder(founders[0]!.id, {
+        provider: providerId,
+      })
+
+      expect(malformed).toMatchObject({
+        cached: false,
+        status: 'failed',
+        error: { code: 'invalid_response' },
+      })
+      expect(refused).toMatchObject({
+        cached: false,
+        status: 'partial',
+        items: [],
+      })
+      expect(empty).toMatchObject({
+        cached: false,
+        status: 'complete',
+        items: [],
+      })
+      expect(cached).toMatchObject({
+        cached: true,
+        runId: empty.runId,
+        status: 'complete',
+        items: [],
+      })
+      expect(transport).toHaveBeenCalledTimes(3)
+      expect(
+        webResultsRepository
+          .listRuns(founders[0]!.id)
+          .map((run) => run.status),
+      ).toEqual(['complete', 'partial', 'failed'])
+    },
+  )
+
   it('refreshes stale evidence by appending a new run', async () => {
     let currentTime = new Date('2026-10-01T12:00:00.000Z')
     let id = 0
