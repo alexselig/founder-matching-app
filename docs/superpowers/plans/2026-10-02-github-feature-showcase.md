@@ -28,7 +28,7 @@
 - Consumes: stable image paths under `docs/showcase/images/`
 - Produces: a GitHub-rendered `Learn About Features` section with six linked screenshots
 
-- [ ] **Step 1: Replace the obsolete route list**
+- [x] **Step 1: Replace the obsolete route list**
 
 Replace `## Views` with:
 
@@ -41,7 +41,7 @@ Replace `## Views` with:
 - `/v2/settings/ai` — server-side provider status and credential validation
 ```
 
-- [ ] **Step 2: Add the feature section after the live demo link**
+- [x] **Step 2: Add the feature section after the live demo link**
 
 Add a two-column HTML table under `## Learn About Features`. Use six cells with these image paths and captions:
 
@@ -92,7 +92,7 @@ Follow it with:
 The public demo is read-only and uses fictitious founder data.
 ```
 
-- [ ] **Step 3: Validate README image targets**
+- [x] **Step 3: Validate README image targets**
 
 Run:
 
@@ -136,7 +136,7 @@ Expected: `Validated 6 README image targets`.
 - Consumes: deployed routes and accessible labels encoded in `scripts/capture-showcase.mjs`
 - Produces: 16 current PNG screenshots with stable filenames
 
-- [ ] **Step 1: Capture all screenshots from the live site**
+- [x] **Step 1: Capture all screenshots from the live site**
 
 Run:
 
@@ -146,7 +146,7 @@ SHOWCASE_BASE_URL=https://founder-index-demo.onrender.com node scripts/capture-s
 
 Expected: `Captured 16 showcase images in .../docs/showcase/images`.
 
-- [ ] **Step 2: Verify all screenshots are non-empty PNG files**
+- [x] **Step 2: Verify all screenshots are non-empty PNG files**
 
 Run:
 
@@ -165,7 +165,7 @@ PY
 
 Expected: `Validated 16 PNG screenshots`.
 
-- [ ] **Step 3: Review the changed screenshot set**
+- [x] **Step 3: Review the changed screenshot set**
 
 Run:
 
@@ -186,11 +186,11 @@ Expected: the current production changes update Search, Seating Plans, Tables, a
 - Consumes: completed README and screenshot tasks
 - Produces: `origin/main` matching local `main`
 
-- [ ] **Step 1: Mark every plan step complete**
+- [x] **Step 1: Mark every plan step complete**
 
 Change each checkbox in this plan from `- [ ]` to `- [x]`.
 
-- [ ] **Step 2: Check the final diff**
+- [x] **Step 2: Check the final diff**
 
 Run:
 
@@ -201,14 +201,14 @@ git diff --stat
 
 Expected: no whitespace errors; README, this plan, and refreshed PNGs are listed.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add README.md docs/showcase/images docs/superpowers/plans/2026-10-02-github-feature-showcase.md
 git commit -m "docs: refresh GitHub feature showcase"
 ```
 
-- [ ] **Step 4: Push and verify synchronization**
+- [x] **Step 4: Push and verify synchronization**
 
 ```bash
 git push origin main

@@ -1,23 +1,59 @@
-# Founder Table
+# Founder Index
 
-A reviewable prototype for founder discovery, search, and organizer-controlled
-dinner grouping.
+A reviewable prototype for founder discovery, structured search, and organizer-controlled
+seating plans.
 
-## Views
+**Live public demo:** <https://founder-index-demo.onrender.com/v2>
 
-- `/` — founder discovery and search
-- `/plan` — proposed product plan with section-level decisions, inline comments,
-  browser autosave, and JSON feedback export
-- `/directory` — alternate URL for founder discovery plus name, company, industry,
-  role, and education search
-- `/algorithm` — plain-language documentation of table sizing, attribute
-  distance, strategy behavior, deterministic seeds, v1 limitations, and planned
-  constraint-aware improvements
-- `/admin` — organizer preview with attendee filtering, target table size,
-  grouping strategy, parameter selection, deterministic seeds, and CSV export
+## Learn About Features
 
-The admin route is intentionally marked as an unprotected prototype. Production
-use requires authentication and an organizer role.
+<table>
+  <tr>
+    <td width="50%">
+      <a href="docs/showcase/images/01-search-zero.png"><img src="docs/showcase/images/01-search-zero.png" alt="Founder discovery with explainable zero-query suggestions"></a>
+      <strong>Discover founders before typing.</strong><br>
+      Start from explainable adjacent, complementary, and cross-domain suggestions.
+    </td>
+    <td width="50%">
+      <a href="docs/showcase/images/02-search-grid.png"><img src="docs/showcase/images/02-search-grid.png" alt="Structured founder search results"></a>
+      <strong>Turn natural language into structured search.</strong><br>
+      Inspect and edit the dimensions behind every result set.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <a href="docs/showcase/images/06-seating-plans-populated.png"><img src="docs/showcase/images/06-seating-plans-populated.png" alt="Saved seating plans archive"></a>
+      <strong>Resume and review saved plans.</strong><br>
+      Reopen arrangements, inspect versions, and recover plans that need attention.
+    </td>
+    <td width="50%">
+      <a href="docs/showcase/images/07-dinner-configuration.png"><img src="docs/showcase/images/07-dinner-configuration.png" alt="Dinner setup with dimensions and weights"></a>
+      <strong>Configure the matching objective.</strong><br>
+      Select a cohort, table shape, dimensions, rules, and weights before optimization.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <a href="docs/showcase/images/09-tables.png"><img src="docs/showcase/images/09-tables.png" alt="Optimized seating tables workspace"></a>
+      <strong>Review every seat placement.</strong><br>
+      Scan continuous compact tables, thresholds, locks, and below-threshold seats.
+    </td>
+    <td width="50%">
+      <a href="docs/showcase/images/14-web-evidence.png"><img src="docs/showcase/images/14-web-evidence.png" alt="Top web results evidence drawer"></a>
+      <strong>Check the evidence behind a profile.</strong><br>
+      Open recent web results without leaving the founder workflow.
+    </td>
+  </tr>
+</table>
+
+The public demo is read-only and uses fictitious founder data.
+
+## Product surfaces
+
+- `/v2/search` — schema-wide founder discovery, structured search, and explainable recommendations
+- `/v2/seating-plans` — saved seating arrangements, version history, and recovery warnings
+- `/v2/dinner` — cohort setup, matching criteria, table optimization, manual edits, analysis, and export
+- `/v2/settings/ai` — server-side provider status and credential validation
 
 ## Run locally
 
