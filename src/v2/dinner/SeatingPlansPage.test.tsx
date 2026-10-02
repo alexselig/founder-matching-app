@@ -147,14 +147,20 @@ describe('SeatingPlansPage index', () => {
     expect([...container.querySelectorAll('.v2-plans-hero-stat strong')].map((stat) => stat.textContent)).toEqual(['0', '0', '0'])
     expect(container.querySelector('.v2-plans-hero-summary')).toHaveClass('v2-plans-zero-state')
     expect(screen.queryByLabelText('Find a plan')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /New seating plan/ })).not.toBeInTheDocument()
+    expect(within(container.querySelector('footer')!).getByRole('button', { name: 'New seating plan' })).toHaveClass(
+      'v2-plans-footer-create',
+    )
 
     fireEvent.click(screen.getByRole('button', { name: /Create your first seating plan/ }))
     expect(navigate).toHaveBeenCalledWith('/v2/dinner')
 
     cleanup()
-    renderPlans({ navigate })
-    fireEvent.click(screen.getByRole('button', { name: /New seating plan/ }))
+    const archive = renderPlans({ navigate })
+    expect(archive.container.querySelector('.v2-plans-hero .v2-plans-new-plan')).not.toBeInTheDocument()
+
+    const footerAction = within(archive.container.querySelector('footer')!).getByRole('button', { name: 'New seating plan' })
+    expect(footerAction).toHaveClass('v2-plans-footer-create')
+    fireEvent.click(footerAction)
     expect(navigate).toHaveBeenLastCalledWith('/v2/dinner')
   })
 

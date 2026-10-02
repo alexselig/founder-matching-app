@@ -31,7 +31,7 @@
 - Consumes: `V2Footer.actions?: ReactNode`
 - Produces: `.v2-plans-footer-create`, a page-specific footer button that calls `navigate('/v2/dinner')`
 
-- [ ] **Step 1: Update the behavior test to require a footer action and no hero action**
+- [x] **Step 1: Update the behavior test to require a footer action and no hero action**
 
 Replace the archive-state assertions in `SeatingPlansPage.test.tsx` with:
 
@@ -48,7 +48,7 @@ fireEvent.click(footerAction)
 expect(navigate).toHaveBeenLastCalledWith('/v2/dinner')
 ```
 
-- [ ] **Step 2: Run the focused test and verify it fails**
+- [x] **Step 2: Run the focused test and verify it fails**
 
 Run:
 
@@ -58,7 +58,7 @@ npm test -- --run src/v2/dinner/SeatingPlansPage.test.tsx
 
 Expected: FAIL because the archive action is still inside `.v2-plans-hero` and the footer has no `New seating plan` button.
 
-- [ ] **Step 3: Move the action into `V2Footer.actions`**
+- [x] **Step 3: Move the action into `V2Footer.actions`**
 
 Delete the `!zero` hero button block and render the footer as:
 
@@ -86,7 +86,7 @@ Delete the `!zero` hero button block and render the footer as:
 
 Keep the empty-state `Create your first seating plan` button in place. It may continue sharing `createRef`; only one of the two creation controls is used for focus recovery at a time.
 
-- [ ] **Step 4: Remove the hero CTA column and styles**
+- [x] **Step 4: Remove the hero CTA column and styles**
 
 Change the desktop summary grid in `seating-plans.css` to:
 
@@ -99,7 +99,7 @@ Change the desktop summary grid in `seating-plans.css` to:
 
 Delete `.v2-plans-new-plan`, `.v2-plans-new-plan-plus`, and their responsive overrides. At the 1320px and 1120px container breakpoints, remove the extra CTA column so the hero continues to contain only the copy plus three statistics.
 
-- [ ] **Step 5: Style the footer action as the orange right-edge primary command**
+- [x] **Step 5: Style the footer action as the orange right-edge primary command**
 
 Add to `v2-footer-actions.css`:
 
@@ -133,7 +133,7 @@ Add to `v2-footer-actions.css`:
 }
 ```
 
-- [ ] **Step 6: Add responsive CSS contracts**
+- [x] **Step 6: Add responsive CSS contracts**
 
 In `dinnerResponsive.test.ts`, assert that:
 
@@ -145,7 +145,7 @@ expect(footer).toMatch(/@media \(max-width: 560px\)[\s\S]*\.v2-footer-actions > 
 
 Read `src/v2/layout/v2-footer-actions.css` into a `footer` constant beside the existing route CSS fixtures.
 
-- [ ] **Step 7: Run focused tests**
+- [x] **Step 7: Run focused tests**
 
 Run:
 
@@ -155,7 +155,7 @@ npm test -- --run src/v2/dinner/SeatingPlansPage.test.tsx src/v2/dinner/dinnerRe
 
 Expected: all tests pass.
 
-- [ ] **Step 8: Run code-quality and browser verification**
+- [x] **Step 8: Run code-quality and browser verification**
 
 Run:
 
@@ -167,7 +167,7 @@ npm run test:e2e
 
 Expected: lint and build exit 0; Playwright reports 3 passed, including the phone/tablet viewport containment test.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/v2/dinner/SeatingPlansPage.tsx \

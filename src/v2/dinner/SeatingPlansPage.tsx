@@ -300,20 +300,6 @@ export function SeatingPlansPage({
                     <span>{stat.label}</span>
                   </div>
                 ))}
-                {!zero && (
-                  <button type="button" className="v2-plans-new-plan" aria-label="New seating plan" onClick={() => navigate('/v2/dinner')}>
-                    <span className="v2-plans-new-plan-plus" aria-hidden="true">
-                      +
-                    </span>
-                    <span>
-                      New{' '}
-                      <br />
-                      seating{' '}
-                      <br />
-                      plan
-                    </span>
-                  </button>
-                )}
               </div>
             </section>
 
@@ -468,7 +454,19 @@ export function SeatingPlansPage({
           </>
         )}
       </main>
-      <V2Footer role={role} aiStatus={aiStatus} aiTone={aiTone} />
+      <V2Footer
+        role={role}
+        aiStatus={aiStatus}
+        aiTone={aiTone}
+        actions={
+          restricted ? undefined : (
+            <button type="button" className="v2-plans-footer-create" aria-label="New seating plan" onClick={() => navigate('/v2/dinner')}>
+              <span aria-hidden="true">+</span>
+              New seating plan
+            </button>
+          )
+        }
+      />
       <div data-testid="plans-live-region" className="v2-visually-hidden" role="status" aria-live="polite">
         {message}
       </div>

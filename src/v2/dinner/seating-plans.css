@@ -13,17 +13,13 @@
 .v2-plans-hero-title { padding: 20px 32px; color: #fff; background: var(--v2-blue); }
 .v2-plans-eyebrow { font-size: 11px; line-height: 1.2; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .v2-plans-hero-title h1 { max-width: 210px; margin: 10px 0 0; font: 800 34px/.88 "League Spartan", "Avenir Next", system-ui, sans-serif; text-transform: uppercase; }
-.v2-plans-hero-summary { display: grid; grid-template-columns: minmax(380px, 1fr) 156px 156px 156px 198px; align-items: stretch; }
-.v2-plans-hero-summary.v2-plans-zero-state { grid-template-columns: minmax(380px, 1fr) 156px 156px 156px; }
+.v2-plans-hero-summary, .v2-plans-hero-summary.v2-plans-zero-state { display: grid; grid-template-columns: minmax(380px, 1fr) 156px 156px 156px; align-items: stretch; }
 .v2-plans-hero-copy { display: flex; flex-direction: column; justify-content: center; padding: 0 36px; }
 .v2-plans-hero-copy h2 { margin: 0 0 8px; font: 800 30px/.96 "League Spartan", sans-serif; text-transform: uppercase; }
 .v2-plans-hero-copy p { max-width: 535px; margin: 0; color: var(--ink-muted); font-size: 14px; line-height: 1.45; }
 .v2-plans-hero-stat { display: flex; flex-direction: column; justify-content: center; padding: 0 22px; border-left: 1px solid var(--line); }
 .v2-plans-hero-stat strong { font: 800 36px/.9 "League Spartan", sans-serif; }
 .v2-plans-hero-stat span { margin-top: 8px; color: var(--ink-muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.v2-plans-new-plan { position: relative; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 14px; border: 0; border-left: 1px solid var(--ink); color: var(--ink); background: var(--v2-orange); padding: 0 18px; font: 800 22px/.92 "League Spartan", sans-serif; letter-spacing: .02em; font-weight: 800; text-align: left; text-transform: uppercase; cursor: pointer; transition: background 140ms ease, transform 140ms ease; }
-.v2-plans-new-plan-plus { color: var(--ink); background: transparent; flex: 0 0 auto; font-size: 52px; line-height: 1; }
-.v2-plans-new-plan:hover { filter: brightness(1.06); transform: translateY(-2px); }
 .v2-plans-toolbar { height: 76px; display: grid; grid-template-columns: minmax(400px, 1fr) 190px 164px; border-bottom: 1px solid var(--line); }
 .v2-plans-search-box { display: flex; align-items: center; padding: 0 28px; border-right: 1px solid var(--line); }
 .v2-plans-search-box label { margin-right: 14px; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
@@ -99,7 +95,7 @@
 .v2-plans-dialog-actions .v2-plans-confirm-delete { min-width: 176px; color: #fff; background: #b42318; }
 /* The mock's desktop hero summary needs 1046px inside its 80% column, so its compact columns start at 1320px. */
 @container plans (max-width: 1320px) {
-  .v2-plans-hero-summary { grid-template-columns: minmax(340px, 1fr) 126px 126px 126px 170px; }
+  .v2-plans-hero-summary, .v2-plans-hero-summary.v2-plans-zero-state { grid-template-columns: minmax(340px, 1fr) 126px 126px 126px; }
 }
 @container plans (max-width: 1180px) {
   .v2-plans-table-head, .v2-plans-plan-row { grid-template-columns: minmax(267px, 1.25fr) 120px 98px 92px 180px 224px; }
@@ -110,8 +106,7 @@
   .v2-plans-hero { height: auto; grid-template-columns: 1fr; }
   .v2-plans-hero-title { padding: 18px 28px; }
   .v2-plans-hero-title h1 { max-width: none; font-size: 30px; }
-  .v2-plans-hero-summary { grid-template-columns: repeat(3, minmax(0, 1fr)) 198px; }
-  .v2-plans-hero-summary.v2-plans-zero-state { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .v2-plans-hero-summary, .v2-plans-hero-summary.v2-plans-zero-state { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .v2-plans-hero-copy { grid-column: 1 / -1; padding: 22px 28px; border-bottom: 1px solid var(--line); }
   .v2-plans-hero-stat { min-height: 92px; }
   .v2-plans-hero-stat:nth-of-type(2) { border-left: 0; }
@@ -136,9 +131,6 @@
   .v2-plans-hero-stat { padding: 16px 20px; }
   .v2-plans-hero-stat:nth-of-type(2) { border-left: 0; }
   .v2-plans-hero-stat strong { font-size: 28px; }
-  .v2-plans-new-plan { grid-column: 1 / -1; min-height: 64px; border-top: 1px solid var(--ink); border-left: 0; }
-  .v2-plans-new-plan br { display: none; }
-  .v2-plans-new-plan-plus { font-size: 36px; }
   .v2-plans-toolbar { height: auto; grid-template-columns: 1fr; }
   .v2-plans-search-box { flex-wrap: wrap; gap: 8px; padding: 14px 20px; border-right: 0; border-bottom: 1px solid var(--line); }
   .v2-plans-search-box input { width: 100%; }

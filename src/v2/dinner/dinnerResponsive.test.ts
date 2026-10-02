@@ -42,9 +42,13 @@ describe('V2 responsive routes', () => {
 
   it('gives secondary-route mobile controls adequate hit areas', () => {
     const plans = read('seating-plans.css')
+    const footer = readV2('layout/v2-footer-actions.css')
     const ai = readV2('settings/ai-provider.css')
     const evidence = readV2('evidence/founder-evidence.css')
 
+    expect(plans).not.toContain('.v2-plans-new-plan')
+    expect(footer).toMatch(/\.v2-footer-actions > \.v2-plans-footer-create \{[^}]*background: var\(--v2-orange\)/)
+    expect(footer).toMatch(/@media \(max-width: 560px\)[\s\S]*\.v2-footer-actions > \.v2-plans-footer-create \{[^}]*min-height: 44px/)
     expect(plans).toMatch(/@container plans \(max-width: 760px\)[\s\S]*\.v2-plans-dialog-close \{[^}]*width: 44px;[^}]*height: 44px/)
     expect(ai).toMatch(/@media \(max-width: 620px\)[\s\S]*\.v2-ai-config \{[^}]*padding: 24px 20px/)
     expect(evidence).toMatch(/@media \(max-width: 640px\)[\s\S]*\.v2-evidence-close \{[^}]*width: 44px;[^}]*height: 44px/)
