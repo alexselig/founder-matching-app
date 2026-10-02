@@ -765,7 +765,10 @@ of raw keys in serialized logs.
 - [ ] **Step 2: Implement credential storage**
 
 Use `FOUNDER_APP_MASTER_KEY` containing 32 bytes of base64-decoded key material.
-Reject missing or invalid keys at server startup.
+Reject invalid keys at server startup. A missing key disables provider
+credential storage when no credentials exist so basic Search and deterministic
+dinners still run without AI; if encrypted credentials already exist, reject a
+missing or mismatched key at startup.
 
 - [ ] **Step 3: Write and implement dinner persistence tests**
 

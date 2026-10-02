@@ -7,8 +7,10 @@
     "dev": "vite",
     "dev:server": "tsx server/index.ts",
     "build:client": "tsc -b && vite build",
-    "build:server": "tsc -p tsconfig.server.json",
+    "build:server": "tsc -p tsconfig.server.json && node server/copy-server-assets.mjs",
     "build": "npm run build:client && npm run build:server",
+    "fixtures:demo": "tsx scripts/generate-demo-fixtures.ts",
+    "smoke:server-built": "node server/smoke-built-server.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "lint": "oxlint",
@@ -16,6 +18,7 @@
     "start": "node dist-server/server/index.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
     "@fastify/static": "^10.1.4",
     "better-sqlite3": "^13.0.3",
     "fastify": "^5.12.5",

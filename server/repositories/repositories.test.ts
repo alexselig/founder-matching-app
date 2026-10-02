@@ -1,0 +1,1098 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+
+import { normalizeFounders, type Founder } from '../../src/shared/founder.js'
+import {
+  createDatabase,
+  type DatabaseOptions,
+  type SqliteDatabase,
+} from '../database.js'
+import {
+  DinnerRepository,
+  type DinnerConfiguration,
+  type DinnerVersion,
+} from './dinners.js'
+import { RepositoryError } from './errors.js'
+import { FounderRepository } from './founders.js'
+import {
+  WebResultsRepository,
+  type WebEnrichmentRun,
+  type WebResultInput,
+} from './webResults.js'
+
+const fixturePath = resolve(process.cwd(), 'src/founders.json')
+const founders = normalizeFounders(
+  JSON.parse(readFileSync(fixturePath, 'utf8')) as unknown,
+)
+
+function makeRun(
+  founderId: string,
+  id: string,
+  retrievedAt: string,
+): WebEnrichmentRun {
+  return {
+    id,
+    founderId,
+    queryFingerprint: `fingerprint-${id}`,
+    provider: 'fixture',
+    retrievedAt,
+    results: Array.from({ length: 5 }, (_, index) => ({
+      rank: index + 1,
+      classification: index % 2 === 0 ? 'both' : 'founder',
+      title: `${id} result ${index + 1}`,
+      url: `https://example.test/${id}/${index + 1}`,
+      domain: 'example.test',
+      snippet: `Evidence ${index + 1} for ${founderId}`,
+      provider: 'fixture',
+      retrievedAt,
+      confidence: 0.95 - index * 0.05,
+      entityMatch: {
+        founder: true,
+        company: index % 2 === 0,
+      },
+    })),
+  }
+}
+
+function makeDinnerConfiguration(): DinnerConfiguration {
+  return {
+    id: 'dinner-1',
+    name: 'Founder Dinner',
+    founderIds: founders.slice(0, 24).map((founder) => founder.id),
+    configuration: {
+      tableCount: 3,
+      seatsPerTable: 8,
+      criteria: [],
+      rules: [],
+      locks: [],
+    },
+    createdAt: '2026-10-01T12:00:00.000Z',
+    updatedAt: '2026-10-01T12:00:00.000Z',
+  }
+}
+
+function makeSparseArray<T>(value: T): T[] {
+  const array = new Array<T>(2)
+  array[1] = value
+  return array
+}
+
+const sparseWebMetadataCases = [
+  {
+    label: 'query context',
+    mutate: (run: WebEnrichmentRun) => {
+      run.queryContext = {
+        aliases: makeSparseArray('founder'),
+      }
+    },
+  },
+  {
+    label: 'run provider metadata',
+    mutate: (run: WebEnrichmentRun) => {
+      run.rawProviderMetadata = {
+        request: {
+          sources: makeSparseArray('web'),
+        },
+      }
+    },
+  },
+  {
+    label: 'result provider metadata',
+    mutate: (run: WebEnrichmentRun) => {
+      run.results[0]!.rawProviderMetadata = {
+        provider: {
+          signals: makeSparseArray('verified'),
+        },
+      }
+    },
+  },
+] satisfies Array<{
+  label: string
+  mutate: (run: WebEnrichmentRun) => void
+}>
+
+function expectRepositoryError(
+  action: () => unknown,
+  code: RepositoryError['code'],
+) {
+  try {
+    action()
+    throw new Error('Expected repository operation to throw')
+  } catch (error) {
+    expect(error).toBeInstanceOf(RepositoryError)
+    expect((error as RepositoryError).code).toBe(code)
+  }
+}
+
+describe('SQLite repositories', () => {
+  let database: SqliteDatabase
+  let founderRepository: FounderRepository
+  let webResultsRepository: WebResultsRepository
+  let dinnerRepository: DinnerRepository
+
+  beforeEach(() => {
+    database = createDatabase({ filename: ':memory:' })
+    founderRepository = new FounderRepository(database)
+    webResultsRepository = new WebResultsRepository(database)
+    dinnerRepository = new DinnerRepository(database)
+    founderRepository.saveAll(founders)
+  })
+
+  afterEach(() => {
+    if (database.open) {
+      database.close()
+    }
+  })
+
+  it('requires callers to explicitly choose a database filename', () => {
+    const createWithoutOptions = () => {
+      const unconfiguredCreateDatabase = createDatabase as (
+        options?: DatabaseOptions,
+      ) => SqliteDatabase
+      const unconfiguredDatabase = unconfiguredCreateDatabase()
+      unconfiguredDatabase.close()
+    }
+
+    expect(createWithoutOptions).toThrow(
+      'Database filename is required; use :memory: explicitly for ephemeral storage',
+    )
+  })
+
+  it('creates the normalized V2 tables, FTS table, and required indexes', () => {
+    const schemaObjects = database
+      .prepare(
+        `SELECT name, type
+         FROM sqlite_master
+         WHERE name IN (
+           'founders',
+           'founders_fts',
+           'web_enrichment_runs',
+           'web_results',
+           'dinner_configurations',
+           'dinner_versions',
+           'idx_web_enrichment_runs_founder_id',
+           'idx_web_enrichment_runs_query_fingerprint',
+           'idx_web_results_retrieved_at'
+         )
+         ORDER BY name`,
+      )
+      .all() as Array<{ name: string; type: string }>
+
+    expect(schemaObjects.map(({ name }) => name)).toEqual([
+      'dinner_configurations',
+      'dinner_versions',
+      'founders',
+      'founders_fts',
+      'idx_web_enrichment_runs_founder_id',
+      'idx_web_enrichment_runs_query_fingerprint',
+      'idx_web_results_retrieved_at',
+      'web_enrichment_runs',
+      'web_results',
+    ])
+    expect(
+      database.pragma('foreign_keys', { simple: true }),
+    ).toBe(1)
+  })
+
+  it('persists and restores all 574 authoritative founders without merging web evidence', () => {
+    expect(founderRepository.list()).toHaveLength(574)
+
+    const sourceFounder = founders.find(
+      (founder) => founder.id === '343105',
+    ) as Founder
+    const storedFounder = founderRepository.get(sourceFounder.id)
+
+    expect(storedFounder).toEqual(sourceFounder)
+    expect(storedFounder).not.toHaveProperty('webResults')
+    expect(storedFounder).not.toHaveProperty('web_results')
+  })
+
+  it.each([
+    {
+      label: 'null collection',
+      input: null,
+    },
+    {
+      label: 'non-array collection',
+      input: { founder: founders[0] },
+    },
+    {
+      label: 'null founder object',
+      input: [null],
+    },
+  ])('rejects a malformed founder $label as invalid_data', ({ input }) => {
+    expectRepositoryError(
+      () =>
+        founderRepository.saveAll(
+          input as unknown as readonly Founder[],
+        ),
+      'invalid_data',
+    )
+  })
+
+  it('validates every required founder field before persistence', () => {
+    const requiredFields = [
+      'id',
+      'name',
+      'cohortGroup',
+      'cohortSection',
+      'companyVertical',
+      'companyVerticalLevels',
+      'company',
+      'age',
+      'education',
+      'role',
+      'searchName',
+      'raw',
+    ] as const
+
+    for (const field of requiredFields) {
+      const malformed = {
+        ...founders[0]!,
+      } as unknown as Record<string, unknown>
+      delete malformed[field]
+
+      expectRepositoryError(
+        () =>
+          founderRepository.saveAll([
+            malformed as unknown as Founder,
+          ]),
+        'invalid_data',
+      )
+    }
+  })
+
+  it.each([
+    Number.MAX_VALUE,
+    Number.MAX_SAFE_INTEGER + 1,
+    1.5,
+  ])('rejects unsafe founder age %s as invalid_data', (age) => {
+    expectRepositoryError(
+      () =>
+        founderRepository.saveAll([
+          {
+            ...founders[0]!,
+            age,
+          },
+        ]),
+      'invalid_data',
+    )
+  })
+
+  it('rejects sparse founder collections and company vertical levels', () => {
+    expectRepositoryError(
+      () =>
+        founderRepository.saveAll(
+          makeSparseArray(founders[0]!),
+        ),
+      'invalid_data',
+    )
+
+    expectRepositoryError(
+      () =>
+        founderRepository.saveAll([
+          {
+            ...founders[0]!,
+            companyVerticalLevels: makeSparseArray('B2B Software'),
+          },
+        ]),
+      'invalid_data',
+    )
+  })
+
+  it('returns a not_found error for an unknown founder', () => {
+    expectRepositoryError(
+      () => founderRepository.get('missing-founder'),
+      'not_found',
+    )
+  })
+
+  it('validates every founder repository read argument before SQLite access', () => {
+    const invalidListOptions = [
+      null,
+      'all',
+      { limit: 0 },
+      { limit: 1.5 },
+      { limit: '1' },
+      { limit: 1001 },
+      { limit: Number.MAX_SAFE_INTEGER },
+      { limit: Number.MAX_SAFE_INTEGER + 1 },
+      { limit: Number.MAX_VALUE },
+      { offset: -1 },
+      { offset: 1.5 },
+      { offset: '0' },
+      { offset: Number.MAX_SAFE_INTEGER + 1 },
+      { offset: Number.MAX_VALUE },
+      { unexpected: true },
+    ]
+
+    for (const options of invalidListOptions) {
+      expectRepositoryError(
+        () =>
+          founderRepository.list(
+            options as unknown as {
+              limit?: number
+              offset?: number
+            },
+          ),
+        'invalid_data',
+      )
+    }
+
+    for (const id of [undefined, null, '', 343105]) {
+      expectRepositoryError(
+        () => founderRepository.get(id as unknown as string),
+        'invalid_data',
+      )
+    }
+  })
+
+  it('surfaces founder storage failures instead of returning an empty list', () => {
+    database.close()
+
+    expectRepositoryError(
+      () => founderRepository.list(),
+      'storage_failure',
+    )
+  })
+
+  it('keeps only the latest run evidence in latest and orders run history newest first', () => {
+    const founderId = founders[0]!.id
+    const firstRun = makeRun(
+      founderId,
+      'run-first',
+      '2026-10-01T10:00:00.000Z',
+    )
+    const secondRun = makeRun(
+      founderId,
+      'run-second',
+      '2026-10-01T11:00:00.000Z',
+    )
+
+    webResultsRepository.appendRun(firstRun)
+    webResultsRepository.appendRun(secondRun)
+
+    expect(webResultsRepository.latest(founderId)).toHaveLength(5)
+    expect(
+      webResultsRepository.latest(founderId).map((result) => result.runId),
+    ).toEqual(Array(5).fill(secondRun.id))
+    expect(
+      webResultsRepository.listRuns(founderId).map((run) => run.id),
+    ).toEqual([secondRun.id, firstRun.id])
+    expect(founderRepository.get(founderId)).toEqual(founders[0])
+  })
+
+  it('persists failed attempts while latest continues to return the latest successful evidence', () => {
+    const founderId = founders[0]!.id
+    const successful = makeRun(
+      founderId,
+      'run-successful',
+      '2026-10-01T10:00:00.000Z',
+    )
+    const failed: WebEnrichmentRun = {
+      id: 'run-failed',
+      founderId,
+      queryFingerprint: 'failed-fingerprint',
+      provider: 'fixture',
+      status: 'failed',
+      retrievedAt: '2026-10-01T11:00:00.000Z',
+      completedAt: '2026-10-01T11:00:01.000Z',
+      error: {
+        code: 'unavailable',
+        message: 'Provider unavailable',
+        retryable: true,
+      },
+      results: [],
+    }
+
+    webResultsRepository.appendRun(successful)
+    webResultsRepository.appendRun(failed)
+
+    expect(
+      webResultsRepository.latest(founderId).map((result) => result.runId),
+    ).toEqual(Array(5).fill(successful.id))
+    expect(webResultsRepository.listRuns(founderId)[0]).toMatchObject({
+      id: failed.id,
+      status: 'failed',
+      error: failed.error,
+    })
+  })
+
+  it('finds the newest reusable run for one provider and query fingerprint', () => {
+    const founderId = founders[0]!.id
+    const first = makeRun(
+      founderId,
+      'run-fingerprint-first',
+      '2026-10-01T10:00:00.000Z',
+    )
+    first.queryFingerprint = 'shared-fingerprint'
+    const second = makeRun(
+      founderId,
+      'run-fingerprint-second',
+      '2026-10-01T11:00:00.000Z',
+    )
+    second.queryFingerprint = 'shared-fingerprint'
+
+    webResultsRepository.appendRun(first)
+    webResultsRepository.appendRun(second)
+
+    expect(
+      webResultsRepository.findLatestByFingerprint(
+        founderId,
+        'shared-fingerprint',
+        'fixture',
+      )?.id,
+    ).toBe(second.id)
+  })
+
+  it('finds the latest completed zero-result run separately from reusable evidence', () => {
+    const founderId = founders[0]!.id
+    const evidence = makeRun(
+      founderId,
+      'run-with-evidence',
+      '2026-10-01T10:00:00.000Z',
+    )
+    evidence.queryFingerprint = 'shared-zero-fingerprint'
+    const zero = makeRun(
+      founderId,
+      'run-without-results',
+      '2026-10-01T11:00:00.000Z',
+    )
+    zero.queryFingerprint = 'shared-zero-fingerprint'
+    zero.status = 'complete'
+    zero.results = []
+
+    webResultsRepository.appendRun(evidence)
+    webResultsRepository.appendRun(zero)
+
+    expect(
+      webResultsRepository.findLatestByFingerprint(
+        founderId,
+        'shared-zero-fingerprint',
+        'fixture',
+      )?.id,
+    ).toBe(evidence.id)
+    expect(
+      webResultsRepository.findLatestCompletedZeroByFingerprint(
+        founderId,
+        'shared-zero-fingerprint',
+        'fixture',
+      )?.id,
+    ).toBe(zero.id)
+  })
+
+  it('uses insertion order when enrichment runs share a retrieved timestamp', () => {
+    const founderId = founders[0]!.id
+    const retrievedAt = '2026-10-01T12:00:00.000Z'
+    const firstEvidence = makeRun(
+      founderId,
+      'z-evidence-first',
+      retrievedAt,
+    )
+    firstEvidence.queryFingerprint = 'same-time-fingerprint'
+    const secondEvidence = makeRun(
+      founderId,
+      'a-evidence-second',
+      retrievedAt,
+    )
+    secondEvidence.queryFingerprint = 'same-time-fingerprint'
+    const firstZero = makeRun(
+      founderId,
+      'z-zero-first',
+      retrievedAt,
+    )
+    firstZero.queryFingerprint = 'same-time-fingerprint'
+    firstZero.status = 'complete'
+    firstZero.results = []
+    const secondZero = makeRun(
+      founderId,
+      'a-zero-second',
+      retrievedAt,
+    )
+    secondZero.queryFingerprint = 'same-time-fingerprint'
+    secondZero.status = 'complete'
+    secondZero.results = []
+
+    for (const run of [
+      firstEvidence,
+      secondEvidence,
+      firstZero,
+      secondZero,
+    ]) {
+      webResultsRepository.appendRun(run)
+    }
+
+    expect(
+      webResultsRepository.listRuns(founderId).map((run) => run.id),
+    ).toEqual([
+      secondZero.id,
+      firstZero.id,
+      secondEvidence.id,
+      firstEvidence.id,
+    ])
+    expect(
+      new Set(
+        webResultsRepository
+          .latest(founderId)
+          .map((result) => result.runId),
+      ),
+    ).toEqual(new Set([secondEvidence.id]))
+    expect(
+      webResultsRepository.findLatestByFingerprint(
+        founderId,
+        'same-time-fingerprint',
+        'fixture',
+      )?.id,
+    ).toBe(secondEvidence.id)
+    expect(
+      webResultsRepository.findLatestCompletedZeroByFingerprint(
+        founderId,
+        'same-time-fingerprint',
+        'fixture',
+      )?.id,
+    ).toBe(secondZero.id)
+  })
+
+  it('returns empty enrichment collections only for existing founders without runs', () => {
+    const founderId = founders[0]!.id
+
+    expect(webResultsRepository.latest(founderId)).toEqual([])
+    expect(webResultsRepository.listRuns(founderId)).toEqual([])
+  })
+
+  it('returns not_found for enrichment reads for an unknown founder', () => {
+    expectRepositoryError(
+      () => webResultsRepository.latest('missing-founder'),
+      'not_found',
+    )
+    expectRepositoryError(
+      () => webResultsRepository.listRuns('missing-founder'),
+      'not_found',
+    )
+  })
+
+  it('validates every web-results read founder ID before SQLite access', () => {
+    for (const founderId of [undefined, null, '', 343105]) {
+      expectRepositoryError(
+        () =>
+          webResultsRepository.latest(
+            founderId as unknown as string,
+          ),
+        'invalid_data',
+      )
+      expectRepositoryError(
+        () =>
+          webResultsRepository.listRuns(
+            founderId as unknown as string,
+          ),
+        'invalid_data',
+      )
+    }
+  })
+
+  it('normalizes enrichment timestamps to UTC before chronological ordering', () => {
+    const founderId = founders[0]!.id
+    const laterOffsetRun = makeRun(
+      founderId,
+      'run-offset-later',
+      '2026-10-01T12:00:00-07:00',
+    )
+    const earlierUtcRun = makeRun(
+      founderId,
+      'run-utc-earlier',
+      '2026-10-01T18:30:00.000Z',
+    )
+
+    webResultsRepository.appendRun(laterOffsetRun)
+    webResultsRepository.appendRun(earlierUtcRun)
+
+    expect(
+      webResultsRepository.latest(founderId).map((result) => result.runId),
+    ).toEqual(Array(5).fill(laterOffsetRun.id))
+    expect(
+      webResultsRepository
+        .latest(founderId)
+        .map((result) => result.retrievedAt),
+    ).toEqual(Array(5).fill('2026-10-01T19:00:00.000Z'))
+    expect(
+      webResultsRepository.listRuns(founderId).map((run) => ({
+        id: run.id,
+        retrievedAt: run.retrievedAt,
+      })),
+    ).toEqual([
+      {
+        id: laterOffsetRun.id,
+        retrievedAt: '2026-10-01T19:00:00.000Z',
+      },
+      {
+        id: earlierUtcRun.id,
+        retrievedAt: '2026-10-01T18:30:00.000Z',
+      },
+    ])
+  })
+
+  it('rejects enrichment runs with more than five evidence items', () => {
+    const run = makeRun(
+      founders[0]!.id,
+      'run-too-large',
+      '2026-10-01T12:00:00.000Z',
+    )
+    run.results.push({
+      ...run.results[0]!,
+      rank: 6,
+      url: 'https://example.test/run-too-large/6',
+    })
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(run),
+      'invalid_data',
+    )
+  })
+
+  it.each([
+    {
+      label: 'result shape',
+      mutate: (run: WebEnrichmentRun) => {
+        ;(run.results as unknown[])[0] = null
+      },
+    },
+    {
+      label: 'classification',
+      mutate: (run: WebEnrichmentRun) => {
+        ;(
+          run.results[0] as WebEnrichmentRun['results'][number] & {
+            classification: string
+          }
+        ).classification = 'unsupported'
+      },
+    },
+    {
+      label: 'rank',
+      mutate: (run: WebEnrichmentRun) => {
+        run.results[0]!.rank = 0
+      },
+    },
+    {
+      label: 'unsafe rank',
+      mutate: (run: WebEnrichmentRun) => {
+        run.results[0]!.rank = Number.MAX_VALUE
+      },
+    },
+    {
+      label: 'confidence',
+      mutate: (run: WebEnrichmentRun) => {
+        run.results[0]!.confidence = 1.1
+      },
+    },
+  ])('rejects invalid web result $label as invalid_data', ({ mutate }) => {
+    const run = makeRun(
+      founders[0]!.id,
+      'run-invalid-data',
+      '2026-10-01T12:00:00.000Z',
+    )
+    mutate(run)
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(run),
+      'invalid_data',
+    )
+  })
+
+  it('rejects a non-object enrichment run as invalid_data', () => {
+    expectRepositoryError(
+      () =>
+        webResultsRepository.appendRun(
+          null as unknown as WebEnrichmentRun,
+        ),
+      'invalid_data',
+    )
+  })
+
+  it('rejects sparse web result collections', () => {
+    const sparseResultsRun = makeRun(
+      founders[0]!.id,
+      'run-sparse-results',
+      '2026-10-01T12:00:00.000Z',
+    )
+    sparseResultsRun.results = makeSparseArray(
+      sparseResultsRun.results[0]!,
+    )
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(sparseResultsRun),
+      'invalid_data',
+    )
+  })
+
+  it.each(sparseWebMetadataCases)(
+    'rejects sparse $label before a missing-founder lookup',
+    ({ mutate }) => {
+      const run = makeRun(
+        'missing-founder',
+        'run-missing-founder-metadata',
+        '2026-10-01T12:00:00.000Z',
+      )
+      mutate(run)
+
+      expectRepositoryError(
+        () => webResultsRepository.appendRun(run),
+        'invalid_data',
+      )
+    },
+  )
+
+  it.each(sparseWebMetadataCases)(
+    'rejects sparse $label before touching a closed database',
+    ({ mutate }) => {
+      const run = makeRun(
+        founders[0]!.id,
+        'run-closed-database-metadata',
+        '2026-10-01T12:00:00.000Z',
+      )
+      mutate(run)
+      database.close()
+
+      expectRepositoryError(
+        () => webResultsRepository.appendRun(run),
+        'invalid_data',
+      )
+    },
+  )
+
+  it('rejects malformed entity match before a missing-founder lookup', () => {
+    const run = makeRun(
+      'missing-founder',
+      'run-missing-founder-entity-match',
+      '2026-10-01T12:00:00.000Z',
+    )
+    run.results[0]!.entityMatch =
+      new Date() as unknown as WebResultInput['entityMatch']
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(run),
+      'invalid_data',
+    )
+  })
+
+  it('rejects malformed entity match before touching a closed database', () => {
+    const run = makeRun(
+      founders[0]!.id,
+      'run-closed-database-entity-match',
+      '2026-10-01T12:00:00.000Z',
+    )
+    run.results[0]!.entityMatch =
+      Object(true) as unknown as WebResultInput['entityMatch']
+    database.close()
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(run),
+      'invalid_data',
+    )
+  })
+
+  it('rejects non-serializable nested result metadata before database access', () => {
+    const run = makeRun(
+      'missing-founder',
+      'run-circular-result-metadata',
+      '2026-10-01T12:00:00.000Z',
+    )
+    const circularMetadata: Record<string, unknown> = {}
+    circularMetadata.self = circularMetadata
+    run.results[0]!.rawProviderMetadata = {
+      nested: circularMetadata,
+    }
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(run),
+      'invalid_data',
+    )
+  })
+
+  it('rejects duplicate append-only enrichment run IDs as conflicts', () => {
+    const run = makeRun(
+      founders[0]!.id,
+      'run-conflict',
+      '2026-10-01T12:00:00.000Z',
+    )
+
+    webResultsRepository.appendRun(run)
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(run),
+      'conflict',
+    )
+  })
+
+  it('rejects duplicate enrichment ranks as conflicts', () => {
+    const run = makeRun(
+      founders[0]!.id,
+      'run-rank-conflict',
+      '2026-10-01T12:00:00.000Z',
+    )
+    run.results[1]!.rank = run.results[0]!.rank
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(run),
+      'conflict',
+    )
+  })
+
+  it.each([
+    {
+      label: 'null configuration',
+      configuration: null,
+    },
+    {
+      label: 'non-object configuration',
+      configuration: 'dinner',
+    },
+    {
+      label: 'missing founder IDs',
+      configuration: {
+        ...makeDinnerConfiguration(),
+        founderIds: undefined,
+      },
+    },
+    {
+      label: 'missing configuration payload',
+      configuration: (() => {
+        const configuration = {
+          ...makeDinnerConfiguration(),
+        } as unknown as Record<string, unknown>
+        delete configuration.configuration
+        return configuration
+      })(),
+    },
+  ])(
+    'rejects malformed dinner $label as invalid_data',
+    ({ configuration }) => {
+      expectRepositoryError(
+        () =>
+          dinnerRepository.saveConfiguration(
+            configuration as unknown as DinnerConfiguration,
+          ),
+        'invalid_data',
+      )
+    },
+  )
+
+  it.each([
+    {
+      label: 'null version',
+      version: null,
+    },
+    {
+      label: 'non-object version',
+      version: 'version',
+    },
+    {
+      label: 'missing snapshot',
+      version: {
+        id: 'dinner-1-v1',
+        configurationId: 'dinner-1',
+        version: 1,
+        createdAt: '2026-10-01T12:01:00.000Z',
+      },
+    },
+  ])('rejects malformed dinner $label as invalid_data', ({ version }) => {
+    expectRepositoryError(
+      () =>
+        dinnerRepository.appendVersion(
+          version as unknown as DinnerVersion,
+        ),
+      'invalid_data',
+    )
+  })
+
+  it('rejects sparse dinner founder IDs and nested payload arrays', () => {
+    const sparseFounderIds = makeDinnerConfiguration()
+    sparseFounderIds.founderIds = makeSparseArray(founders[0]!.id)
+
+    expectRepositoryError(
+      () => dinnerRepository.saveConfiguration(sparseFounderIds),
+      'invalid_data',
+    )
+
+    const sparseConfiguration = makeDinnerConfiguration()
+    sparseConfiguration.configuration = {
+      criteria: makeSparseArray({ field: 'role' }),
+    }
+
+    expectRepositoryError(
+      () => dinnerRepository.saveConfiguration(sparseConfiguration),
+      'invalid_data',
+    )
+
+    const validConfiguration = makeDinnerConfiguration()
+    dinnerRepository.saveConfiguration(validConfiguration)
+
+    expectRepositoryError(
+      () =>
+        dinnerRepository.appendVersion({
+          id: 'dinner-1-v-sparse',
+          configurationId: validConfiguration.id,
+          version: 1,
+          snapshot: {
+            assignments: makeSparseArray({
+              tableId: 'table-1',
+            }),
+          },
+          createdAt: '2026-10-01T12:01:00.000Z',
+        }),
+      'invalid_data',
+    )
+  })
+
+  it('validates every dinner repository read ID before SQLite access', () => {
+    for (const id of [undefined, null, '', 1]) {
+      expectRepositoryError(
+        () =>
+          dinnerRepository.getConfiguration(
+            id as unknown as string,
+          ),
+        'invalid_data',
+      )
+      expectRepositoryError(
+        () =>
+          dinnerRepository.listVersions(
+            id as unknown as string,
+          ),
+        'invalid_data',
+      )
+    }
+  })
+
+  it.each([
+    Number.MAX_VALUE,
+    Number.MAX_SAFE_INTEGER + 1,
+    1.5,
+  ])('rejects unsafe dinner version %s as invalid_data', (version) => {
+    const configuration = makeDinnerConfiguration()
+    dinnerRepository.saveConfiguration(configuration)
+
+    expectRepositoryError(
+      () =>
+        dinnerRepository.appendVersion({
+          id: `dinner-unsafe-${String(version)}`,
+          configurationId: configuration.id,
+          version,
+          snapshot: {},
+          createdAt: '2026-10-01T12:01:00.000Z',
+        }),
+      'invalid_data',
+    )
+  })
+
+  it('enforces safe integer storage constraints in SQLite', () => {
+    const founderId = founders[0]!.id
+
+    expect(() =>
+      database
+        .prepare(
+          'UPDATE founders SET age = 9007199254740992 WHERE id = ?',
+        )
+        .run(founderId),
+    ).toThrow()
+    expect(() =>
+      database
+        .prepare('UPDATE founders SET age = 1.5 WHERE id = ?')
+        .run(founderId),
+    ).toThrow()
+
+    const run = makeRun(
+      founderId,
+      'integer-storage-run',
+      '2026-10-01T12:00:00.000Z',
+    )
+    webResultsRepository.appendRun(run)
+
+    expect(() =>
+      database
+        .prepare(
+          'UPDATE web_results SET rank = 1.5 WHERE run_id = ? AND rank = 1',
+        )
+        .run(run.id),
+    ).toThrow()
+
+    const configuration = makeDinnerConfiguration()
+    dinnerRepository.saveConfiguration(configuration)
+
+    expect(() =>
+      database
+        .prepare(
+          `INSERT INTO dinner_versions (
+             id,
+             configuration_id,
+             version,
+             snapshot_json,
+             created_at
+           ) VALUES (
+             'unsafe-version',
+             ?,
+             9007199254740992,
+             '{}',
+             '2026-10-01T12:01:00.000Z'
+           )`,
+        )
+        .run(configuration.id),
+    ).toThrow()
+    expect(() =>
+      database
+        .prepare(
+          `INSERT INTO dinner_versions (
+             id,
+             configuration_id,
+             version,
+             snapshot_json,
+             created_at
+           ) VALUES (
+             'fractional-version',
+             ?,
+             1.5,
+             '{}',
+             '2026-10-01T12:01:00.000Z'
+           )`,
+        )
+        .run(configuration.id),
+    ).toThrow()
+  })
+
+  it('persists saved dinner configurations with append-only versions', () => {
+    const configuration = makeDinnerConfiguration()
+
+    dinnerRepository.saveConfiguration(configuration)
+    dinnerRepository.appendVersion({
+      id: 'dinner-1-v1',
+      configurationId: configuration.id,
+      version: 1,
+      snapshot: {
+        assignments: [],
+        alternatives: [],
+        selectedSolutionId: null,
+      },
+      createdAt: '2026-10-01T12:01:00.000Z',
+    })
+    dinnerRepository.appendVersion({
+      id: 'dinner-1-v2',
+      configurationId: configuration.id,
+      version: 2,
+      snapshot: {
+        assignments: [{ tableId: 'table-1', founderIds: [] }],
+        alternatives: [],
+        selectedSolutionId: 'solution-2',
+      },
+      createdAt: '2026-10-01T12:02:00.000Z',
+    })
+
+    expect(dinnerRepository.getConfiguration(configuration.id)).toEqual(
+      configuration,
+    )
+    expect(
+      dinnerRepository
+        .listVersions(configuration.id)
+        .map((version) => version.version),
+    ).toEqual([2, 1])
+  })
+})

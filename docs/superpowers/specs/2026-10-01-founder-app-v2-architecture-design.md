@@ -270,6 +270,11 @@ ciphertext in SQLite. The browser receives status, label, last four characters,
 and validation time only. Raw keys never enter browser storage, logs,
 analytics, URLs, or API responses.
 
+When no credentials have been stored, an absent master key disables provider
+credential storage without disabling basic Search or deterministic dinner
+matching. Invalid keys always fail startup; once encrypted credentials exist,
+an absent or mismatched key also fails startup.
+
 Footer states are:
 
 - `+ AI Disabled`

@@ -40,6 +40,6 @@ describe('AppRouter', () => {
 
     render(<AppRouter />)
 
-    expect(screen.getByText('Founder Search')).toBeInTheDocument()
+    expect(screen.getByText('Loading founder workspace…')).toBeInTheDocument()
   })
 })
