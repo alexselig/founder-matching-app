@@ -90,6 +90,8 @@ describe('Dinner tables responsive grid', () => {
     expect(tablet).toMatch(/\.v2-dinner-work-tools \{[^}]*padding: 0 10px 0 0/)
     expect(phone).toMatch(/\.v2-dinner-work-tools \{[^}]*padding: 0 8px 0 0/)
     expect(css).toMatch(/\.v2-dinner-segmented button \{[^}]*padding: 0 20px/)
+    expect(css).toMatch(/\.v2-dinner-density, \.v2-dinner-legend, \.v2-dinner-threshold \{[^}]*justify-content: flex-start;[^}]*padding-top: 12px/)
+    expect(css).toMatch(/\.v2-dinner-legend i \{[^}]*width: 28px;[^}]*height: 28px/)
     expect(phone).toMatch(/\.v2-dinner-density \{[^}]*display: none/)
     expect(phone).toMatch(/\.v2-dinner-threshold \{[^}]*margin-left: auto/)
     expect(phone).toMatch(/\.v2-dinner-segmented button \{[^}]*padding: 0 14px/)
