@@ -19,6 +19,7 @@ import { FounderRepository } from './founders.js'
 import {
   WebResultsRepository,
   type WebEnrichmentRun,
+  type WebResultInput,
 } from './webResults.js'
 
 const fixturePath = resolve(process.cwd(), 'src/founders.json')
@@ -588,6 +589,37 @@ describe('SQLite repositories', () => {
       )
     },
   )
+
+  it('rejects malformed entity match before a missing-founder lookup', () => {
+    const run = makeRun(
+      'missing-founder',
+      'run-missing-founder-entity-match',
+      '2026-10-01T12:00:00.000Z',
+    )
+    run.results[0]!.entityMatch =
+      new Date() as unknown as WebResultInput['entityMatch']
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(run),
+      'invalid_data',
+    )
+  })
+
+  it('rejects malformed entity match before touching a closed database', () => {
+    const run = makeRun(
+      founders[0]!.id,
+      'run-closed-database-entity-match',
+      '2026-10-01T12:00:00.000Z',
+    )
+    run.results[0]!.entityMatch =
+      Object(true) as unknown as WebResultInput['entityMatch']
+    database.close()
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(run),
+      'invalid_data',
+    )
+  })
 
   it('rejects non-serializable nested result metadata before database access', () => {
     const run = makeRun(
