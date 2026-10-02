@@ -69,17 +69,92 @@ interface WebResultRow {
   raw_provider_metadata_json: string | null
 }
 
-function assertNonEmpty(value: string, label: string) {
-  if (!value) {
+interface NormalizedRunInput {
+  retrievedAt: string
+  results: Array<{
+    input: WebResultInput
+    retrievedAt: string
+    staleAfter: string | null
+  }>
+}
+
+const WEB_RESULT_CLASSIFICATIONS: readonly WebResultClassification[] = [
+  'founder',
+  'company',
+  'both',
+]
+
+function assertNonEmpty(value: unknown, label: string): asserts value is string {
+  if (typeof value !== 'string' || !value) {
     throw new RepositoryError(`${label} is required`, 'invalid_data')
   }
 }
 
-function assertTimestamp(value: string, label: string) {
+function normalizeTimestamp(value: unknown, label: string) {
   assertNonEmpty(value, label)
-  if (Number.isNaN(Date.parse(value))) {
+  const timestamp = Date.parse(value)
+  if (Number.isNaN(timestamp)) {
     throw new RepositoryError(
       `${label} must be a valid timestamp`,
+      'invalid_data',
+    )
+  }
+
+  return new Date(timestamp).toISOString()
+}
+
+function assertClassification(
+  value: unknown,
+): asserts value is WebResultClassification {
+  if (
+    typeof value !== 'string' ||
+    !WEB_RESULT_CLASSIFICATIONS.includes(
+      value as WebResultClassification,
+    )
+  ) {
+    throw new RepositoryError(
+      'Web result classification must be founder, company, or both',
+      'invalid_data',
+    )
+  }
+}
+
+function assertEntityMatch(value: unknown) {
+  if (value === undefined) {
+    return
+  }
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new RepositoryError(
+      'Web result entity match must be an object',
+      'invalid_data',
+    )
+  }
+
+  const entries = Object.entries(value)
+  if (
+    entries.some(
+      ([key, entryValue]) =>
+        (key !== 'founder' && key !== 'company') ||
+        typeof entryValue !== 'boolean',
+    )
+  ) {
+    throw new RepositoryError(
+      'Web result entity match accepts only boolean founder and company fields',
+      'invalid_data',
+    )
+  }
+}
+
+function assertHttpUrl(value: string) {
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      throw new Error('Unsupported URL protocol')
+    }
+  } catch {
+    throw new RepositoryError(
+      'Web result URL must be an absolute HTTP or HTTPS URL',
       'invalid_data',
     )
   }
@@ -122,12 +197,29 @@ function parseOptionalJson(
   }
 }
 
-function validateRun(run: WebEnrichmentRun) {
+function validateRun(run: WebEnrichmentRun): NormalizedRunInput {
+  if (!run || typeof run !== 'object' || Array.isArray(run)) {
+    throw new RepositoryError(
+      'Enrichment run must be an object',
+      'invalid_data',
+    )
+  }
+
   assertNonEmpty(run.id, 'Enrichment run ID')
   assertNonEmpty(run.founderId, 'Founder ID')
   assertNonEmpty(run.queryFingerprint, 'Query fingerprint')
   assertNonEmpty(run.provider, 'Provider')
-  assertTimestamp(run.retrievedAt, 'Run retrieval time')
+  const retrievedAt = normalizeTimestamp(
+    run.retrievedAt,
+    'Run retrieval time',
+  )
+
+  if (!Array.isArray(run.results)) {
+    throw new RepositoryError(
+      'Enrichment run results must be an array',
+      'invalid_data',
+    )
+  }
 
   if (run.results.length > 5) {
     throw new RepositoryError(
@@ -136,10 +228,16 @@ function validateRun(run: WebEnrichmentRun) {
     )
   }
 
-  const ranks = new Set<number>()
-  const urls = new Set<string>()
-  for (const result of run.results) {
+  const results = run.results.map((result) => {
+    if (!result || typeof result !== 'object' || Array.isArray(result)) {
+      throw new RepositoryError(
+        'Web results must be objects',
+        'invalid_data',
+      )
+    }
+
     if (
+      typeof result.rank !== 'number' ||
       !Number.isInteger(result.rank) ||
       result.rank < 1 ||
       result.rank > 5
@@ -149,38 +247,57 @@ function validateRun(run: WebEnrichmentRun) {
         'invalid_data',
       )
     }
-    if (ranks.has(result.rank)) {
-      throw new RepositoryError(
-        `Duplicate web result rank ${result.rank}`,
-        'invalid_data',
-      )
-    }
-    ranks.add(result.rank)
 
+    assertClassification(result.classification)
     assertNonEmpty(result.title, 'Web result title')
     assertNonEmpty(result.url, 'Web result URL')
+    assertHttpUrl(result.url)
     assertNonEmpty(result.domain, 'Web result domain')
     assertNonEmpty(result.snippet, 'Web result snippet')
     assertNonEmpty(result.provider, 'Web result provider')
-    assertTimestamp(result.retrievedAt, 'Web result retrieval time')
-
-    if (urls.has(result.url)) {
-      throw new RepositoryError(
-        `Duplicate web result URL ${result.url}`,
-        'invalid_data',
-      )
-    }
-    urls.add(result.url)
+    const resultRetrievedAt = normalizeTimestamp(
+      result.retrievedAt,
+      'Web result retrieval time',
+    )
 
     if (
       result.confidence !== undefined &&
-      (result.confidence < 0 || result.confidence > 1)
+      (typeof result.confidence !== 'number' ||
+        !Number.isFinite(result.confidence) ||
+        result.confidence < 0 ||
+        result.confidence > 1)
     ) {
       throw new RepositoryError(
         'Web result confidence must be between 0 and 1',
         'invalid_data',
       )
     }
+
+    if (result.providerResultId !== undefined) {
+      assertNonEmpty(
+        result.providerResultId,
+        'Web result provider result ID',
+      )
+    }
+
+    assertEntityMatch(result.entityMatch)
+
+    return {
+      input: result,
+      retrievedAt: resultRetrievedAt,
+      staleAfter:
+        result.staleAfter === undefined
+          ? null
+          : normalizeTimestamp(
+              result.staleAfter,
+              'Web result stale-after time',
+            ),
+    }
+  })
+
+  return {
+    retrievedAt,
+    results,
   }
 }
 
@@ -225,20 +342,11 @@ export class WebResultsRepository {
   constructor(private readonly database: SqliteDatabase) {}
 
   appendRun(run: WebEnrichmentRun): void {
-    validateRun(run)
+    const normalized = validateRun(run)
 
     try {
       const append = this.database.transaction(() => {
-        const founder = this.database
-          .prepare('SELECT id FROM founders WHERE id = ?')
-          .get(run.founderId)
-
-        if (!founder) {
-          throw new RepositoryError(
-            `Founder ${run.founderId} was not found`,
-            'not_found',
-          )
-        }
+        this.assertFounderExists(run.founderId)
 
         this.database
           .prepare(
@@ -257,7 +365,7 @@ export class WebResultsRepository {
             run.founderId,
             run.queryFingerprint,
             run.provider,
-            run.retrievedAt,
+            normalized.retrievedAt,
             encodeOptionalJson(
               run.queryContext,
               'Enrichment query context',
@@ -288,7 +396,8 @@ export class WebResultsRepository {
            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
 
-        for (const result of run.results) {
+        for (const normalizedResult of normalized.results) {
+          const { input: result } = normalizedResult
           insertResult.run(
             run.id,
             run.founderId,
@@ -300,13 +409,13 @@ export class WebResultsRepository {
             result.snippet,
             result.provider,
             result.providerResultId ?? null,
-            result.retrievedAt,
+            normalizedResult.retrievedAt,
             result.confidence ?? null,
             encodeOptionalJson(
               result.entityMatch ?? {},
               'Web result entity match',
             ),
-            result.staleAfter ?? null,
+            normalizedResult.staleAfter,
             encodeOptionalJson(
               result.rawProviderMetadata,
               'Web result provider metadata',
@@ -326,6 +435,8 @@ export class WebResultsRepository {
 
   latest(founderId: string): WebResult[] {
     try {
+      this.assertFounderExists(founderId)
+
       const run = this.database
         .prepare(
           `SELECT id
@@ -347,6 +458,8 @@ export class WebResultsRepository {
 
   listRuns(founderId: string): WebEnrichmentRun[] {
     try {
+      this.assertFounderExists(founderId)
+
       const rows = this.database
         .prepare(
           `SELECT
@@ -420,5 +533,18 @@ export class WebResultsRepository {
       .all(runId) as WebResultRow[]
 
     return rows.map(rowToResult)
+  }
+
+  private assertFounderExists(founderId: string): void {
+    const founder = this.database
+      .prepare('SELECT id FROM founders WHERE id = ?')
+      .get(founderId)
+
+    if (!founder) {
+      throw new RepositoryError(
+        `Founder ${founderId} was not found`,
+        'not_found',
+      )
+    }
   }
 }

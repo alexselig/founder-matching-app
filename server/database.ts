@@ -6,14 +6,24 @@ import Database from 'better-sqlite3'
 export type SqliteDatabase = Database.Database
 
 export interface DatabaseOptions {
-  filename?: string
+  filename: string
   migrationPath?: string
 }
 
 export function createDatabase(
-  options: DatabaseOptions = {},
+  options: DatabaseOptions,
 ): SqliteDatabase {
-  const database = new Database(options.filename ?? ':memory:')
+  if (
+    !options ||
+    typeof options.filename !== 'string' ||
+    !options.filename
+  ) {
+    throw new Error(
+      'Database filename is required; use :memory: explicitly for ephemeral storage',
+    )
+  }
+
+  const database = new Database(options.filename)
   const migrationPath =
     options.migrationPath ??
     resolve(process.cwd(), 'server/migrations/001-v2.sql')

@@ -14,13 +14,15 @@ export class RepositoryError extends Error {
   }
 }
 
-function isConstraintError(error: unknown) {
+function constraintCode(error: unknown) {
   if (!error || typeof error !== 'object' || !('code' in error)) {
-    return false
+    return undefined
   }
 
   const { code } = error as { code?: unknown }
   return typeof code === 'string' && code.startsWith('SQLITE_CONSTRAINT')
+    ? code
+    : undefined
 }
 
 export function throwRepositoryFailure(
@@ -31,8 +33,18 @@ export function throwRepositoryFailure(
     throw error
   }
 
-  if (isConstraintError(error)) {
+  const code = constraintCode(error)
+
+  if (
+    code === 'SQLITE_CONSTRAINT_PRIMARYKEY' ||
+    code === 'SQLITE_CONSTRAINT_ROWID' ||
+    code === 'SQLITE_CONSTRAINT_UNIQUE'
+  ) {
     throw new RepositoryError(storageMessage, 'conflict')
+  }
+
+  if (code) {
+    throw new RepositoryError(storageMessage, 'invalid_data')
   }
 
   throw new RepositoryError(storageMessage, 'storage_failure')
