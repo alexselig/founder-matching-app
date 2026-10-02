@@ -152,6 +152,14 @@ function assertEntityMatch(value: unknown) {
     )
   }
 
+  const prototype = Object.getPrototypeOf(value)
+  if (prototype !== Object.prototype && prototype !== null) {
+    throw new RepositoryError(
+      'Web result entity match must be a plain object',
+      'invalid_data',
+    )
+  }
+
   const entries = Object.entries(value)
   if (
     entries.some(
