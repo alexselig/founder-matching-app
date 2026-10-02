@@ -37,6 +37,15 @@ function chooseAccount(name: RegExp) {
   fireEvent.click(screen.getByRole('menuitemradio', { name }))
 }
 
+function expectZeroQueryDiscovery() {
+  expect(screen.getByRole('heading', { level: 2, name: 'Same sector, different seat' })).toBeInTheDocument()
+  expect(screen.getByLabelText('Describe the founders you want to meet')).toHaveValue('')
+  expect(screen.queryByTestId('result-count')).not.toBeInTheDocument()
+  expect(screen.queryByText('No dimensions yet')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Export Results' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Create Dinner Matching/ })).not.toBeInTheDocument()
+}
+
 beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
@@ -305,8 +314,55 @@ describe('SearchPage no-results recovery', () => {
     expect(screen.getByRole('button', { name: 'Edit dimensions' })).toHaveFocus()
 
     fireEvent.click(screen.getByRole('button', { name: 'Clear all dimensions' }))
-    expect(resultCount()).toBe(String(founders.length))
-    expect(screen.getByText('No dimensions yet')).toBeInTheDocument()
+    expectZeroQueryDiscovery()
+    expect(liveRegion()).toHaveTextContent('All dimensions cleared. Founder discovery shown')
+  })
+
+  it('returns to discovery when the final chip is removed instead of showing every founder', () => {
+    const { navigate, exportResults } = renderSearch()
+    search('company Lantern')
+    expect(resultCount()).toBe(String(executeSearch(founders, { text: '', dimensions: [{ field: 'company', operator: 'is', value: 'Lantern' }] }).length))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Company dimension' }))
+    expectZeroQueryDiscovery()
+    expect(liveRegion()).toHaveTextContent('Company dimension removed. Founder discovery shown')
+
+    search('leonard')
+    expect(screen.getByTestId('dimension-keywords')).toHaveTextContent('Keywords leonard')
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Keywords dimension' }))
+    expectZeroQueryDiscovery()
+    expect(navigate).not.toHaveBeenCalled()
+    expect(exportResults).not.toHaveBeenCalled()
+    expect(JSON.parse(sessionStorage.getItem('founder-v2-search-state') ?? '{}')).toMatchObject({ active: false })
+  })
+
+  it('returns to discovery when the final dimension is removed inside the picker', () => {
+    renderSearch()
+    search('company Lantern')
+    fireEvent.click(screen.getByRole('button', { name: '+ Add dimension' }))
+    const dialog = screen.getByRole('dialog', { name: 'Add search dimension' })
+
+    fireEvent.click(within(dialog).getByRole('option', { name: /Company Remove/ }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expectZeroQueryDiscovery()
+    expect(screen.getByLabelText('Describe the founders you want to meet')).toHaveFocus()
+  })
+
+  it('restores a stored search that has no constraints as discovery', () => {
+    sessionStorage.setItem(
+      'founder-v2-search-state',
+      JSON.stringify({
+        active: true,
+        input: '',
+        submittedText: '',
+        query: { text: '', dimensions: [] },
+        view: 'grid',
+        groupBy: null,
+        sortBy: null,
+      }),
+    )
+    renderSearch()
+    expectZeroQueryDiscovery()
   })
 
   it('describes the applied dimensions once the failed search has been edited', () => {
@@ -326,8 +382,8 @@ describe('SearchPage no-results recovery', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'No founders match both dimensions.' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Return to discovery' }))
-    expect(screen.getByRole('heading', { level: 2, name: 'Same sector, different seat' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Describe the founders you want to meet')).toHaveValue('')
+    expectZeroQueryDiscovery()
+    expect(screen.getByLabelText('Describe the founders you want to meet')).toHaveFocus()
     expect(screen.queryByText('Search dimensions used')).not.toBeInTheDocument()
   })
 
@@ -335,6 +391,34 @@ describe('SearchPage no-results recovery', () => {
     renderSearch()
     search('engineers in fintech from Lantern age 50')
     expect(screen.getByRole('heading', { level: 2, name: 'No founders match all four dimensions.' })).toBeInTheDocument()
+  })
+
+  it('counts the Keywords chip as an applied constraint in the recovery heading', () => {
+    renderSearch()
+    search('engineers age 50 xyzzy')
+    expect(screen.getByTestId('dimension-keywords')).toHaveTextContent('Keywords xyzzy')
+    expect(screen.getByRole('heading', { level: 2, name: 'No founders match all three dimensions.' })).toBeInTheDocument()
+
+    search('xyzzy')
+    expect(screen.getByRole('heading', { level: 2, name: 'No founders match this dimension.' })).toBeInTheDocument()
+
+    search('engineers age 50 xyzzy')
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Role dimension' }))
+    expect(screen.getByRole('heading', { level: 2, name: 'No founders match both dimensions.' })).toBeInTheDocument()
+    expect(screen.getByTestId('failed-query')).toHaveTextContent('Age 50 · Keywords xyzzy')
+  })
+
+  it('keeps a second value for the same field visible as a Keywords chip', () => {
+    renderSearch()
+    search('fintech or healthcare')
+
+    expect(screen.getByTestId('dimension-companyVertical')).toHaveTextContent('Financial Technology and Services')
+    expect(screen.getByTestId('dimension-keywords')).toHaveTextContent('Keywords healthcare')
+    const expected = executeSearch(founders, {
+      text: 'healthcare',
+      dimensions: [{ field: 'companyVertical', operator: 'is', value: 'Financial Technology and Services' }],
+    })
+    expect(resultCount()).toBe(String(expected.length))
   })
 })
 

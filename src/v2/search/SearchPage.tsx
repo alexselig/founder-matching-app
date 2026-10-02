@@ -32,8 +32,10 @@ import { createSearchCohortHandoff } from './searchHandoff'
 import {
   EMPTY_QUERY,
   INITIAL_SEARCH_SESSION,
+  countActiveConstraints,
   deriveDefaultGroupBy,
   groupResults,
+  isSearchActive,
   readSearchSession,
   sortResults,
   writeSearchSession,
@@ -56,6 +58,7 @@ function defaultNavigate(url: string) {
 }
 
 function runSearch(founders: readonly Founder[], query: StructuredSearchQuery) {
+  if (!isSearchActive(query)) return []
   try {
     return executeSearch(founders, query)
   } catch {
@@ -74,7 +77,7 @@ function fieldLabel(field: string) {
 function describeDimensions(query: StructuredSearchQuery) {
   return [
     ...query.dimensions.map((dimension) => `${fieldLabel(dimension.field)} ${formatDimensionValue(dimension)}`),
-    ...(query.text.trim() ? [query.text] : []),
+    ...(query.text.trim() ? [`Keywords ${query.text}`] : []),
   ].join(' · ')
 }
 
@@ -91,10 +94,12 @@ export function SearchPage({
   const addButtonRef = useRef<HTMLButtonElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const pendingFocusRef = useRef<HTMLElement | null>(null)
+  const queryInputRef = useRef<HTMLInputElement>(null)
   const queryInputId = useId()
 
   const currentFounder = founders.find((founder) => founder.id === currentFounderId) ?? null
-  const { active, query, view } = session
+  const { query, view } = session
+  const active = session.active && isSearchActive(query)
   const groupBy = session.groupBy ?? deriveDefaultGroupBy(query)
   const sortBy = session.sortBy ?? 'relevance'
 
@@ -102,6 +107,7 @@ export function SearchPage({
   const groups = useMemo(() => groupResults(sortResults(results, sortBy), groupBy), [results, sortBy, groupBy])
   const ordered = useMemo(() => groups.flatMap((group) => group.results), [groups])
   const collections = useMemo(() => buildDiscoveryCollections(founders, currentFounder), [founders, currentFounder])
+  const hasResults = active && results.length > 0
   const failedQuery = useMemo(() => {
     const submitted = session.submittedText
     const unchanged = submitted && JSON.stringify(compileSearchText(submitted, founders)) === JSON.stringify(query)
@@ -117,6 +123,10 @@ export function SearchPage({
   }
 
   function applyQuery(next: StructuredSearchQuery, announcement: string) {
+    if (!isSearchActive(next)) {
+      returnToDiscovery(`${announcement}. Founder discovery shown`)
+      return
+    }
     updateSession({ active: true, query: next })
     setMessage(`${announcement}. ${matchedMessage(runSearch(founders, next).length)}`)
   }
@@ -191,10 +201,12 @@ export function SearchPage({
     applyQuery(EMPTY_QUERY, 'All dimensions cleared')
   }
 
-  function returnToDiscovery() {
+  function returnToDiscovery(announcement = 'Founder discovery shown') {
+    returnFocusRef.current = null
+    pendingFocusRef.current = queryInputRef.current
     setPickerOpen(false)
     setSession((previous) => ({ ...INITIAL_SEARCH_SESSION, view: previous.view }))
-    setMessage('Founder discovery shown')
+    setMessage(announcement)
   }
 
   function changeRole(next: AccountRole) {
@@ -203,11 +215,13 @@ export function SearchPage({
   }
 
   function handleExport() {
+    if (!hasResults) return
     exportResults(ordered)
     setMessage(`Exported ${ordered.length} ${ordered.length === 1 ? 'founder' : 'founders'}`)
   }
 
   function handleCreateDinner() {
+    if (!hasResults) return
     const handoff = createSearchCohortHandoff(browserSessionStorage(), {
       founderIds: ordered.map((result) => result.founder.id),
       query,
@@ -215,8 +229,6 @@ export function SearchPage({
     })
     navigate(handoff.url)
   }
-
-  const hasResults = active && results.length > 0
 
   return (
     <div className="v2-shell v2-search">
@@ -235,6 +247,7 @@ export function SearchPage({
             <label htmlFor={queryInputId}>Describe the founders you want to meet</label>
             <div className="v2-query">
               <input
+                ref={queryInputRef}
                 id={queryInputId}
                 type="text"
                 placeholder="Try “Sales founders in fintech”"
@@ -277,11 +290,11 @@ export function SearchPage({
             />
             {results.length === 0 ? (
               <NoResults
-                dimensionCount={query.dimensions.length}
+                constraintCount={countActiveConstraints(query)}
                 failedQuery={failedQuery}
                 onEditDimensions={openPicker}
                 onClearDimensions={clearAllDimensions}
-                onReturnToDiscovery={returnToDiscovery}
+                onReturnToDiscovery={() => returnToDiscovery()}
               />
             ) : view === 'grid' ? (
               <GridResults groups={groups} />

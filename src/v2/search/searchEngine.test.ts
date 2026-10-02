@@ -259,6 +259,42 @@ describe('compileSearchText', () => {
     })
   })
 
+  it('keeps a second recognized value for the same field as visible keyword text', () => {
+    expect(compileSearchText('engineering and design founders', founders)).toEqual({
+      text: 'design',
+      dimensions: [{ field: 'role', operator: 'is', value: 'Engineering' }],
+    })
+    expect(compileSearchText('fintech or healthcare', founders)).toEqual({
+      text: 'healthcare',
+      dimensions: [{ field: 'companyVertical', operator: 'is', value: 'Financial Technology and Services' }],
+    })
+    expect(compileSearchText('fintech or health care founders at Lantern', founders)).toEqual({
+      text: 'health care',
+      dimensions: [
+        { field: 'companyVertical', operator: 'is', value: 'Financial Technology and Services' },
+        { field: 'company', operator: 'is', value: 'Lantern' },
+      ],
+    })
+  })
+
+  it('keeps a conflicting age phrase visible and merges complementary age bounds', () => {
+    expect(compileSearchText('aged 30 or aged 40', founders)).toEqual({
+      text: '40',
+      dimensions: [{ field: 'age', operator: 'is', value: 30 }],
+    })
+    expect(compileSearchText('founders over 30 and under 40', founders)).toEqual({
+      text: '',
+      dimensions: [{ field: 'age', operator: 'between', value: { min: 31, max: 39 } }],
+    })
+  })
+
+  it('does not repeat a value that is already represented by a dimension', () => {
+    expect(compileSearchText('engineering engineers', founders)).toEqual({
+      text: '',
+      dimensions: [{ field: 'role', operator: 'is', value: 'Engineering' }],
+    })
+  })
+
   it('produces queries that validate and execute through Basic Search', () => {
     const compiled = compileSearchText('Engineering founders in B2B software, age 25–33', founders)
 

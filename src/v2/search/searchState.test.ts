@@ -6,9 +6,11 @@ import { executeSearch, type StructuredSearchQuery } from './searchEngine'
 import {
   INITIAL_SEARCH_SESSION,
   SEARCH_SESSION_KEY,
+  countActiveConstraints,
   deriveDefaultGroupBy,
   groupOptions,
   groupResults,
+  isSearchActive,
   readSearchSession,
   sortOptions,
   sortResults,
@@ -102,6 +104,29 @@ describe('search session persistence', () => {
 
     sessionStorage.setItem(SEARCH_SESSION_KEY, '{not json')
     expect(readSearchSession(sessionStorage)).toEqual(INITIAL_SEARCH_SESSION)
+  })
+
+  it('restores a stored search with no constraints as zero-query discovery', () => {
+    const emptied = { ...INITIAL_SEARCH_SESSION, active: true, input: 'engineers', submittedText: 'engineers', view: 'list' as const }
+
+    writeSearchSession(sessionStorage, emptied)
+    expect(readSearchSession(sessionStorage)).toEqual({ ...INITIAL_SEARCH_SESSION, view: 'list' })
+  })
+})
+
+describe('search activity', () => {
+  it('treats a query as active only when it has a dimension or keyword text', () => {
+    expect(isSearchActive({ text: '', dimensions: [] })).toBe(false)
+    expect(isSearchActive({ text: '   ', dimensions: [] })).toBe(false)
+    expect(isSearchActive({ text: 'leonard', dimensions: [] })).toBe(true)
+    expect(isSearchActive(approvedQuery)).toBe(true)
+  })
+
+  it('counts the keyword chip as an active constraint whenever keyword text is present', () => {
+    expect(countActiveConstraints({ text: '', dimensions: [] })).toBe(0)
+    expect(countActiveConstraints({ text: 'leonard', dimensions: [] })).toBe(1)
+    expect(countActiveConstraints(approvedQuery)).toBe(3)
+    expect(countActiveConstraints({ ...approvedQuery, text: 'design' })).toBe(4)
   })
 })
 

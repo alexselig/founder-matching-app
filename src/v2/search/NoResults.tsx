@@ -1,7 +1,7 @@
 import { noResultsHeading } from './founderDisplay'
 
 export interface NoResultsProps {
-  dimensionCount: number
+  constraintCount: number
   failedQuery: string
   onEditDimensions: (trigger: HTMLButtonElement) => void
   onClearDimensions: () => void
@@ -9,7 +9,7 @@ export interface NoResultsProps {
 }
 
 export function NoResults({
-  dimensionCount,
+  constraintCount,
   failedQuery,
   onEditDimensions,
   onClearDimensions,
@@ -24,7 +24,7 @@ export function NoResults({
         </div>
         <div className="v2-empty-message">
           <small>No results</small>
-          <h2 id="v2-no-results-heading">{noResultsHeading(dimensionCount)}</h2>
+          <h2 id="v2-no-results-heading">{noResultsHeading(constraintCount)}</h2>
           <p>Your search and dimensions are still applied. Adjust one constraint rather than starting over.</p>
           {failedQuery && (
             <div className="v2-failed-query" data-testid="failed-query">

@@ -47,6 +47,10 @@ export function isSearchActive(query: StructuredSearchQuery) {
   return query.text.trim() !== '' || query.dimensions.length > 0
 }
 
+export function countActiveConstraints(query: StructuredSearchQuery) {
+  return query.dimensions.length + (query.text.trim() !== '' ? 1 : 0)
+}
+
 export function groupOptions(): PresentationOption[] {
   return [
     { value: 'none', label: 'None' },
@@ -144,6 +148,7 @@ export function readSearchSession(storage: Pick<Storage, 'getItem'> | undefined)
     ) {
       return INITIAL_SEARCH_SESSION
     }
+    if (active && !isSearchActive(query)) return { ...INITIAL_SEARCH_SESSION, view }
     return {
       active,
       input,
