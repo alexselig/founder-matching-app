@@ -40,19 +40,26 @@ export function V2Footer({ aiStatus = '+ AI Disabled', role = 'admin', onExport,
       <a className="v2-version-link v2-active-version" href="/v2" aria-current="page">
         V2
       </a>
-      <div className={aiTone ? `v2-footer-ai v2-footer-ai-${aiTone}` : 'v2-footer-ai'}>{aiStatus}</div>
-      {role === 'admin' ? (
-        <button
-          type="button"
-          className="v2-footer-demo"
-          aria-pressed={demoMode}
-          onClick={toggleDemoMode}
-        >
-          Demo mode {demoMode ? 'On' : 'Off'}
-        </button>
-      ) : (
-        <div aria-hidden="true" />
-      )}
+      <a
+        className={aiTone ? `v2-footer-ai v2-footer-ai-${aiTone}` : 'v2-footer-ai'}
+        href="/v2/settings/ai"
+      >
+        {aiStatus}
+      </a>
+      <button
+        type="button"
+        role="switch"
+        className="v2-footer-demo"
+        aria-label="Demo mode"
+        aria-checked={demoMode}
+        onClick={toggleDemoMode}
+      >
+        <span>Demo mode</span>
+        <span className="v2-footer-demo-track" aria-hidden="true">
+          <span className="v2-footer-demo-thumb" />
+        </span>
+        <strong>{demoMode ? 'On' : 'Off'}</strong>
+      </button>
       {hasActions && <div className="v2-footer-actions">{actions}</div>}
       {!hasActions && onExport && (
         <button type="button" className="v2-footer-export" onClick={onExport}>

@@ -12,7 +12,13 @@ describe('V2Footer', () => {
     const footer = container.querySelector('footer')!
     expect(footer.className).toBe('v2-footer')
     expect(container.querySelector('.v2-footer-ai')!.className).toBe('v2-footer-ai')
+    expect(screen.getByRole('link', { name: '+ AI Disabled' }).getAttribute('href')).toBe('/v2/settings/ai')
     expect(container.querySelector('.v2-footer-actions')).toBeNull()
+    const demoToggle = screen.getByRole('switch', { name: 'Demo mode' })
+    expect(demoToggle.getAttribute('aria-checked')).toBe('false')
+    expect(demoToggle.querySelector('.v2-footer-demo-track')).toBeTruthy()
+    expect(demoToggle.textContent).toContain('Off')
+    expect(container.querySelector('.v2-footer-ai')!.nextElementSibling).toBe(demoToggle)
     fireEvent.click(screen.getByRole('button', { name: 'Export Results' }))
     expect(onExport).toHaveBeenCalledOnce()
     expect(screen.getByRole('button', { name: 'Create Dinner Matching →' })).toBeTruthy()
@@ -33,5 +39,11 @@ describe('V2Footer', () => {
     expect(container.querySelector('.v2-footer-actions')!.textContent).toBe('Save')
     expect(screen.queryByRole('button', { name: 'Export Results' })).toBeNull()
     expect(screen.getByRole('link', { name: 'V2' }).getAttribute('aria-current')).toBe('page')
+  })
+
+  it('links founder accounts to AI settings and exposes Demo mode', () => {
+    render(<V2Footer role="founder" />)
+    expect(screen.getByRole('link', { name: '+ AI Disabled' }).getAttribute('href')).toBe('/v2/settings/ai')
+    expect(screen.getByRole('switch', { name: 'Demo mode' }).getAttribute('aria-checked')).toBe('false')
   })
 })

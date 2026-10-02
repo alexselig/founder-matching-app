@@ -1,6 +1,8 @@
 /* Page-level footer command group (twenty-table responsive review v4 footer). Additive to v2-chrome.css; only applies with the actions prop. */
 
 .v2-footer.v2-footer-with-actions { grid-template-columns: 48px 48px minmax(184px, auto) minmax(0, 1fr) auto; }
+.v2-footer a.v2-footer-ai { color: inherit; text-decoration: none; cursor: pointer; }
+.v2-footer a.v2-footer-ai:hover { background: var(--surface-alt); }
 .v2-footer .v2-footer-ai-enabled { color: #17634d; }
 .v2-footer .v2-footer-ai-issue { color: #b42318; }
 .v2-footer .v2-footer-ai-off { color: var(--ink-muted); }
@@ -22,6 +24,8 @@
 }
 
 .v2-footer-demo {
+  justify-content: flex-start;
+  gap: 8px;
   border: 0;
   border-left: 1px solid var(--v2-rule, #d8d4cb);
   background: transparent;
@@ -31,9 +35,45 @@
   cursor: pointer;
 }
 
-.v2-footer-demo[aria-pressed='true'] {
+.v2-footer-demo-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface-alt);
+}
+
+.v2-footer-demo-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+  transition: transform 140ms ease, background 140ms ease;
+}
+
+.v2-footer-demo strong {
+  min-width: 18px;
+  font-size: inherit;
+}
+
+.v2-footer-demo[aria-checked='true'] {
   color: #0f6f66;
   font-weight: 700;
+}
+
+.v2-footer-demo[aria-checked='true'] .v2-footer-demo-track {
+  border-color: #0f6f66;
+  background: #e4f2ef;
+}
+
+.v2-footer-demo[aria-checked='true'] .v2-footer-demo-thumb {
+  background: #0f6f66;
+  transform: translateX(16px);
 }
 .v2-footer-actions > span { display: flex; align-items: center; padding: 0 16px; border-left: 1px solid var(--line); color: var(--ink-muted); font-size: 10px; font-weight: 800; }
 .v2-footer-actions > .v2-footer-secondary-dark { background: var(--ink); color: white; }
