@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Founder Index V2: search, evidence review, deterministic dinner matching, saved plans, secure AI credentials, and public-safe Demo mode.">
+    <title>Founder Index V2 — Product showcase</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="./showcase.css">
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="wordmark" href="#top">Founder Index <span>V2</span></a>
+      <nav aria-label="Showcase sections">
+        <a href="#search">Search</a>
+        <a href="#matching">Dinner matching</a>
+        <a href="#trust">Trust</a>
+        <a href="#storyboard">Storyboard</a>
+      </nav>
+      <a class="repo-link" href="https://github.com/alexselig/founder-matching-app">GitHub ↗</a>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="brandline">Founder discovery · Dinner intelligence</p>
+          <h1>Find the right people.<br><em>Build the right room.</em></h1>
+          <p class="hero-dek">
+            Founder Index combines schema-wide search, citable web evidence, and deterministic
+            seating optimization in one reviewable workflow. Every screenshot below comes from
+            the running application using synthetic Demo data.
+          </p>
+          <div class="hero-actions">
+            <a class="primary" href="#storyboard">Review the 16-screen proof</a>
+            <a href="#architecture">See how it works</a>
+          </div>
+        </div>
+        <figure class="hero-frame">
+          <img src="./showcase/images/09-tables.png" alt="Founder Index table view with three optimized dinner tables">
+          <figcaption>
+            <span>Live product capture</span>
+            Tables view · deterministic assignment · editable locks
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="proof-strip" aria-label="Product facts">
+        <div><strong>574</strong><span>Production founder records supported</span></div>
+        <div><strong>160</strong><span>Public-safe synthetic Demo founders</span></div>
+        <div><strong>20</strong><span>Tables verified in responsive layouts</span></div>
+        <div><strong>0</strong><span>API keys stored in the browser</span></div>
+      </section>
+
+      <section class="chapter" id="search">
+        <div class="chapter-label">
+          <p class="brandline">01 · Founder discovery</p>
+          <h2>Search starts broad, then becomes exact.</h2>
+        </div>
+        <div class="chapter-copy">
+          <p>
+            Zero-query collections make the index useful before anyone types. Natural-language
+            input compiles into visible, editable dimensions, with grid and list views, grouping,
+            sorting, export, and explicit no-results recovery.
+          </p>
+          <ul class="feature-ledger">
+            <li><span>Discovery</span><strong>Explainable recommendations with visible reasons</strong></li>
+            <li><span>Control</span><strong>Every interpreted dimension remains editable</strong></li>
+            <li><span>Recovery</span><strong>Failed searches preserve intent instead of resetting</strong></li>
+          </ul>
+        </div>
+        <figure class="wide-shot">
+          <img src="./showcase/images/02-search-grid.png" alt="Founder search results grouped in a grid">
+        </figure>
+      </section>
+
+      <section class="chapter chapter-dark" id="matching">
+        <div class="chapter-label">
+          <p class="brandline">02 · Dinner matching</p>
+          <h2>A seating plan you can inspect, challenge, and improve.</h2>
+        </div>
+        <div class="chapter-copy">
+          <p>
+            Organizers define the cohort, capacity, objectives, and hard rules. The optimizer
+            produces complete assignments only, shows weak placements, compares structural
+            alternatives, and keeps every manual decision visible.
+          </p>
+        </div>
+        <div class="paired-shots">
+          <figure>
+            <img src="./showcase/images/10-analysis.png" alt="Dinner analysis with objective performance and weakest placements">
+            <figcaption>Analysis turns an arrangement into a reviewable decision.</figcaption>
+          </figure>
+          <figure>
+            <img src="./showcase/images/11-alternatives.png" alt="Three dinner arrangements compared side by side">
+            <figcaption>Alternatives disclose tradeoffs before a solution is selected.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="chapter" id="trust">
+        <div class="chapter-label">
+          <p class="brandline">03 · Evidence and privacy</p>
+          <h2>AI can assist without becoming the source of truth.</h2>
+        </div>
+        <div class="chapter-copy">
+          <p>
+            Authoritative founder fields stay separate from web evidence. Supported claims retain
+            source URL, retrieval date, provider, confidence, and entity match. Provider credentials
+            travel directly to the server, are validated, and are encrypted before local persistence.
+          </p>
+        </div>
+        <div class="paired-shots">
+          <figure>
+            <img src="./showcase/images/14-web-evidence.png" alt="Web evidence review with authoritative founder data separated from citations">
+            <figcaption>Source records remain local to the claims they support.</figcaption>
+          </figure>
+          <figure>
+            <img src="./showcase/images/15-ai-provider.png" alt="AI provider credential configuration and security boundary">
+            <figcaption>Redacted metadata is visible; the raw credential is not.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="architecture" id="architecture">
+        <div>
+          <p class="brandline">Architecture</p>
+          <h2>One deployable service. Clear boundaries.</h2>
+        </div>
+        <ol>
+          <li><b>Browser</b><span>React V2 surfaces, Basic Search, local Demo toggle, and no credential persistence.</span></li>
+          <li><b>Server</b><span>Typed founder, enrichment, provider, dinner, versioning, and export routes.</span></li>
+          <li><b>SQLite</b><span>Durable founders, append-only dinner versions, evidence history, and encrypted provider secrets.</span></li>
+          <li><b>Providers</b><span>Optional adapters for interpretation and cited web search; deterministic matching works without them.</span></li>
+        </ol>
+      </section>
+
+      <section class="storyboard" id="storyboard">
+        <div class="storyboard-head">
+          <div>
+            <p class="brandline">Release storyboard</p>
+            <h2>Sixteen verified states.</h2>
+          </div>
+          <p>
+            The sequence covers discovery, search, failure recovery, plan creation, analysis,
+            persistence, export, evidence, AI configuration, and responsive behavior.
+          </p>
+        </div>
+        <div class="story-grid">
+          <figure><span>01</span><img src="./showcase/images/01-search-zero.png" alt="Search zero-query discovery"><figcaption>Search · zero query</figcaption></figure>
+          <figure><span>02</span><img src="./showcase/images/02-search-grid.png" alt="Search grid results"><figcaption>Search · grid results</figcaption></figure>
+          <figure><span>03</span><img src="./showcase/images/03-search-list.png" alt="Search list results"><figcaption>Search · list results</figcaption></figure>
+          <figure><span>04</span><img src="./showcase/images/04-search-no-results.png" alt="Search no results recovery"><figcaption>Search · recovery</figcaption></figure>
+          <figure><span>05</span><img src="./showcase/images/05-seating-plans-zero.png" alt="Empty seating plan archive"><figcaption>Plans · zero state</figcaption></figure>
+          <figure><span>06</span><img src="./showcase/images/06-seating-plans-populated.png" alt="Populated seating plan archive"><figcaption>Plans · archive</figcaption></figure>
+          <figure><span>07</span><img src="./showcase/images/07-dinner-configuration.png" alt="Dinner configuration"><figcaption>Dinner · configuration</figcaption></figure>
+          <figure><span>08</span><img src="./showcase/images/08-rule-recovery.png" alt="Capacity recovery"><figcaption>Dinner · safe recovery</figcaption></figure>
+          <figure><span>09</span><img src="./showcase/images/09-tables.png" alt="Table view"><figcaption>Dinner · tables</figcaption></figure>
+          <figure><span>10</span><img src="./showcase/images/10-analysis.png" alt="Analysis view"><figcaption>Dinner · analysis</figcaption></figure>
+          <figure><span>11</span><img src="./showcase/images/11-alternatives.png" alt="Alternative comparison"><figcaption>Dinner · alternatives</figcaption></figure>
+          <figure><span>12</span><img src="./showcase/images/12-saved-history.png" alt="Saved version history"><figcaption>Plans · version history</figcaption></figure>
+          <figure><span>13</span><img src="./showcase/images/13-export.png" alt="Export workflow"><figcaption>Dinner · export</figcaption></figure>
+          <figure><span>14</span><img src="./showcase/images/14-web-evidence.png" alt="Founder web evidence"><figcaption>Evidence · cited sources</figcaption></figure>
+          <figure><span>15</span><img src="./showcase/images/15-ai-provider.png" alt="AI provider setup"><figcaption>AI · secure credential</figcaption></figure>
+          <figure class="mobile-proof"><span>16</span><img src="./showcase/images/16-mobile-tables.png" alt="Responsive mobile table view"><figcaption>Tables · mobile</figcaption></figure>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div><strong>Founder Index V2</strong><span>Search people. Design conversations.</span></div>
+      <p>All public screenshots use deterministic synthetic data and reserved example domains.</p>
+      <a href="https://github.com/alexselig/founder-matching-app">View the repository ↗</a>
+    </footer>
+  </body>
+</html>
