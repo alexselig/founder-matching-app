@@ -306,9 +306,9 @@ export function SeatingPlansPage({
                       +
                     </span>
                     <span>
-                      New
+                      New{' '}
                       <br />
-                      seating
+                      seating{' '}
                       <br />
                       plan
                     </span>

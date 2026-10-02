@@ -48,6 +48,9 @@
   .v2-ai-form-row { grid-template-columns: 1fr; }
 }
 @media (max-width: 620px) {
+  .v2-ai-title-block, .v2-ai-head-copy { padding: 24px 20px; }
+  .v2-ai-config { padding: 24px 20px 32px; }
+  .v2-ai-security { padding: 24px 20px; }
   .v2-ai-provider-grid { grid-template-columns: 1fr; }
   .v2-ai-provider-grid button { border-right: 1px solid #141414; border-bottom: 0; }
   .v2-ai-provider-grid button:last-child { border-bottom: 1px solid #141414; }
@@ -58,5 +61,6 @@
   .v2-ai-validation-head > button {
     grid-column: 1 / -1;
     width: 100%;
+    min-height: 44px;
   }
 }

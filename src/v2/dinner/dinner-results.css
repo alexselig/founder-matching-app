@@ -37,7 +37,7 @@
 .v2-dinner-metric.v2-dinner-alert strong { color: #9a5b00; }
 .v2-dinner-work-tools { min-height: 52px; display: flex; align-items: center; justify-content: flex-start; gap: 14px; padding: 0 14px 0 0; border-bottom: 1px solid var(--line); background: white; }
 .v2-dinner-segmented { align-self: stretch; display: flex; align-items: stretch; }
-.v2-dinner-segmented button { height: 100%; min-width: 76px; padding: 0 16px; border: 0; border-right: 1px solid var(--line); background: white; color: var(--ink-muted); font-size: 10px; font-weight: 800; }
+.v2-dinner-segmented button { height: 100%; min-width: 76px; padding: 0 20px; border: 0; border-right: 1px solid var(--line); background: white; color: var(--ink-muted); font-size: 10px; font-weight: 800; }
 .v2-dinner-segmented .v2-dinner-active { box-shadow: inset 0 -3px var(--v2-blue); background: var(--surface-alt); color: var(--v2-blue); }
 .v2-dinner-density { margin-left: auto; display: flex; align-items: center; }
 .v2-dinner-density button { min-height: 32px; padding: 0 12px; border: 1px solid var(--line-strong); border-right: 0; background: white; font-size: 10px; font-weight: 800; }
@@ -208,8 +208,9 @@
   .v2-dinner-metric span { font-size: 7px; }
   .v2-dinner-work-tools { min-height: 47px; gap: 6px; padding: 0 8px 0 0; }
   .v2-dinner-tool-left, .v2-dinner-tool-right { gap: 6px; }
-  .v2-dinner-density, .v2-dinner-threshold { display: none; }
-  .v2-dinner-segmented button { min-height: 30px; padding: 0 10px; }
+  .v2-dinner-density { display: none; }
+  .v2-dinner-threshold { margin-left: auto; gap: 4px; font-size: 9px; }
+  .v2-dinner-segmented button { min-height: 30px; padding: 0 14px; }
   .v2-dinner-table-workspace { grid-template-rows: 48px minmax(0, 1fr); }
   .v2-dinner-index-grid { width: max-content; height: 47px; display: flex; }
   .v2-dinner-index-button { width: 48px; min-height: 47px; border-bottom: 0; }

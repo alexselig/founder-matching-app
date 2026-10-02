@@ -45,3 +45,40 @@ test('shows top web results in a drawer and secure AI setup', async ({ page }) =
   }))
   expect(JSON.stringify(storage)).not.toContain('DEMO-secret')
 })
+
+test('keeps every V2 route inside mobile and tablet viewports', async ({ page }) => {
+  const routes = [
+    '/v2',
+    '/v2/seating-plans',
+    '/v2/settings/ai',
+    '/v2/founders/demo-founder-ae527df17156/evidence',
+  ]
+
+  for (const width of [390, 768]) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1024 })
+
+    for (const route of routes) {
+      await page.goto(route)
+      await expect
+        .poll(() =>
+          page.evaluate(() => ({
+            clientWidth: document.documentElement.clientWidth,
+            scrollWidth: document.documentElement.scrollWidth,
+          })),
+        )
+        .toEqual({ clientWidth: width, scrollWidth: width })
+    }
+
+    await page.goto('/v2/seating-plans')
+    await page.getByRole('button', { name: 'Reopen' }).first().click()
+    await expect(page).toHaveURL(/\/v2\/dinner\?plan=/)
+    await expect
+      .poll(() =>
+        page.evaluate(() => ({
+          clientWidth: document.documentElement.clientWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+        })),
+      )
+      .toEqual({ clientWidth: width, scrollWidth: width })
+  }
+})

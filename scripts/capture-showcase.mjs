@@ -139,7 +139,7 @@ await withPage(
   twentyTablePath,
   '16-mobile-tables.png',
   openTwentyTablePlan,
-  { viewport: { width: 780, height: 1688 } },
+  { viewport: { width: 390, height: 844 } },
 )
 
 await browser.close()

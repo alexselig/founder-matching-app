@@ -3,6 +3,48 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const read = (file: string) => readFileSync(resolve(process.cwd(), 'src/v2/dinner', file), 'utf8')
+const readV2 = (file: string) => readFileSync(resolve(process.cwd(), 'src/v2', file), 'utf8')
+
+describe('V2 shared responsive shell', () => {
+  it('removes the desktop minimum width and creates a two-row mobile header', () => {
+    const css = readV2('search/v2-chrome.css')
+    const tablet = css.slice(css.indexOf('@media (max-width: 900px)'), css.indexOf('@media (max-width: 620px)'))
+    const phone = css.slice(css.indexOf('@media (max-width: 620px)'))
+
+    expect(tablet).toMatch(/\.v2-topbar \{[^}]*min-width: 0/)
+    expect(phone).toMatch(/\.v2-topbar \{[^}]*grid-template-rows: 64px 48px/)
+    expect(phone).toMatch(/\.v2-nav \{[^}]*grid-column: 1 \/ -1/)
+  })
+
+  it('keeps the mobile footer inside the safe area', () => {
+    const css = readV2('layout/v2-footer-actions.css')
+    expect(css).toMatch(/env\(safe-area-inset-bottom\)/)
+  })
+})
+
+describe('V2 responsive routes', () => {
+  it('stacks Search and constrains its picker to the viewport', () => {
+    const css = readV2('search/search.css')
+    const tablet = css.slice(css.indexOf('@media (max-width: 900px)'), css.indexOf('@media (max-width: 620px)'))
+    const phone = css.slice(css.indexOf('@media (max-width: 620px)'))
+
+    expect(tablet).toMatch(/\.v2-hero \{[^}]*grid-template-columns: 1fr/)
+    expect(tablet).toMatch(/\.v2-founder-grid \{[^}]*grid-template-columns: repeat\(2/)
+    expect(phone).toMatch(/\.v2-recommendation-columns \{[^}]*grid-template-columns: 1fr/)
+    expect(phone).toMatch(/\.v2-founder-grid \{[^}]*grid-template-columns: 1fr/)
+    expect(phone).toMatch(/\.v2-picker \{[^}]*width: calc\(100vw - 32px\)/)
+  })
+
+  it('gives secondary-route mobile controls adequate hit areas', () => {
+    const plans = read('seating-plans.css')
+    const ai = readV2('settings/ai-provider.css')
+    const evidence = readV2('evidence/founder-evidence.css')
+
+    expect(plans).toMatch(/@container plans \(max-width: 760px\)[\s\S]*\.v2-plans-dialog-close \{[^}]*width: 44px;[^}]*height: 44px/)
+    expect(ai).toMatch(/@media \(max-width: 620px\)[\s\S]*\.v2-ai-config \{[^}]*padding: 24px 20px/)
+    expect(evidence).toMatch(/@media \(max-width: 640px\)[\s\S]*\.v2-evidence-close \{[^}]*width: 44px;[^}]*height: 44px/)
+  })
+})
 
 describe('Dinner and Seating Plans responsive header', () => {
   it('is shared by both workbench pages', () => {
@@ -42,6 +84,10 @@ describe('Dinner tables responsive grid', () => {
     const phone = css.slice(css.indexOf('@container dinner (max-width: 560px)'))
     expect(tablet).toMatch(/\.v2-dinner-work-tools \{[^}]*padding: 0 10px 0 0/)
     expect(phone).toMatch(/\.v2-dinner-work-tools \{[^}]*padding: 0 8px 0 0/)
+    expect(css).toMatch(/\.v2-dinner-segmented button \{[^}]*padding: 0 20px/)
+    expect(phone).toMatch(/\.v2-dinner-density \{[^}]*display: none/)
+    expect(phone).toMatch(/\.v2-dinner-threshold \{[^}]*margin-left: auto/)
+    expect(phone).toMatch(/\.v2-dinner-segmented button \{[^}]*padding: 0 14px/)
   })
 
   it('drops to the reference two-card tablet grid before three cards squeeze founder names', () => {

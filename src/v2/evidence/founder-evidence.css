@@ -42,6 +42,7 @@
 @keyframes v2-evidence-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (max-width: 640px) {
   .v2-evidence-drawer { width: 100vw; border-left: 0; }
+  .v2-evidence-close { width: 44px; height: 44px; }
   .v2-evidence-title { min-height: 78px; }
   .v2-evidence-title h2 { font-size: 24px; }
 }
