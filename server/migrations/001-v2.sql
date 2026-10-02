@@ -7,7 +7,10 @@ CREATE TABLE IF NOT EXISTS founders (
   company_vertical_levels_json TEXT NOT NULL
     CHECK (json_valid(company_vertical_levels_json)),
   company TEXT NOT NULL,
-  age INTEGER NOT NULL CHECK (age >= 0),
+  age INTEGER NOT NULL CHECK (
+    typeof(age) = 'integer'
+    AND age BETWEEN 0 AND 9007199254740991
+  ),
   education TEXT NOT NULL,
   role TEXT NOT NULL,
   search_name TEXT NOT NULL,
@@ -159,7 +162,10 @@ CREATE TABLE IF NOT EXISTS web_results (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   run_id TEXT NOT NULL,
   founder_id TEXT NOT NULL,
-  rank INTEGER NOT NULL CHECK (rank BETWEEN 1 AND 5),
+  rank INTEGER NOT NULL CHECK (
+    typeof(rank) = 'integer'
+    AND rank BETWEEN 1 AND 5
+  ),
   classification TEXT NOT NULL
     CHECK (classification IN ('founder', 'company', 'both')),
   title TEXT NOT NULL,
@@ -217,7 +223,10 @@ CREATE TABLE IF NOT EXISTS dinner_configurations (
 CREATE TABLE IF NOT EXISTS dinner_versions (
   id TEXT PRIMARY KEY NOT NULL,
   configuration_id TEXT NOT NULL,
-  version INTEGER NOT NULL CHECK (version > 0),
+  version INTEGER NOT NULL CHECK (
+    typeof(version) = 'integer'
+    AND version BETWEEN 1 AND 9007199254740991
+  ),
   snapshot_json TEXT NOT NULL CHECK (json_valid(snapshot_json)),
   created_at TEXT NOT NULL,
   UNIQUE (configuration_id, version),

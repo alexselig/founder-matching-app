@@ -240,7 +240,7 @@ function validateRun(run: WebEnrichmentRun): NormalizedRunInput {
 
     if (
       typeof result.rank !== 'number' ||
-      !Number.isInteger(result.rank) ||
+      !Number.isSafeInteger(result.rank) ||
       result.rank < 1 ||
       result.rank > 5
     ) {
