@@ -25,6 +25,93 @@ export interface FounderListOptions {
   offset?: number
 }
 
+interface FounderParameters {
+  id: string
+  name: string
+  cohortGroup: string
+  cohortSection: string
+  companyVertical: string
+  companyVerticalLevelsJson: string
+  company: string
+  age: number
+  education: string
+  role: string
+  searchName: string
+  rawJson: string
+}
+
+function assertRequiredString(
+  value: unknown,
+  label: string,
+): asserts value is string {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new RepositoryError(
+      `${label} is required`,
+      'invalid_data',
+    )
+  }
+}
+
+function assertFounder(
+  value: unknown,
+  index: number,
+): asserts value is Founder {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new RepositoryError(
+      `Founder record ${index + 1} must be an object`,
+      'invalid_data',
+    )
+  }
+
+  const founder = value as Record<string, unknown>
+  assertRequiredString(founder.id, 'Founder ID')
+  assertRequiredString(founder.name, 'Founder name')
+  assertRequiredString(founder.cohortGroup, 'Founder cohort group')
+  assertRequiredString(founder.cohortSection, 'Founder cohort section')
+  assertRequiredString(
+    founder.companyVertical,
+    'Founder company vertical',
+  )
+  assertRequiredString(founder.company, 'Founder company')
+  assertRequiredString(founder.education, 'Founder education')
+  assertRequiredString(founder.role, 'Founder role')
+  assertRequiredString(founder.searchName, 'Founder search name')
+
+  if (
+    !Array.isArray(founder.companyVerticalLevels) ||
+    !founder.companyVerticalLevels.every(
+      (level) => typeof level === 'string' && level.trim().length > 0,
+    )
+  ) {
+    throw new RepositoryError(
+      'Founder company vertical levels must be non-empty strings',
+      'invalid_data',
+    )
+  }
+
+  if (
+    typeof founder.age !== 'number' ||
+    !Number.isInteger(founder.age) ||
+    founder.age < 0
+  ) {
+    throw new RepositoryError(
+      'Founder age must be a non-negative integer',
+      'invalid_data',
+    )
+  }
+
+  if (
+    !founder.raw ||
+    typeof founder.raw !== 'object' ||
+    Array.isArray(founder.raw)
+  ) {
+    throw new RepositoryError(
+      'Founder source record must be an object',
+      'invalid_data',
+    )
+  }
+}
+
 function requireJson(value: unknown, label: string) {
   try {
     const encoded = JSON.stringify(value)
@@ -113,18 +200,46 @@ export class FounderRepository {
   constructor(private readonly database: SqliteDatabase) {}
 
   saveAll(founders: readonly Founder[]): void {
+    if (!Array.isArray(founders)) {
+      throw new RepositoryError(
+        'Founders must be an array',
+        'invalid_data',
+      )
+    }
+
     const ids = new Set<string>()
-    for (const founder of founders) {
-      if (!founder.id || ids.has(founder.id)) {
+    const parameters = founders.map((founder, index) => {
+      assertFounder(founder, index)
+
+      if (ids.has(founder.id)) {
         throw new RepositoryError(
-          ids.has(founder.id)
-            ? `Duplicate founder ID ${founder.id}`
-            : 'Founder ID is required',
+          `Duplicate founder ID ${founder.id}`,
           'invalid_data',
         )
       }
       ids.add(founder.id)
-    }
+
+      return {
+        id: founder.id,
+        name: founder.name,
+        cohortGroup: founder.cohortGroup,
+        cohortSection: founder.cohortSection,
+        companyVertical: founder.companyVertical,
+        companyVerticalLevelsJson: requireJson(
+          founder.companyVerticalLevels,
+          'Founder vertical levels',
+        ),
+        company: founder.company,
+        age: founder.age,
+        education: founder.education,
+        role: founder.role,
+        searchName: founder.searchName,
+        rawJson: requireJson(
+          founder.raw,
+          'Founder source record',
+        ),
+      } satisfies FounderParameters
+    })
 
     try {
       const statement = this.database.prepare(
@@ -170,30 +285,14 @@ export class FounderRepository {
            raw_json = excluded.raw_json`,
       )
       const save = this.database.transaction(
-        (records: readonly Founder[]) => {
-          for (const founder of records) {
-            statement.run({
-              id: founder.id,
-              name: founder.name,
-              cohortGroup: founder.cohortGroup,
-              cohortSection: founder.cohortSection,
-              companyVertical: founder.companyVertical,
-              companyVerticalLevelsJson: requireJson(
-                founder.companyVerticalLevels,
-                'Founder vertical levels',
-              ),
-              company: founder.company,
-              age: founder.age,
-              education: founder.education,
-              role: founder.role,
-              searchName: founder.searchName,
-              rawJson: requireJson(founder.raw, 'Founder source record'),
-            })
+        (records: readonly FounderParameters[]) => {
+          for (const record of records) {
+            statement.run(record)
           }
         },
       )
 
-      save(founders)
+      save(parameters)
     } catch (error) {
       throwRepositoryFailure(error, 'Failed to save founders')
     }
