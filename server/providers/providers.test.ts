@@ -12,6 +12,16 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
+const identityContext = {
+  name: 'Ada Founder',
+  company: 'Analytical Engines',
+  companyVertical: 'B2B Software -> Analytics',
+  role: 'CEO',
+  education: 'Mathematics',
+  cohortGroup: 'W26',
+  cohortSection: 'A',
+}
+
 describe('provider adapters', () => {
   it('uses the OpenAI Responses API through an injected transport', async () => {
     const transport = vi.fn(async () =>
@@ -43,6 +53,7 @@ describe('provider adapters', () => {
   it('uses the xAI Responses API through its isolated injected transport', async () => {
     const transport = vi.fn(async () =>
       jsonResponse({
+        status: 'completed',
         output: [
           {
             type: 'message',
@@ -88,6 +99,7 @@ describe('provider adapters', () => {
     const text = `${founderSentence} ${companySentence}`
     const transport = vi.fn(async () =>
       jsonResponse({
+        status: 'completed',
         output: [
           {
             type: 'message',
@@ -158,6 +170,7 @@ describe('provider adapters', () => {
     const text = `${founderSentence} ${companySentence}`
     const transport = vi.fn(async () =>
       jsonResponse({
+        status: 'completed',
         output: [
           {
             type: 'message',
@@ -237,6 +250,7 @@ describe('provider adapters', () => {
     const markerStart = text.indexOf(marker)
     const transport = vi.fn(async () =>
       jsonResponse({
+        status: 'completed',
         output: [
           {
             type: 'message',
@@ -297,6 +311,7 @@ describe('provider adapters', () => {
       model: 'openai-test-model',
       transport: vi.fn(async () =>
         jsonResponse({
+          status: 'completed',
           output: [
             {
               type: 'message',
@@ -349,6 +364,7 @@ describe('provider adapters', () => {
       model: 'xai-test-model',
       transport: vi.fn(async () =>
         jsonResponse({
+          status: 'completed',
           output_text:
             'Ada Founder leads Analytical Engines without local citations.',
           citations: [
@@ -394,6 +410,7 @@ describe('provider adapters', () => {
           model: 'openai-test-model',
           transport: vi.fn(async () =>
             jsonResponse({
+              status: 'completed',
               output_text:
                 'Ada Founder leads Analytical Engines without citations.',
             }),
@@ -408,6 +425,7 @@ describe('provider adapters', () => {
           model: 'xai-test-model',
           transport: vi.fn(async () =>
             jsonResponse({
+              status: 'completed',
               output: [
                 {
                   type: 'message',
@@ -572,6 +590,77 @@ describe('provider adapters', () => {
             cohortSection: 'A',
           },
           query: '"Ada Founder" "Analytical Engines"',
+        }),
+      ).rejects.toMatchObject({
+        code: 'invalid_response',
+      })
+    },
+  )
+
+  it.each([
+    {
+      provider: 'OpenAI',
+      create: (body: unknown) =>
+        createOpenAIProvider({
+          apiKey: 'openai-test-key',
+          model: 'test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+    },
+    {
+      provider: 'xAI',
+      create: (body: unknown) =>
+        createXaiProvider({
+          apiKey: 'xai-test-key',
+          model: 'test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+    },
+  ])(
+    'rejects a statusless $provider search envelope',
+    async ({ create }) => {
+      await expect(
+        create({ output: [] }).searchWeb({
+          founderId: 'founder-1',
+          context: identityContext,
+          query: 'Ada Founder Analytical Engines',
+        }),
+      ).rejects.toMatchObject({
+        code: 'invalid_response',
+      })
+    },
+  )
+
+  it.each([
+    {
+      provider: 'OpenAI',
+      create: (body: unknown) =>
+        createOpenAIProvider({
+          apiKey: 'openai-test-key',
+          model: 'test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+    },
+    {
+      provider: 'xAI',
+      create: (body: unknown) =>
+        createXaiProvider({
+          apiKey: 'xai-test-key',
+          model: 'test-model',
+          transport: vi.fn(async () => jsonResponse(body)),
+        }),
+    },
+  ])(
+    'rejects discriminator-less $provider output blocks',
+    async ({ create }) => {
+      await expect(
+        create({
+          status: 'completed',
+          output: [{ content: [{ text: 'Ada Founder leads Analytical Engines.' }] }],
+        }).searchWeb({
+          founderId: 'founder-1',
+          context: identityContext,
+          query: 'Ada Founder Analytical Engines',
         }),
       ).rejects.toMatchObject({
         code: 'invalid_response',

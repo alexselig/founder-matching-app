@@ -27,10 +27,7 @@ export function validateResponsesSearchEnvelope(
   provider: string,
 ): ValidatedResponsesEnvelope {
   if (!isRecord(body)) throw invalidEnvelope(provider)
-  if (
-    body.status !== undefined &&
-    body.status !== 'completed'
-  ) {
+  if (body.status !== 'completed') {
     throw invalidEnvelope(provider)
   }
   if (
@@ -74,6 +71,9 @@ export function validateResponsesSearchEnvelope(
     if (!isRecord(item)) throw invalidEnvelope(provider)
     const itemType =
       typeof item.type === 'string' ? item.type : undefined
+    if (itemType === undefined) {
+      throw invalidEnvelope(provider)
+    }
     if (
       itemType !== undefined &&
       itemType !== 'message' &&
@@ -96,6 +96,9 @@ export function validateResponsesSearchEnvelope(
         typeof content.type === 'string'
           ? content.type
           : undefined
+      if (contentType === undefined) {
+        throw invalidEnvelope(provider)
+      }
       if (contentType === 'refusal') {
         const refusal = optionalText(content.refusal)
         if (!refusal) throw invalidEnvelope(provider)

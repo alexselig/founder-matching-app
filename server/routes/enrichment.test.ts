@@ -493,6 +493,7 @@ describe('enrichment and interpretation routes', () => {
       model: 'openai-test-model',
       transport: vi.fn(async () =>
         new Response(JSON.stringify({
+          status: 'completed',
           output_text:
             `${founders[0]!.name} leads ${founders[0]!.company} without citations.`,
         }), {

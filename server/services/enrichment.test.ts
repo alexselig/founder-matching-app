@@ -166,6 +166,7 @@ describe('web enrichment service', () => {
       const text = `${founderSentence} ${companySentence}`
       const transport = vi.fn(async () =>
         new Response(JSON.stringify({
+          status: 'completed',
           output: [
             {
               type: 'message',
@@ -231,6 +232,7 @@ describe('web enrichment service', () => {
     const markerStart = text.indexOf(marker)
     const transport = vi.fn(async () =>
       new Response(JSON.stringify({
+        status: 'completed',
         output: [
           {
             type: 'message',
