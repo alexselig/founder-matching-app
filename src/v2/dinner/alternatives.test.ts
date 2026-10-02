@@ -1,12 +1,21 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { buildScaleFixture } from '../../shared/fixtures.js'
 import type { Founder } from '../../shared/founder.js'
+import { normalizeFounders } from '../../shared/founder.js'
 import {
   ALTERNATIVE_MAX_WEAKEST_FIT_DROP,
+  ALTERNATIVE_STRUCTURAL_DIFFERENCE,
   generateAlternatives,
   structuralDifference,
 } from './alternatives.js'
 import { compileCriteria } from './criteria.js'
-import { optimizeDinner } from './optimizer.js'
+import {
+  compareDinnerMetrics,
+  DinnerConflictError,
+  optimizeDinner,
+} from './optimizer.js'
 import { compileHardRules, findRuleViolations } from './rules.js'
 
 function founder(id: string, role: string): Founder {
@@ -25,6 +34,20 @@ function founder(id: string, role: string): Founder {
     raw: Object.freeze({}),
   }
 }
+
+const referenceFounders = normalizeFounders(
+  JSON.parse(
+    readFileSync(resolve(process.cwd(), 'src/founders.json'), 'utf8'),
+  ) as unknown,
+)
+const scaleCriteria = compileCriteria({
+  source: 'manual',
+  criteria: [
+    { field: 'company vertical', objective: 'similarity', weight: 'H' },
+    { field: 'role', objective: 'diversity', weight: 'H' },
+    { field: 'age', objective: 'diversity', weight: 'M' },
+  ],
+})
 
 describe('dinner alternatives', () => {
   it('returns exactly two deterministic, structurally distinct valid solutions', () => {
@@ -94,5 +117,87 @@ describe('dinner alternatives', () => {
     expect(() =>
       generateAlternatives({ founders, tableCount: 2, criteria }, 1),
     ).toThrow(/exactly two/i)
+  })
+
+  it(
+    'keeps the optimized 20-table base at least as strong as both alternatives',
+    () => {
+      const founders = buildScaleFixture(referenceFounders, 'twenty-tables')
+      const request = { founders, tableCount: 20, criteria: scaleCriteria }
+      const base = optimizeDinner(request)
+      const alternatives = generateAlternatives(request, 2, base)
+
+      expect(alternatives).toHaveLength(2)
+      for (const alternative of alternatives) {
+        expect(compareDinnerMetrics(alternative.metrics, base.metrics)).toBeLessThanOrEqual(
+          0,
+        )
+        expect(structuralDifference(base, alternative)).toBeGreaterThanOrEqual(
+          ALTERNATIVE_STRUCTURAL_DIFFERENCE,
+        )
+      }
+    },
+    30_000,
+  )
+
+  it(
+    'generates two structurally distinct alternatives for the full 574-founder dataset',
+    () => {
+      const tableCount = Math.ceil(referenceFounders.length / 8)
+      const request = {
+        founders: referenceFounders,
+        tableCount,
+        criteria: scaleCriteria,
+        maxIterations: 1,
+        maxComparisons: 5_000,
+      }
+      const base = optimizeDinner(request)
+      const alternatives = generateAlternatives(request, 2, base)
+
+      expect(referenceFounders).toHaveLength(574)
+      expect(alternatives).toHaveLength(2)
+      expect(structuralDifference(base, alternatives[0]!)).toBeGreaterThanOrEqual(
+        ALTERNATIVE_STRUCTURAL_DIFFERENCE,
+      )
+      expect(structuralDifference(base, alternatives[1]!)).toBeGreaterThanOrEqual(
+        ALTERNATIVE_STRUCTURAL_DIFFERENCE,
+      )
+      expect(structuralDifference(alternatives[0]!, alternatives[1]!)).toBeGreaterThanOrEqual(
+        ALTERNATIVE_STRUCTURAL_DIFFERENCE,
+      )
+    },
+    60_000,
+  )
+
+  it('reports fully locked cohorts as structurally rigid', () => {
+    const founders = Array.from({ length: 16 }, (_, index) =>
+      founder(String(index), index % 2 ? 'Engineering' : 'Design'),
+    )
+    const criteria = compileCriteria({
+      source: 'manual',
+      criteria: [{ field: 'role', objective: 'diversity', weight: 'H' }],
+    })
+    const request = {
+      founders,
+      tableCount: 2,
+      criteria,
+      locks: founders.map((candidate, index) => ({
+        founderId: candidate.id,
+        tableIndex: index < 8 ? 0 : 1,
+      })),
+      maxIterations: 0,
+    }
+
+    expect(() => generateAlternatives(request, 2)).toThrow(DinnerConflictError)
+    try {
+      generateAlternatives(request, 2)
+    } catch (error) {
+      expect((error as DinnerConflictError).conflicts).toEqual([
+        expect.objectContaining({
+          ruleIds: ['alternative-structural-difference'],
+          message: expect.stringMatching(/rigid|locked|movable/i),
+        }),
+      ])
+    }
   })
 })

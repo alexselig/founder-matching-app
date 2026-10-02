@@ -140,4 +140,113 @@ describe('hard-rule compilation', () => {
       }),
     ])
   })
+
+  it('canonicalizes case-insensitive string and numeric-string field values', () => {
+    const founders = [
+      founder('a', 'A', { role: 'Engineering', age: 30 }),
+      founder('b', 'B', { role: 'Design', age: 28 }),
+    ]
+
+    const result = compileHardRules(
+      [
+        {
+          id: 'engineering-minimum',
+          type: 'field-count',
+          field: 'role',
+          value: 'engineering',
+          min: 1,
+        },
+        {
+          id: 'age-30-maximum',
+          type: 'field-count',
+          field: 'age',
+          value: '30',
+          max: 1,
+        },
+      ],
+      founders,
+    )
+
+    expect(result.conflicts).toEqual([])
+    expect(result.rules).toEqual([
+      expect.objectContaining({ id: 'engineering-minimum', value: 'Engineering' }),
+      expect.objectContaining({ id: 'age-30-maximum', value: 30 }),
+    ])
+  })
+
+  it('rejects exact field values that match no founder', () => {
+    const founders = [founder('a', 'A', { role: 'Engineering' })]
+
+    const result = compileHardRules(
+      [
+        {
+          id: 'unknown-role',
+          type: 'field-count',
+          field: 'role',
+          value: 'Astronaut',
+          min: 1,
+        },
+      ],
+      founders,
+    )
+
+    expect(result.rules).toEqual([])
+    expect(result.conflicts).toEqual([
+      expect.objectContaining({
+        ruleIds: ['unknown-role'],
+        founderIds: [],
+        message: expect.stringMatching(/matches no founder/i),
+      }),
+    ])
+  })
+
+  it('compiles inclusive numeric field ranges and validates their bounds', () => {
+    const founders = [
+      founder('a', 'A', { age: 25 }),
+      founder('b', 'B', { age: 30 }),
+    ]
+
+    const valid = compileHardRules(
+      [
+        {
+          id: 'under-30',
+          type: 'field-count',
+          field: 'age',
+          maxValue: '29',
+          min: 1,
+        },
+      ],
+      founders,
+    )
+    const invalid = compileHardRules(
+      [
+        {
+          id: 'invalid-age-range',
+          type: 'field-count',
+          field: 'age',
+          minValue: 40,
+          maxValue: 20,
+          min: 1,
+        },
+      ],
+      founders,
+    )
+
+    expect(valid.conflicts).toEqual([])
+    expect(valid.rules).toEqual([
+      expect.objectContaining({
+        id: 'under-30',
+        field: 'age',
+        minValue: undefined,
+        maxValue: 29,
+      }),
+    ])
+    expect(invalid.rules).toEqual([])
+    expect(invalid.conflicts).toEqual([
+      expect.objectContaining({
+        ruleIds: ['invalid-age-range'],
+        message: expect.stringMatching(/numeric.*range/i),
+      }),
+    ])
+  })
 })

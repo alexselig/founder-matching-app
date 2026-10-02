@@ -100,11 +100,13 @@ function structuralDifferenceFromAssignment(
     (total, count) => total + chooseTwo(count),
     0,
   )
-  const founderCount = referenceTableByFounder.size
-  const relationships = chooseTwo(founderCount)
   const changedRelationships =
     referenceTogether + candidateTogether - 2 * togetherInBoth
-  return relationships ? changedRelationships / relationships : 0
+  const tablematePairUnion =
+    referenceTogether + candidateTogether - togetherInBoth
+  return tablematePairUnion
+    ? changedRelationships / tablematePairUnion
+    : 0
 }
 
 export function structuralDifference(
@@ -261,9 +263,23 @@ function buildAlternative(
   seed: number,
 ) {
   const groups = founderGroups(request).filter((group) => !group.locked)
+  const baseAssignment = assignmentFromSolution(base)
+  const movableTableIndexes = new Set(
+    groups.map((group) => groupTableIndex(baseAssignment, group)),
+  )
+  if (groups.length < 2 || movableTableIndexes.size < 2) {
+    throw new DinnerConflictError([
+      {
+        ruleIds: ['alternative-structural-difference'],
+        founderIds: request.founders.map((founder) => founder.id).sort(),
+        message:
+          'The dinner assignment is structurally rigid: no movable equal-size components exist across tables',
+      },
+    ])
+  }
   const references = [base, ...priorAlternatives]
   let current = base
-  let assignment: readonly (readonly string[])[] = assignmentFromSolution(base)
+  let assignment: readonly (readonly string[])[] = baseAssignment
   let currentDifference = minimumDifference(current, references)
   let attempts = 0
   const usedGroups = new Set<string>()
@@ -326,6 +342,7 @@ function buildAlternative(
         if (
           difference > currentDifference + 1e-12 &&
           (evaluated.metrics.founderFitVector[0] ?? 0) >= weakestFitFloor &&
+          compareDinnerMetrics(evaluated.metrics, base.metrics) <= 0 &&
           (!best ||
             compareDinnerMetrics(evaluated.metrics, best.solution.metrics) > 0 ||
             (compareDinnerMetrics(evaluated.metrics, best.solution.metrics) === 0 &&
@@ -403,6 +420,7 @@ function buildAlternative(
       if (
         difference > currentDifference + 1e-12 &&
         (evaluated.metrics.founderFitVector[0] ?? 0) >= weakestFitFloor &&
+        compareDinnerMetrics(evaluated.metrics, base.metrics) <= 0 &&
         (!best ||
           compareDinnerMetrics(evaluated.metrics, best.solution.metrics) > 0 ||
           (compareDinnerMetrics(evaluated.metrics, best.solution.metrics) === 0 &&
@@ -442,7 +460,8 @@ function buildAlternative(
     acceptCandidate: (candidateAssignment, metrics) =>
       minimumAssignmentDifference(candidateAssignment, references) >=
         ALTERNATIVE_STRUCTURAL_DIFFERENCE &&
-      (metrics.founderFitVector[0] ?? 0) >= weakestFitFloor,
+      (metrics.founderFitVector[0] ?? 0) >= weakestFitFloor &&
+      compareDinnerMetrics(metrics, base.metrics) <= 0,
   })
 }
 

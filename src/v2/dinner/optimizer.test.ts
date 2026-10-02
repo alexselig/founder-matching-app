@@ -201,6 +201,52 @@ describe('deterministic constrained maximin optimization', () => {
     }
   })
 
+  it('satisfies inclusive numeric ranges such as one founder under 30 per table', () => {
+    const founders = [
+      founder('a', 'Engineering'),
+      founder('b', 'Design'),
+      founder('c', 'Sales'),
+      founder('d', 'Engineering'),
+      founder('e', 'Design'),
+      founder('f', 'Sales'),
+      founder('g', 'Engineering'),
+      founder('h', 'Design'),
+      founder('i', 'Sales'),
+    ].map((candidate, index) => ({
+      ...candidate,
+      age: index < 3 ? 27 + index : 30 + index,
+    }))
+    const compiledRules = compileHardRules(
+      [
+        {
+          id: 'under-30-per-table',
+          type: 'field-count',
+          field: 'age',
+          maxValue: 29,
+          min: 1,
+        },
+      ],
+      founders,
+    )
+
+    const solution = optimizeDinner({
+      founders,
+      tableCount: 3,
+      criteria,
+      rules: compiledRules.rules,
+      maxIterations: 0,
+    })
+
+    expect(
+      solution.tables.every((table) =>
+        table.founderIds.some(
+          (founderId) =>
+            founders.find((candidate) => candidate.id === founderId)!.age < 30,
+        ),
+      ),
+    ).toBe(true)
+  })
+
   it('preserves table and seat locks while satisfying hard rules', () => {
     const founders = [
       founder('a', 'Engineering', 'Shared'),

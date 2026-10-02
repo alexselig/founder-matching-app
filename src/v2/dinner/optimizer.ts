@@ -1,9 +1,9 @@
 import type { Founder } from '../../shared/founder.js'
-import type { FounderFieldKey } from '../../shared/schemaRegistry.js'
 import type { CriteriaSet } from './criteria.js'
 import {
   detectRuleConflicts,
   findRuleViolations,
+  founderMatchesFieldCountRule,
   type HardRule,
   type RuleConflict,
 } from './rules.js'
@@ -364,7 +364,7 @@ function inputConflicts(
   )
   for (const rule of fieldCountRules) {
     const matchingFounderIds = request.founders
-      .filter((founder) => founder[rule.field] === rule.value)
+      .filter((founder) => founderMatchesFieldCountRule(founder, rule))
       .map((founder) => founder.id)
     if (
       rule.min !== undefined &&
@@ -540,7 +540,10 @@ function componentConstraintConflicts(
     }
     for (const rule of fieldCountRules) {
       const count = component.founderIds.filter(
-        (founderId) => founderById.get(founderId)?.[rule.field] === rule.value,
+        (founderId) => {
+          const founder = founderById.get(founderId)
+          return founder ? founderMatchesFieldCountRule(founder, rule) : false
+        },
       ).length
       if (count > rule.max!) {
         conflicts.push(
@@ -593,8 +596,7 @@ export function prepareDinnerRequest(request: DinnerRequest): PreparedDinnerRequ
           matchingCount(
             component.founderIds,
             founderById,
-            rule.field,
-            rule.value,
+            rule,
           ),
         0,
       )
@@ -662,8 +664,10 @@ function componentFitsTable(
       case 'field-count':
         if (rule.max !== undefined) {
           const count = combined.filter(
-            (founderId) =>
-              prepared.founderById.get(founderId)?.[rule.field] === rule.value,
+            (founderId) => {
+              const founder = prepared.founderById.get(founderId)
+              return founder ? founderMatchesFieldCountRule(founder, rule) : false
+            },
           ).length
           if (count > rule.max) {
             return false
@@ -680,11 +684,13 @@ function componentFitsTable(
 function matchingCount(
   founderIds: readonly string[],
   founderById: ReadonlyMap<string, Founder>,
-  field: FounderFieldKey,
-  value: string | number,
+  rule: Extract<HardRule, { type: 'field-count' }>,
 ) {
   return founderIds.filter(
-    (founderId) => founderById.get(founderId)?.[field] === value,
+    (founderId) => {
+      const founder = founderById.get(founderId)
+      return founder ? founderMatchesFieldCountRule(founder, rule) : false
+    },
   ).length
 }
 
@@ -704,8 +710,7 @@ function candidateTableIndexes(
           const componentMatches = matchingCount(
             component.founderIds,
             prepared.founderById,
-            rule.field,
-            rule.value,
+            rule,
           )
           if (!componentMatches) {
             return score
@@ -713,8 +718,7 @@ function candidateTableIndexes(
           const currentMatches = matchingCount(
             tables[tableIndex] ?? [],
             prepared.founderById,
-            rule.field,
-            rule.value,
+            rule,
           )
           return score + Math.max(0, rule.min! - currentMatches)
         }, 0)
@@ -737,8 +741,7 @@ function minimumsRemainPossible(
         matchingCount(
           component.founderIds,
           prepared.founderById,
-          rule.field,
-          rule.value,
+          rule,
         ),
       0,
     )
@@ -748,8 +751,7 @@ function minimumsRemainPossible(
       const currentMatches = matchingCount(
         table,
         prepared.founderById,
-        rule.field,
-        rule.value,
+        rule,
       )
       const shortfall = Math.max(0, rule.min! - currentMatches)
       const remainingCapacity = prepared.capacities[tableIndex]! - table.length
@@ -883,8 +885,7 @@ function tableSatisfiesConstraints(
         const count = matchingCount(
           founderIds,
           prepared.founderById,
-          rule.field,
-          rule.value,
+          rule,
         )
         if (
           (rule.min !== undefined && count < rule.min) ||
@@ -1177,9 +1178,7 @@ function improveAssignment(
   ) {
     iterations += 1
     const tableIndexes = componentTableIndexes(assignment, prepared.components)
-    let bestAssignment: readonly (readonly string[])[] | undefined
-    let bestTables: readonly DinnerTable[] | undefined
-    let bestMetrics = metrics
+    let improved = false
 
     for (
       let leftIndex = 0;
@@ -1190,7 +1189,6 @@ function improveAssignment(
       if (left.locked || left.founderIds.length < 2) {
         continue
       }
-      const leftTableIndex = tableIndexes.get(left.id)!
       for (
         let firstRightIndex = 0;
         firstRightIndex < prepared.components.length &&
@@ -1201,10 +1199,6 @@ function improveAssignment(
         if (firstRight.locked || firstRight.id === left.id) {
           continue
         }
-        const rightTableIndex = tableIndexes.get(firstRight.id)!
-        if (rightTableIndex === leftTableIndex) {
-          continue
-        }
         for (
           let secondRightIndex = firstRightIndex + 1;
           secondRightIndex < prepared.components.length &&
@@ -1212,8 +1206,11 @@ function improveAssignment(
           secondRightIndex += 1
         ) {
           const secondRight = prepared.components[secondRightIndex]!
+          const leftTableIndex = tableIndexes.get(left.id)!
+          const rightTableIndex = tableIndexes.get(firstRight.id)!
           if (
             secondRight.locked ||
+            rightTableIndex === leftTableIndex ||
             tableIndexes.get(secondRight.id) !== rightTableIndex ||
             firstRight.founderIds.length + secondRight.founderIds.length !==
               left.founderIds.length
@@ -1241,10 +1238,14 @@ function improveAssignment(
           ) {
             continue
           }
-          if (compareDinnerMetrics(evaluated.metrics, bestMetrics) > 0) {
-            bestAssignment = candidate
-            bestTables = evaluated.tables
-            bestMetrics = evaluated.metrics
+          if (compareDinnerMetrics(evaluated.metrics, metrics) > 0) {
+            assignment = candidate.map((table) => [...table])
+            tables = evaluated.tables
+            metrics = evaluated.metrics
+            tableIndexes.set(left.id, rightTableIndex)
+            tableIndexes.set(firstRight.id, leftTableIndex)
+            tableIndexes.set(secondRight.id, leftTableIndex)
+            improved = true
           }
         }
       }
@@ -1294,21 +1295,21 @@ function improveAssignment(
         ) {
           continue
         }
-        if (compareDinnerMetrics(evaluated.metrics, bestMetrics) > 0) {
-          bestAssignment = candidate
-          bestTables = evaluated.tables
-          bestMetrics = evaluated.metrics
+        if (compareDinnerMetrics(evaluated.metrics, metrics) > 0) {
+          assignment = candidate.map((table) => [...table])
+          tables = evaluated.tables
+          metrics = evaluated.metrics
+          tableIndexes.set(left.id, rightTableIndex)
+          tableIndexes.set(right.id, leftTableIndex)
+          improved = true
         }
       }
     }
 
-    if (!bestAssignment) {
+    if (!improved) {
       converged = true
       break
     }
-    assignment = bestAssignment.map((table) => [...table])
-    tables = bestTables!
-    metrics = bestMetrics
   }
 
   return { assignment, tables, metrics, iterations, comparisons, converged }
