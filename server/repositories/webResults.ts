@@ -3,6 +3,10 @@ import {
   RepositoryError,
   throwRepositoryFailure,
 } from './errors.js'
+import {
+  assertDenseArray,
+  assertNoSparseArrays,
+} from './validation.js'
 
 export type WebResultClassification = 'founder' | 'company' | 'both'
 
@@ -165,6 +169,8 @@ function encodeOptionalJson(value: unknown, label: string) {
     return null
   }
 
+  assertNoSparseArrays(value, label)
+
   try {
     const encoded = JSON.stringify(value)
     if (encoded === undefined) {
@@ -214,12 +220,7 @@ function validateRun(run: WebEnrichmentRun): NormalizedRunInput {
     'Run retrieval time',
   )
 
-  if (!Array.isArray(run.results)) {
-    throw new RepositoryError(
-      'Enrichment run results must be an array',
-      'invalid_data',
-    )
-  }
+  assertDenseArray(run.results, 'Enrichment run results')
 
   if (run.results.length > 5) {
     throw new RepositoryError(

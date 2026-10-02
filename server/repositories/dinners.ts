@@ -3,6 +3,10 @@ import {
   RepositoryError,
   throwRepositoryFailure,
 } from './errors.js'
+import {
+  assertDenseArray,
+  assertNoSparseArrays,
+} from './validation.js'
 
 export interface DinnerConfiguration {
   id: string
@@ -39,6 +43,8 @@ interface DinnerVersionRow {
 }
 
 function encodeJson(value: unknown, label: string) {
+  assertNoSparseArrays(value, label)
+
   try {
     const encoded = JSON.stringify(value)
     if (encoded === undefined) {
@@ -113,7 +119,18 @@ function assertDinnerConfiguration(
   )
 
   if (
-    !Array.isArray(configuration.founderIds) ||
+    !Array.isArray(configuration.founderIds)
+  ) {
+    throw new RepositoryError(
+      'Dinner founder IDs must be an array',
+      'invalid_data',
+    )
+  }
+  assertDenseArray(
+    configuration.founderIds,
+    'Dinner founder IDs',
+  )
+  if (
     !configuration.founderIds.every(
       (founderId) =>
         typeof founderId === 'string' && founderId.length > 0,

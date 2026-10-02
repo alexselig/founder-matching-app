@@ -72,6 +72,12 @@ function makeDinnerConfiguration(): DinnerConfiguration {
   }
 }
 
+function makeSparseArray<T>(value: T): T[] {
+  const array = new Array<T>(2)
+  array[1] = value
+  return array
+}
+
 function expectRepositoryError(
   action: () => unknown,
   code: RepositoryError['code'],
@@ -221,6 +227,27 @@ describe('SQLite repositories', () => {
         'invalid_data',
       )
     }
+  })
+
+  it('rejects sparse founder collections and company vertical levels', () => {
+    expectRepositoryError(
+      () =>
+        founderRepository.saveAll(
+          makeSparseArray(founders[0]!),
+        ),
+      'invalid_data',
+    )
+
+    expectRepositoryError(
+      () =>
+        founderRepository.saveAll([
+          {
+            ...founders[0]!,
+            companyVerticalLevels: makeSparseArray('B2B Software'),
+          },
+        ]),
+      'invalid_data',
+    )
   })
 
   it('returns a not_found error for an unknown founder', () => {
@@ -395,6 +422,36 @@ describe('SQLite repositories', () => {
     )
   })
 
+  it('rejects sparse web result collections and nested metadata arrays', () => {
+    const sparseResultsRun = makeRun(
+      founders[0]!.id,
+      'run-sparse-results',
+      '2026-10-01T12:00:00.000Z',
+    )
+    sparseResultsRun.results = makeSparseArray(
+      sparseResultsRun.results[0]!,
+    )
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(sparseResultsRun),
+      'invalid_data',
+    )
+
+    const sparseMetadataRun = makeRun(
+      founders[0]!.id,
+      'run-sparse-metadata',
+      '2026-10-01T12:00:00.000Z',
+    )
+    sparseMetadataRun.queryContext = {
+      aliases: makeSparseArray('founder'),
+    }
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(sparseMetadataRun),
+      'invalid_data',
+    )
+  })
+
   it('rejects duplicate append-only enrichment run IDs as conflicts', () => {
     const run = makeRun(
       founders[0]!.id,
@@ -487,6 +544,45 @@ describe('SQLite repositories', () => {
         dinnerRepository.appendVersion(
           version as unknown as DinnerVersion,
         ),
+      'invalid_data',
+    )
+  })
+
+  it('rejects sparse dinner founder IDs and nested payload arrays', () => {
+    const sparseFounderIds = makeDinnerConfiguration()
+    sparseFounderIds.founderIds = makeSparseArray(founders[0]!.id)
+
+    expectRepositoryError(
+      () => dinnerRepository.saveConfiguration(sparseFounderIds),
+      'invalid_data',
+    )
+
+    const sparseConfiguration = makeDinnerConfiguration()
+    sparseConfiguration.configuration = {
+      criteria: makeSparseArray({ field: 'role' }),
+    }
+
+    expectRepositoryError(
+      () => dinnerRepository.saveConfiguration(sparseConfiguration),
+      'invalid_data',
+    )
+
+    const validConfiguration = makeDinnerConfiguration()
+    dinnerRepository.saveConfiguration(validConfiguration)
+
+    expectRepositoryError(
+      () =>
+        dinnerRepository.appendVersion({
+          id: 'dinner-1-v-sparse',
+          configurationId: validConfiguration.id,
+          version: 1,
+          snapshot: {
+            assignments: makeSparseArray({
+              tableId: 'table-1',
+            }),
+          },
+          createdAt: '2026-10-01T12:01:00.000Z',
+        }),
       'invalid_data',
     )
   })

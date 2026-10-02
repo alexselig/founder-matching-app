@@ -4,6 +4,10 @@ import { resolve } from 'node:path'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import {
+  FounderDetailResponseSchema,
+  FounderListResponseSchema,
+} from '../../src/shared/contracts.js'
 import { normalizeFounders } from '../../src/shared/founder.js'
 import { createDatabase, type SqliteDatabase } from '../database.js'
 import { FounderRepository } from '../repositories/founders.js'
@@ -41,7 +45,7 @@ describe('founder routes', () => {
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual({
+    expect(FounderListResponseSchema.parse(response.json())).toEqual({
       ok: true,
       data: {
         items: founders.slice(1, 3),
@@ -62,7 +66,7 @@ describe('founder routes', () => {
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual({
+    expect(FounderDetailResponseSchema.parse(response.json())).toEqual({
       ok: true,
       data: founder,
     })
