@@ -532,17 +532,26 @@ export function createEnrichmentService(
       query,
     )
     const requestTime = now()
-    const cached = options.webResultsRepository.findLatestByFingerprint(
-      founder.id,
-      fingerprint,
-      enrichmentOptions.provider,
-    )
-    if (
-      !enrichmentOptions.forceRefresh &&
-      cached &&
-      isRunFresh(cached, requestTime, staleAfterMs)
-    ) {
-      return toRunResult(cached, true)
+    if (!enrichmentOptions.forceRefresh) {
+      const evidence =
+        options.webResultsRepository.findLatestByFingerprint(
+          founder.id,
+          fingerprint,
+          enrichmentOptions.provider,
+        )
+      if (evidence && isRunFresh(evidence, requestTime, staleAfterMs)) {
+        return toRunResult(evidence, true)
+      }
+
+      const empty =
+        options.webResultsRepository.findLatestCompletedZeroByFingerprint(
+          founder.id,
+          fingerprint,
+          enrichmentOptions.provider,
+        )
+      if (empty && isRunFresh(empty, requestTime, staleAfterMs)) {
+        return toRunResult(empty, true)
+      }
     }
 
     const provider = providers.get(enrichmentOptions.provider)

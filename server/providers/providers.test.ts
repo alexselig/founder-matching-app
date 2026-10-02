@@ -287,6 +287,256 @@ describe('provider adapters', () => {
     ])
   })
 
+  it('does not assign an offset-less multi-claim answer to its single citation', async () => {
+    const generatedAnswer = [
+      'Ada Founder leads Analytical Engines.',
+      'Analytical Engines announced a new analytics product.',
+    ].join(' ')
+    const provider = createOpenAIProvider({
+      apiKey: 'openai-secret',
+      model: 'openai-test-model',
+      transport: vi.fn(async () =>
+        jsonResponse({
+          output: [
+            {
+              type: 'message',
+              content: [
+                {
+                  type: 'output_text',
+                  text: generatedAnswer,
+                  annotations: [
+                    {
+                      type: 'url_citation',
+                      url: 'https://source.test/generic',
+                      title: 'Generic source',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+      ),
+    })
+
+    const results = await provider.searchWeb({
+      founderId: 'founder-1',
+      context: {
+        name: 'Ada Founder',
+        company: 'Analytical Engines',
+        companyVertical: 'B2B Software -> Analytics',
+        role: 'CEO',
+        education: 'Mathematics',
+        cohortGroup: 'W26',
+        cohortSection: 'A',
+      },
+      query: '"Ada Founder" "Analytical Engines"',
+    })
+
+    expect(results).toEqual([
+      expect.objectContaining({
+        snippet: 'Generic source',
+        url: 'https://source.test/generic',
+      }),
+    ])
+    expect(results[0]!.snippet).not.toContain('Ada Founder')
+    expect(results[0]!.snippet).not.toContain('Analytical Engines')
+  })
+
+  it('does not treat generic xAI top-level citation text as source-local evidence', async () => {
+    const provider = createXaiProvider({
+      apiKey: 'xai-secret',
+      model: 'xai-test-model',
+      transport: vi.fn(async () =>
+        jsonResponse({
+          output_text:
+            'Ada Founder leads Analytical Engines without local citations.',
+          citations: [
+            {
+              url: 'https://source.test/generic',
+              title: 'Generic source',
+              text:
+                'Ada Founder leads Analytical Engines. The company launched a product.',
+            },
+          ],
+        }),
+      ),
+    })
+
+    const results = await provider.searchWeb({
+      founderId: 'founder-1',
+      context: {
+        name: 'Ada Founder',
+        company: 'Analytical Engines',
+        companyVertical: 'B2B Software -> Analytics',
+        role: 'CEO',
+        education: 'Mathematics',
+        cohortGroup: 'W26',
+        cohortSection: 'A',
+      },
+      query: '"Ada Founder" "Analytical Engines"',
+    })
+
+    expect(results).toEqual([
+      expect.objectContaining({
+        snippet: 'Generic source',
+        url: 'https://source.test/generic',
+      }),
+    ])
+  })
+
+  it.each([
+    {
+      provider: 'OpenAI',
+      create: () =>
+        createOpenAIProvider({
+          apiKey: 'openai-secret',
+          model: 'openai-test-model',
+          transport: vi.fn(async () =>
+            jsonResponse({
+              output_text:
+                'Ada Founder leads Analytical Engines without citations.',
+            }),
+          ),
+        }),
+    },
+    {
+      provider: 'xAI',
+      create: () =>
+        createXaiProvider({
+          apiKey: 'xai-secret',
+          model: 'xai-test-model',
+          transport: vi.fn(async () =>
+            jsonResponse({
+              output: [
+                {
+                  type: 'message',
+                  content: [
+                    {
+                      type: 'output_text',
+                      text:
+                        'Ada Founder leads Analytical Engines without citations.',
+                    },
+                  ],
+                },
+              ],
+            }),
+          ),
+        }),
+    },
+  ])(
+    'marks an uncited nonempty $provider answer as summary-only',
+    async ({ create }) => {
+      const results = await create().searchWeb({
+        founderId: 'founder-1',
+        context: {
+          name: 'Ada Founder',
+          company: 'Analytical Engines',
+          companyVertical: 'B2B Software -> Analytics',
+          role: 'CEO',
+          education: 'Mathematics',
+          cohortGroup: 'W26',
+          cohortSection: 'A',
+        },
+        query: '"Ada Founder" "Analytical Engines"',
+      })
+
+      expect(results).toEqual([
+        expect.objectContaining({
+          provenance: 'summary_only',
+          snippet: expect.stringContaining('Ada Founder'),
+        }),
+      ])
+    },
+  )
+
+  it('marks an uncited nonempty Anthropic answer as summary-only', async () => {
+    const provider = createAnthropicProvider({
+      apiKey: 'anthropic-secret',
+      clientFactory: () => ({
+        messages: {
+          create: vi.fn(async () => ({
+            content: [
+              {
+                type: 'text',
+                text:
+                  'Ada Founder leads Analytical Engines without citations.',
+                citations: [],
+              },
+            ],
+            stop_reason: 'end_turn',
+          })),
+        },
+        models: { retrieve: vi.fn() },
+      }),
+    })
+
+    const results = await provider.searchWeb({
+      founderId: 'founder-1',
+      context: {
+        name: 'Ada Founder',
+        company: 'Analytical Engines',
+        companyVertical: 'B2B Software -> Analytics',
+        role: 'CEO',
+        education: 'Mathematics',
+        cohortGroup: 'W26',
+        cohortSection: 'A',
+      },
+      query: '"Ada Founder" "Analytical Engines"',
+    })
+
+    expect(results).toEqual([
+      expect.objectContaining({
+        provenance: 'summary_only',
+        snippet: expect.stringContaining('Ada Founder'),
+      }),
+    ])
+  })
+
+  it.each([
+    {
+      provider: 'OpenAI',
+      create: () =>
+        createOpenAIProvider({
+          apiKey: 'openai-secret',
+          model: 'openai-test-model',
+          transport: vi.fn(async () =>
+            jsonResponse({ output: [] }),
+          ),
+        }),
+    },
+    {
+      provider: 'xAI',
+      create: () =>
+        createXaiProvider({
+          apiKey: 'xai-secret',
+          model: 'xai-test-model',
+          transport: vi.fn(async () =>
+            jsonResponse({ output: [] }),
+          ),
+        }),
+    },
+  ])(
+    'preserves a truly empty $provider search as no results',
+    async ({ create }) => {
+      await expect(
+        create().searchWeb({
+          founderId: 'founder-1',
+          context: {
+            name: 'Ada Founder',
+            company: 'Analytical Engines',
+            companyVertical: 'B2B Software -> Analytics',
+            role: 'CEO',
+            education: 'Mathematics',
+            cohortGroup: 'W26',
+            cohortSection: 'A',
+          },
+          query: '"Ada Founder" "Analytical Engines"',
+        }),
+      ).resolves.toEqual([])
+    },
+  )
+
   it('uses the official Anthropic SDK with Claude Opus 4.8', async () => {
     const create = vi.fn(async () => ({
       content: [

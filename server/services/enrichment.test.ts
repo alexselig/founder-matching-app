@@ -355,6 +355,115 @@ describe('web enrichment service', () => {
     expect(webResultsRepository.listRuns(founders[0]!.id)).toHaveLength(2)
   })
 
+  it('persists an uncited nonempty provider answer as partial unsupported evidence', async () => {
+    const provider = fakeProvider(async () => [
+      {
+        title: 'OpenAI generated web summary',
+        url: 'https://openai.com/',
+        snippet:
+          `${founders[0]!.name} leads ${founders[0]!.company} without citations.`,
+        provenance: 'summary_only',
+      },
+    ])
+    const service = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [provider],
+      now: () => new Date('2026-10-01T12:00:00.000Z'),
+      createId: () => 'uncited-summary',
+    })
+
+    const result = await service.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+    })
+
+    expect(result).toMatchObject({
+      status: 'partial',
+      items: [],
+      warnings: [
+        '1 provider result(s) lacked usable provenance',
+        'Provider results did not contain identity-matched cited evidence',
+      ],
+    })
+    expect(webResultsRepository.listRuns(founders[0]!.id)[0]).toMatchObject({
+      status: 'partial',
+      results: [],
+    })
+  })
+
+  it('caches a fresh completed zero-result fingerprint', async () => {
+    const searchWeb = vi.fn(async () => [])
+    let id = 0
+    const service = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [fakeProvider(searchWeb)],
+      now: () => new Date('2026-10-01T12:00:00.000Z'),
+      createId: () => `zero-result-run-${++id}`,
+    })
+
+    const first = await service.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+    })
+    const second = await service.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+    })
+
+    expect(first).toMatchObject({
+      cached: false,
+      status: 'complete',
+      items: [],
+    })
+    expect(second).toMatchObject({
+      cached: true,
+      runId: first.runId,
+      status: 'complete',
+      items: [],
+    })
+    expect(searchWeb).toHaveBeenCalledTimes(1)
+    expect(webResultsRepository.listRuns(founders[0]!.id)).toHaveLength(1)
+  })
+
+  it('prefers older fresh evidence after a forced zero-result refresh', async () => {
+    let calls = 0
+    let id = 0
+    const searchWeb = vi.fn(async () => {
+      calls += 1
+      return calls === 2 ? [] : baseResults
+    })
+    const service = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [fakeProvider(searchWeb)],
+      now: () => new Date('2026-10-01T12:00:00.000Z'),
+      createId: () => `zero-precedence-${++id}`,
+    })
+
+    const successful = await service.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+    })
+    const zeroResult = await service.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+      forceRefresh: true,
+    })
+    const reused = await service.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+    })
+
+    expect(zeroResult).toMatchObject({
+      status: 'complete',
+      items: [],
+    })
+    expect(reused).toMatchObject({
+      cached: true,
+      runId: successful.runId,
+      status: 'complete',
+    })
+    expect(reused.items).toEqual(successful.items)
+    expect(searchWeb).toHaveBeenCalledTimes(2)
+    expect(webResultsRepository.listRuns(founders[0]!.id)).toHaveLength(2)
+  })
+
   it('refreshes stale evidence by appending a new run', async () => {
     let currentTime = new Date('2026-10-01T12:00:00.000Z')
     let id = 0

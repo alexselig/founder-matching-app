@@ -718,6 +718,59 @@ export class WebResultsRepository {
     }
   }
 
+  findLatestCompletedZeroByFingerprint(
+    founderId: string,
+    queryFingerprint: string,
+    provider: string,
+  ): WebEnrichmentRun | undefined {
+    assertRepositoryId(founderId, 'Founder ID')
+    assertNonEmpty(queryFingerprint, 'Query fingerprint')
+    assertNonEmpty(provider, 'Provider')
+
+    try {
+      this.assertFounderExists(founderId)
+      const row = this.database
+        .prepare(
+          `SELECT
+               id,
+               founder_id,
+               query_fingerprint,
+               provider,
+               status,
+               retrieved_at,
+               completed_at,
+               warnings_json,
+               error_json,
+               query_context_json,
+               raw_provider_metadata_json
+             FROM web_enrichment_runs
+             WHERE founder_id = ?
+               AND query_fingerprint = ?
+               AND provider = ?
+               AND status = 'complete'
+               AND NOT EXISTS (
+                 SELECT 1
+                 FROM web_results
+                 WHERE web_results.run_id = web_enrichment_runs.id
+               )
+             ORDER BY retrieved_at DESC, id DESC
+             LIMIT 1`,
+        )
+        .get(
+          founderId,
+          queryFingerprint,
+          provider,
+        ) as WebRunRow | undefined
+
+      return row ? this.rowToRun(row) : undefined
+    } catch (error) {
+      throwRepositoryFailure(
+        error,
+        `Failed to read cached empty web results for founder ${founderId}`,
+      )
+    }
+  }
+
   private rowToRun(row: WebRunRow): WebEnrichmentRun {
     const queryContext = parseOptionalJson(
       row.query_context_json,

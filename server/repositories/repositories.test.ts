@@ -447,6 +447,42 @@ describe('SQLite repositories', () => {
     ).toBe(second.id)
   })
 
+  it('finds the latest completed zero-result run separately from reusable evidence', () => {
+    const founderId = founders[0]!.id
+    const evidence = makeRun(
+      founderId,
+      'run-with-evidence',
+      '2026-10-01T10:00:00.000Z',
+    )
+    evidence.queryFingerprint = 'shared-zero-fingerprint'
+    const zero = makeRun(
+      founderId,
+      'run-without-results',
+      '2026-10-01T11:00:00.000Z',
+    )
+    zero.queryFingerprint = 'shared-zero-fingerprint'
+    zero.status = 'complete'
+    zero.results = []
+
+    webResultsRepository.appendRun(evidence)
+    webResultsRepository.appendRun(zero)
+
+    expect(
+      webResultsRepository.findLatestByFingerprint(
+        founderId,
+        'shared-zero-fingerprint',
+        'fixture',
+      )?.id,
+    ).toBe(evidence.id)
+    expect(
+      webResultsRepository.findLatestCompletedZeroByFingerprint(
+        founderId,
+        'shared-zero-fingerprint',
+        'fixture',
+      )?.id,
+    ).toBe(zero.id)
+  })
+
   it('returns empty enrichment collections only for existing founders without runs', () => {
     const founderId = founders[0]!.id
 

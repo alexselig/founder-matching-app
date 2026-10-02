@@ -4,6 +4,8 @@ interface CitationAnnotation {
   type?: unknown
   url?: unknown
   title?: unknown
+  snippet?: unknown
+  cited_text?: unknown
   start_index?: unknown
   end_index?: unknown
 }
@@ -77,7 +79,6 @@ function precedingClaim(text: string, start: number) {
 function citationText(
   text: string,
   annotation: CitationAnnotation,
-  annotationCount: number,
 ) {
   const start =
     typeof annotation.start_index === 'number'
@@ -103,10 +104,14 @@ function citationText(
     return precedingClaim(text, start) ?? sentenceNear(text, start, end)
   }
 
-  if (annotationCount === 1 && meaningfulText(text)) {
-    return withoutCitationMarkers(text)
-  }
-  return undefined
+  const sourceLocalText = [
+    annotation.cited_text,
+    annotation.snippet,
+  ].find(
+    (value): value is string =>
+      typeof value === 'string' && Boolean(value.trim()),
+  )
+  return sourceLocalText?.trim()
 }
 
 export function responseAnnotationResults(
@@ -135,7 +140,7 @@ export function responseAnnotationResults(
           title,
           url: annotation.url as string,
           snippet:
-            citationText(content.text, annotation, annotations.length) ??
+            citationText(content.text, annotation) ??
             (title === fallbackTitle ? fallbackSnippet : title),
           provenance: 'citation',
           rawMetadata: {
