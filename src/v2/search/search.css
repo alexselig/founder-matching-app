@@ -1,6 +1,9 @@
 /* V2 Search workspace. Values follow the approved v20 / v22 / v29 Search references. */
 
 .v2-search-main { min-width: 980px; }
+.v2-search-main.v2-search-zero { min-height: calc(100vh - 129px); display: flex; flex-direction: column; }
+.v2-search-zero .v2-hero { flex: 1 0 227px; height: auto; min-height: 227px; }
+.v2-search-zero .v2-zero-discovery { flex: 0 0 auto; margin-top: auto; }
 
 /* Hero */
 .v2-hero {

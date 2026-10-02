@@ -1,9 +1,16 @@
 import { useId, useState } from 'react'
 
+import type { Founder } from '../../shared/founder'
 import type { DiscoveryCollection, DiscoveryRecommendation } from './discovery'
 import { FounderAttributes, FounderAvatar } from './FounderAttributes'
 
-function RecommendationRow({ recommendation }: { recommendation: DiscoveryRecommendation }) {
+function RecommendationRow({
+  recommendation,
+  onViewWebResults,
+}: {
+  recommendation: DiscoveryRecommendation
+  onViewWebResults?: (founder: Founder) => void
+}) {
   const [open, setOpen] = useState(false)
   const detailsId = useId()
   const { founder, reason } = recommendation
@@ -30,12 +37,18 @@ function RecommendationRow({ recommendation }: { recommendation: DiscoveryRecomm
           <em className="v2-recommendation-reason">{reason}</em>
         </span>
       </button>
-      <FounderAttributes founder={founder} id={detailsId} hidden={!open} />
+      <FounderAttributes founder={founder} id={detailsId} hidden={!open} onViewWebResults={onViewWebResults} />
     </div>
   )
 }
 
-function CollectionColumn({ collection }: { collection: DiscoveryCollection }) {
+function CollectionColumn({
+  collection,
+  onViewWebResults,
+}: {
+  collection: DiscoveryCollection
+  onViewWebResults?: (founder: Founder) => void
+}) {
   const headingId = useId()
 
   return (
@@ -49,19 +62,29 @@ function CollectionColumn({ collection }: { collection: DiscoveryCollection }) {
       </div>
       <div className="v2-recommendation-list">
         {collection.founders.map((recommendation) => (
-          <RecommendationRow key={recommendation.founder.id} recommendation={recommendation} />
+          <RecommendationRow
+            key={recommendation.founder.id}
+            recommendation={recommendation}
+            onViewWebResults={onViewWebResults}
+          />
         ))}
       </div>
     </section>
   )
 }
 
-export function ZeroQueryDiscovery({ collections }: { collections: readonly DiscoveryCollection[] }) {
+export function ZeroQueryDiscovery({
+  collections,
+  onViewWebResults,
+}: {
+  collections: readonly DiscoveryCollection[]
+  onViewWebResults?: (founder: Founder) => void
+}) {
   return (
     <section className="v2-zero-discovery" aria-label="Founder discovery">
       <div className="v2-recommendation-columns">
         {collections.map((collection) => (
-          <CollectionColumn key={collection.title} collection={collection} />
+          <CollectionColumn key={collection.title} collection={collection} onViewWebResults={onViewWebResults} />
         ))}
       </div>
     </section>

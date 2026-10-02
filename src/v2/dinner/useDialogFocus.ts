@@ -11,6 +11,7 @@ export function useDialogFocus<T extends HTMLElement>(
   open: boolean,
   onClose: () => void,
   initialFocus?: RefObject<HTMLElement | null>,
+  returnFocus?: RefObject<HTMLElement | null>,
 ): RefObject<T | null> {
   const dialogRef = useRef<T>(null)
   const closeRef = useRef(onClose)
@@ -22,6 +23,7 @@ export function useDialogFocus<T extends HTMLElement>(
     if (!open) return undefined
     const dialog = dialogRef.current
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const fallback = returnFocus?.current
     const target = initialFocus?.current ?? dialog?.querySelector<HTMLElement>(FOCUSABLE) ?? dialog
     target?.focus()
 
@@ -48,9 +50,10 @@ export function useDialogFocus<T extends HTMLElement>(
     document.addEventListener('keydown', onKeyDown)
     return () => {
       document.removeEventListener('keydown', onKeyDown)
-      if (trigger?.isConnected) trigger.focus()
+      const target = trigger?.isConnected ? trigger : fallback
+      if (target?.isConnected) target.focus()
     }
-  }, [open, initialFocus])
+  }, [open, initialFocus, returnFocus])
 
   return dialogRef
 }

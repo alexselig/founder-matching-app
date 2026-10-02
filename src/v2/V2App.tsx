@@ -65,9 +65,9 @@ const AiProviderPage = lazy(() =>
     default: module.AiProviderPage,
   })),
 )
-const FounderEvidencePage = lazy(() =>
+const FounderEvidenceDrawer = lazy(() =>
   import('./evidence/FounderEvidencePage').then((module) => ({
-    default: module.FounderEvidencePage,
+    default: module.FounderEvidenceDrawer,
   })),
 )
 
@@ -413,6 +413,7 @@ export interface V2AppProps {
   readonly initialPlans?: readonly SeatingPlanSummary[]
   readonly initialCredentials?: ProviderCredentialList
   readonly initialEvidence?: FounderEvidenceData
+  readonly navigate?: (url: string) => void
 }
 
 export function V2App({
@@ -422,12 +423,13 @@ export function V2App({
   initialPlans,
   initialCredentials,
   initialEvidence,
+  navigate = (url) => window.location.assign(url),
 }: V2AppProps = {}) {
   const dinnerRoute = matchDinnerRoute(pathname)
   const settingsRoute =
     pathname.replace(/\/+$/, '') === '/v2/settings/ai'
   const evidenceMatch = pathname.match(/^\/v2\/founders\/([^/]+)\/evidence\/?$/)
-  const evidenceFounderId = evidenceMatch
+  const routeEvidenceFounderId = evidenceMatch
     ? decodeURIComponent(evidenceMatch[1]!)
     : null
   const demoMode = readDemoMode()
@@ -471,6 +473,10 @@ export function V2App({
   const [evidence, setEvidence] = useState<FounderEvidenceData | null>(
     initialEvidence ?? null,
   )
+  const [evidenceFounderId, setEvidenceFounderId] = useState<string | null>(
+    routeEvidenceFounderId,
+  )
+  const [evidenceRequestKey, setEvidenceRequestKey] = useState(0)
   const [credentialStatusError, setCredentialStatusError] = useState(false)
   const [error, setError] = useState('')
   const savedPlanId = useRef<string | undefined>(undefined)
@@ -596,7 +602,14 @@ export function V2App({
     : undefined
 
   useEffect(() => {
-    if (!evidenceFounderId || initialEvidence) return
+    if (
+      !evidenceFounderId ||
+      (
+        evidenceRequestKey === 0 &&
+        initialEvidence &&
+        evidenceFounderId === routeEvidenceFounderId
+      )
+    ) return
     let active = true
     const request = demoMode
       ? import('../fixtures/demo/web-evidence.json').then((module) => {
@@ -617,17 +630,20 @@ export function V2App({
       })
       .catch((caught: unknown) => {
         if (active) {
-          setError(
-            caught instanceof Error
-              ? caught.message
-              : 'Founder evidence failed to load',
-          )
+          console.error('Founder evidence failed to load', caught)
+          setEvidence({ status: 'provider_failure', items: [] })
         }
       })
     return () => {
       active = false
     }
-  }, [demoMode, evidenceFounderId, initialEvidence])
+  }, [
+    demoMode,
+    evidenceFounderId,
+    evidenceRequestKey,
+    initialEvidence,
+    routeEvidenceFounderId,
+  ])
 
   const planRequest = useMemo(() => readPlanRequest(search), [search])
   useEffect(() => {
@@ -671,8 +687,7 @@ export function V2App({
   if (
     !founders ||
     (dinnerRoute === 'seating-plans' && !plans) ||
-    (settingsRoute && !credentials) ||
-    (evidenceFounderId && !evidence)
+    (settingsRoute && !credentials)
   ) {
     return (
       <main className="v2-runtime-state" aria-busy="true">
@@ -742,32 +757,38 @@ export function V2App({
     )
   }
 
-  if (evidenceFounderId) {
-    const founder = founders.find((item) => item.id === evidenceFounderId)
-    if (!founder) {
-      return (
-        <main className="v2-runtime-state">
-          <h1>Founder evidence was not found.</h1>
-        </main>
-      )
-    }
-    return (
-      <Suspense fallback={null}>
-        <FounderEvidencePage
-          founder={founder}
-          evidence={evidence!}
-          aiStatus={aiStatus}
-          aiTone={aiTone}
-        />
-      </Suspense>
-    )
-  }
-
+  const evidenceFounder = evidenceFounderId
+    ? founders.find((item) => item.id === evidenceFounderId) ?? null
+    : null
   return (
-    <SearchPage
-      founders={founders}
-      aiStatus={aiStatus}
-      aiTone={aiTone}
-    />
+    <>
+      <SearchPage
+        founders={founders}
+        aiStatus={aiStatus}
+        aiTone={aiTone}
+        navigate={navigate}
+        onViewWebResults={(founder) => {
+          setEvidence(null)
+          setEvidenceFounderId(founder.id)
+        }}
+      />
+      {evidenceFounder && (
+        <Suspense fallback={null}>
+          <FounderEvidenceDrawer
+            founder={evidenceFounder}
+            evidence={evidence}
+            onRetry={() => {
+              setEvidence(null)
+              setEvidenceRequestKey((current) => current + 1)
+            }}
+            onClose={() => {
+              setEvidenceFounderId(null)
+              setEvidence(null)
+              if (routeEvidenceFounderId) navigate('/v2/search')
+            }}
+          />
+        </Suspense>
+      )}
+    </>
   )
 }

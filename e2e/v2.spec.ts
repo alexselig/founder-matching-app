@@ -13,7 +13,7 @@ test('loads public-safe Demo discovery and saved plans', async ({ page }) => {
     page.getByRole('heading', { name: 'Find the right founders.' }),
   ).toBeVisible()
   await expect(page.getByText('Ari North')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Demo mode On' })).toBeVisible()
+  await expect(page.getByRole('switch', { name: 'Demo mode' })).toHaveAttribute('aria-checked', 'true')
 
   await page.goto('/v2/seating-plans')
   await expect(page.getByText('4 seating plans')).toBeVisible()
@@ -25,21 +25,17 @@ test('loads public-safe Demo discovery and saved plans', async ({ page }) => {
     }),
   ).toBeVisible()
   await expect(page.getByText('Table 01', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Demo mode On' }).click()
+  await page.getByRole('switch', { name: 'Demo mode' }).click()
   await expect(page).toHaveURL('/v2')
 })
 
-test('shows source-separated evidence and secure AI setup', async ({ page }) => {
+test('shows top web results in a drawer and secure AI setup', async ({ page }) => {
   await page.goto('/v2/founders/demo-founder-ae527df17156/evidence')
   await expect(
-    page.getByRole('heading', {
-      name: 'Review the evidence, not just the summary.',
-    }),
+    page.getByRole('dialog', { name: 'Top web results' }),
   ).toBeVisible()
-  await expect(page.getByText('Authoritative founder data')).toBeVisible()
-  await expect(
-    page.getByText('Supported by cited Web Search evidence'),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Find the right founders.' })).toBeVisible()
+  await expect(page.getByRole('dialog').getByRole('listitem')).toHaveCount(5)
 
   await page.goto('/v2/settings/ai')
   await expect(page.getByText('Credential is valid')).toBeVisible()

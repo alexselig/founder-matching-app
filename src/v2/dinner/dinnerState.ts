@@ -73,18 +73,29 @@ const DIMENSION_OPTIONS: readonly CriterionDraft[] = [
   { field: 'cohortSection', label: 'Cohort section', description: 'Broaden existing networks', objective: 'diversity', weight: 'M' },
 ]
 
+const ALL_DIMENSIONS: readonly CriterionDraft[] = [...DEFAULT_CRITERIA, ...DIMENSION_OPTIONS]
+
 export function objectiveLabel(objective: CriterionObjective) {
   return objective === 'similarity' ? 'Similar' : 'Diverse'
 }
 
 export function canAddDimension(criteria: readonly CriterionDraft[]) {
-  return DIMENSION_OPTIONS.some((option) => !criteria.some((criterion) => criterion.field === option.field))
+  return availableDimensions(criteria).length > 0
 }
 
-export function addDimension(criteria: readonly CriterionDraft[]): readonly CriterionDraft[] {
+export function availableDimensions(criteria: readonly CriterionDraft[]) {
   const used = new Set(criteria.map((criterion) => criterion.field))
-  const next = [...DEFAULT_CRITERIA, ...DIMENSION_OPTIONS].find((option) => !used.has(option.field))
-  return next ? [...criteria, next] : criteria
+  return ALL_DIMENSIONS.filter((option) => !used.has(option.field))
+}
+
+export function addDimension(
+  criteria: readonly CriterionDraft[],
+  field: FounderFieldKey,
+  weight: CriterionWeightLevel,
+): readonly CriterionDraft[] {
+  if (criteria.some((criterion) => criterion.field === field)) return criteria
+  const dimension = ALL_DIMENSIONS.find((option) => option.field === field)
+  return dimension ? [...criteria, { ...dimension, weight }] : criteria
 }
 
 export function removeDimension(criteria: readonly CriterionDraft[], field: FounderFieldKey) {

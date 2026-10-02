@@ -23,7 +23,7 @@ export interface DinnerExportDialogProps {
 const HEADS: Record<ExportStage, { eyebrow: string; title: string; text: string; close: string }> = {
   options: {
     eyebrow: 'Confirm export',
-    title: 'Confirm the current view.',
+    title: 'CONFIRM EXPORT CONTENT',
     text: 'Check the view and decide whether to include the available founder details.',
     close: 'Close export options',
   },

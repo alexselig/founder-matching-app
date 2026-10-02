@@ -205,7 +205,7 @@ describe('DinnerPage setup', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('edits advanced criteria in place', () => {
+  it('edits advanced criteria and explicitly adds a selected dimension and weight', () => {
     renderDinner()
     const trigger = screen.getByRole('button', { name: /Advanced criteria/ })
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
@@ -224,7 +224,16 @@ describe('DinnerPage setup', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove Age' }))
     expect(screen.getByText('2 dimensions · AI-assisted and fully editable')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: '+ Add dimension' }))
+    expect(screen.getByText('2 dimensions · AI-assisted and fully editable')).toBeTruthy()
+
+    const dialog = screen.getByRole('dialog', { name: 'Add matching dimension' })
+    fireEvent.change(within(dialog).getByRole('combobox', { name: 'Dimension' }), { target: { value: 'education' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'H' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add dimension' }))
+
     expect(screen.getByText('3 dimensions · AI-assisted and fully editable')).toBeTruthy()
+    const education = screen.getByText('Education', { selector: 'strong' }).closest('.v2-setup-interpretation-row') as HTMLElement
+    expect(within(education).getByRole('button', { name: 'H' }).getAttribute('aria-pressed')).toBe('true')
 
     fireEvent.click(screen.getByRole('button', { name: 'Maximum diversity' }))
     expect((screen.getByLabelText(/Your instructions/) as HTMLTextAreaElement).value).toBe(
@@ -418,10 +427,25 @@ describe('DinnerPage results workspace', () => {
     expect(screen.getByText('Tables', { selector: '.v2-dinner-metric span' }).previousElementSibling!.textContent).toBe('5')
     tableCards(container).forEach((card) => expect(card.querySelectorAll('.v2-dinner-seat')).toHaveLength(8))
 
+    const toolbar = container.querySelector('.v2-dinner-work-tools')!
+    expect([...toolbar.children].map((item) => item.className)).toEqual([
+      'v2-dinner-segmented',
+      'v2-dinner-threshold',
+      'v2-dinner-legend',
+      'v2-dinner-density',
+    ])
+
     const threshold = screen.getByLabelText(/Threshold/) as HTMLInputElement
     fireEvent.change(threshold, { target: { value: '85' } })
-    expect(container.querySelector('.v2-dinner-threshold output')!.textContent).toBe('85')
+    expect(threshold.value).toBe('85')
     expect(container.querySelector('.v2-dinner-table-foot')!.textContent).toMatch(/85/)
+    expect(screen.getByRole('button', { name: 'Increase threshold' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Decrease threshold' }))
+    expect(threshold.value).toBe('84')
+    fireEvent.change(threshold, { target: { value: '60' } })
+    expect(screen.getByRole('button', { name: 'Decrease threshold' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Increase threshold' }))
+    expect(threshold.value).toBe('61')
 
     fireEvent.click(screen.getByRole('button', { name: 'Comfortable' }))
     expect(container.querySelector('.v2-dinner-tables')!.className).toContain('v2-dinner-comfortable')
@@ -462,7 +486,7 @@ describe('DinnerPage results workspace', () => {
     expect(screen.getByLabelText('Table index').tagName).toBe('ASIDE')
   })
 
-  it('edits matching objectives and H M L weights directly while reviewing results', async () => {
+  it('edits matching criteria and explicitly adds a selected dimension while reviewing results', async () => {
     renderDinner()
     await generateTables('Fixture cohort', '3 × 8')
 
@@ -478,6 +502,17 @@ describe('DinnerPage results workspace', () => {
 
     fireEvent.click(within(role).getByRole('button', { name: 'Remove Role' }))
     await waitFor(() => expect(within(rail).queryByRole('button', { name: 'Remove Role' })).toBeNull())
+
+    fireEvent.click(within(rail).getByRole('button', { name: '+ Add dimension' }))
+    const dialog = screen.getByRole('dialog', { name: 'Add matching dimension' })
+    expect(within(rail).queryByRole('button', { name: 'Remove Role' })).toBeNull()
+    fireEvent.change(within(dialog).getByRole('combobox', { name: 'Dimension' }), { target: { value: 'role' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'L' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add dimension' }))
+
+    const restoredRole = await within(rail).findByText('Role', { selector: 'span' })
+    const restoredWeights = within(restoredRole.closest('.v2-dinner-criterion') as HTMLElement).getByRole('group', { name: 'Role weight' })
+    expect(within(restoredWeights).getByRole('button', { name: 'L' }).getAttribute('aria-pressed')).toBe('true')
   })
 
   it('switches to Analysis and swaps founders by keyboard or drag', async () => {
@@ -485,6 +520,9 @@ describe('DinnerPage results workspace', () => {
     await generateTables('Fixture cohort', '3 × 8')
     fireEvent.click(screen.getByRole('button', { name: 'Analysis' }))
     expect(screen.getByRole('button', { name: 'Analysis' }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.queryByRole('group', { name: 'Table density' })).toBeNull()
+    expect(screen.getByLabelText(/Threshold/)).toBeTruthy()
+    expect(screen.getByLabelText('Fit score legend')).toBeTruthy()
     expect(container.querySelector('.v2-dinner-analysis')!.className).toContain('v2-dinner-visible')
     expect((container.querySelector('.v2-dinner-table-workspace') as HTMLElement).hidden).toBe(true)
     expect(screen.getByText('Objective performance')).toBeTruthy()
@@ -581,7 +619,7 @@ describe('DinnerPage results workspace', () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ name: 'Founders Dinner · Oct 16', lockedTables: [] }))
 
     fireEvent.click(screen.getByRole('button', { name: 'Export' }))
-    let dialog = screen.getByRole('dialog', { name: 'Confirm the current view.' })
+    let dialog = screen.getByRole('dialog', { name: 'CONFIRM EXPORT CONTENT' })
     expect(within(dialog).getByText('Seating plan · Founders Dinner · Oct 16')).toBeTruthy()
     fireEvent.click(within(dialog).getByLabelText(/Include founder details/))
     fireEvent.click(within(dialog).getByRole('button', { name: 'Export CSV →' }))

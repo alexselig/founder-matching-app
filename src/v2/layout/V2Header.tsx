@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 
 import type { Founder } from '../../shared/founder'
 import {
-  browserLocalStorage,
+  browserNavigationType,
+  browserSessionStorage,
   readAccountTipDismissed,
   writeAccountTipDismissed,
   type AccountRole,
@@ -31,7 +32,9 @@ const ROLE_MESSAGES: Readonly<Record<AccountRole, string>> = {
 
 export function V2Header({ active, role, currentFounder, onRoleChange }: V2HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [tipVisible, setTipVisible] = useState(() => !readAccountTipDismissed(browserLocalStorage()))
+  const [tipVisible, setTipVisible] = useState(
+    () => !readAccountTipDismissed(browserSessionStorage(), browserNavigationType()),
+  )
   const [message, setMessage] = useState('')
   const profileRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -60,7 +63,7 @@ export function V2Header({ active, role, currentFounder, onRoleChange }: V2Heade
 
   function dismissTip() {
     setTipVisible(false)
-    writeAccountTipDismissed(browserLocalStorage())
+    writeAccountTipDismissed(browserSessionStorage())
   }
 
   function toggleMenu() {

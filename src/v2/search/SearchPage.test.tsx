@@ -3,7 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import rawFounders from '../../founders.json'
 import { normalizeFounders } from '../../shared/founder'
-import { ACCOUNT_ROLE_KEY, ACCOUNT_TIP_DISMISSED_KEY, CURRENT_FOUNDER_KEY } from './accountState'
+import {
+  ACCOUNT_ROLE_KEY,
+  ACCOUNT_TIP_DISMISSED_KEY,
+  CURRENT_FOUNDER_KEY,
+  readAccountTipDismissed,
+} from './accountState'
 import { buildDiscoveryCollections } from './discovery'
 import { executeSearch, type SearchResult } from './searchEngine'
 import { SEARCH_COHORT_KEY_PREFIX } from './searchHandoff'
@@ -15,8 +20,16 @@ const approvedText = 'Engineering founders in B2B software, age 25–33'
 function renderSearch() {
   const navigate = vi.fn<(url: string) => void>()
   const exportResults = vi.fn<(results: readonly SearchResult[]) => void>()
-  const view = render(<SearchPage founders={founders} navigate={navigate} exportResults={exportResults} />)
-  return { ...view, navigate, exportResults }
+  const viewWebResults = vi.fn()
+  const view = render(
+    <SearchPage
+      founders={founders}
+      navigate={navigate}
+      exportResults={exportResults}
+      onViewWebResults={viewWebResults}
+    />,
+  )
+  return { ...view, navigate, exportResults, viewWebResults }
 }
 
 function search(text: string) {
@@ -80,8 +93,8 @@ describe('SearchPage zero-query discovery', () => {
     expect(screen.queryByRole('button', { name: /Create Dinner Matching/ })).not.toBeInTheDocument()
   })
 
-  it('expands a recommendation to show every source attribute', () => {
-    renderSearch()
+  it('expands a recommendation and opens web results without navigation', () => {
+    const { navigate, viewWebResults } = renderSearch()
     const row = within(screen.getByRole('region', { name: 'Same sector, different seat' })).getAllByRole('button', {
       name: /More/,
     })[0]
@@ -93,6 +106,9 @@ describe('SearchPage zero-query discovery', () => {
     const details = document.getElementById(row.getAttribute('aria-controls')!)!
     expect(within(details).getByText('Founder ID')).toBeInTheDocument()
     expect(within(details).getByText('Cohort section')).toBeInTheDocument()
+    fireEvent.click(within(details).getByRole('button', { name: 'View top web results →' }))
+    expect(viewWebResults).toHaveBeenCalledWith(expect.objectContaining({ id: expect.any(String) }))
+    expect(navigate).not.toHaveBeenCalled()
   })
 
   it('recomputes discovery for the persisted current founder', () => {
@@ -484,11 +500,12 @@ describe('SearchPage roles and handoff', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss account switcher tip' }))
     expect(screen.queryByRole('complementary', { name: 'Switch account views' })).not.toBeInTheDocument()
-    expect(localStorage.getItem(ACCOUNT_TIP_DISMISSED_KEY)).toBe('true')
+    expect(sessionStorage.getItem(ACCOUNT_TIP_DISMISSED_KEY)).toBe('true')
     first.unmount()
 
     renderSearch()
     expect(screen.queryByRole('complementary', { name: 'Switch account views' })).not.toBeInTheDocument()
+    expect(readAccountTipDismissed(sessionStorage, 'reload')).toBe(false)
   })
 
   it('hands the ordered result cohort to Dinner Matching', () => {
@@ -522,7 +539,7 @@ describe('SearchPage roles and handoff', () => {
     renderSearch()
     const footer = screen.getByRole('contentinfo')
 
-    expect(within(footer).getByRole('link', { name: 'V1' })).toHaveAttribute('href', '/v1')
+    expect(within(footer).getByRole('link', { name: 'V1' })).toHaveAttribute('href', '/v1/directory')
     expect(within(footer).getByRole('link', { name: 'V2' })).toHaveAttribute('aria-current', 'page')
     expect(within(footer).getByText('+ AI Disabled')).toBeInTheDocument()
   })

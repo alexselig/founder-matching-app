@@ -2,6 +2,7 @@ import { useId, useMemo, useRef, useState } from 'react'
 
 import type { Founder } from '../../shared/founder'
 import { initials } from '../search/founderDisplay'
+import { DinnerDimensionDialog } from './DinnerDimensionDialog'
 import {
   addDimension,
   BRIEF_STARTERS,
@@ -29,7 +30,7 @@ import {
 } from './dinnerState'
 import { useDialogFocus } from './useDialogFocus'
 
-export type SetupDialog = 'cohort' | 'tables' | 'rule'
+export type SetupDialog = 'cohort' | 'tables' | 'rule' | 'dimension'
 
 export interface DinnerSetupProps {
   readonly founders: readonly Founder[]
@@ -106,6 +107,7 @@ export function DinnerSetup(props: DinnerSetupProps) {
   const planId = useId()
   const briefId = useId()
   const advancedId = useId()
+  const advancedTriggerRef = useRef<HTMLButtonElement>(null)
 
   const snapshot = { planName, cohort, tables, rules }
   const stage = setupStage(snapshot)
@@ -250,6 +252,7 @@ export function DinnerSetup(props: DinnerSetupProps) {
               </button>
             ))}
             <button
+              ref={advancedTriggerRef}
               type="button"
               className="v2-setup-advanced-trigger"
               aria-expanded={advancedOpen}
@@ -306,7 +309,7 @@ export function DinnerSetup(props: DinnerSetupProps) {
                   type="button"
                   className="v2-setup-add-dimension-control"
                   disabled={generating}
-                  onClick={() => onCriteriaChange(addDimension(criteria))}
+                  onClick={() => setDialog('dimension')}
                 >
                   + Add dimension
                 </button>
@@ -365,6 +368,17 @@ export function DinnerSetup(props: DinnerSetupProps) {
           initialText={ruleSeed.text}
           onAdd={addRule}
           onClose={close}
+        />
+      )}
+      {dialog === 'dimension' && !generating && (
+        <DinnerDimensionDialog
+          criteria={criteria}
+          onAdd={(field, weight) => {
+            onCriteriaChange(addDimension(criteria, field, weight))
+            close()
+          }}
+          onClose={close}
+          returnFocusRef={advancedTriggerRef}
         />
       )}
     </>

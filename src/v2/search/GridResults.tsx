@@ -1,5 +1,6 @@
 import { useId, useState, type ReactNode } from 'react'
 
+import type { Founder } from '../../shared/founder'
 import type { SearchResult } from './searchEngine'
 import { matchedDisplays } from './searchExport'
 import type { ResultGroup } from './searchState'
@@ -30,7 +31,7 @@ export function ResultGroups({
   )
 }
 
-function GridCard({ result }: { result: SearchResult }) {
+function GridCard({ result, onViewWebResults }: { result: SearchResult; onViewWebResults?: (founder: Founder) => void }) {
   const [open, setOpen] = useState(false)
   const detailsId = useId()
   const { founder } = result
@@ -72,19 +73,19 @@ function GridCard({ result }: { result: SearchResult }) {
           </div>
         </div>
       )}
-      <FounderAttributes founder={founder} id={detailsId} hidden={!open} />
+      <FounderAttributes founder={founder} id={detailsId} hidden={!open} onViewWebResults={onViewWebResults} />
     </article>
   )
 }
 
-export function GridResults({ groups }: { groups: readonly ResultGroup[] }) {
+export function GridResults({ groups, onViewWebResults }: { groups: readonly ResultGroup[]; onViewWebResults?: (founder: Founder) => void }) {
   return (
     <ResultGroups
       groups={groups}
       renderGroup={(results) => (
         <div className="v2-founder-grid">
           {results.map((result) => (
-            <GridCard key={result.founder.id} result={result} />
+            <GridCard key={result.founder.id} result={result} onViewWebResults={onViewWebResults} />
           ))}
         </div>
       )}

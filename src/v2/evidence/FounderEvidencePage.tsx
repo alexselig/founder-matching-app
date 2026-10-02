@@ -1,21 +1,13 @@
+import { useEffect, useId, useRef } from 'react'
+
 import type { Founder } from '../../shared/founder'
-import { V2Footer } from '../layout/V2Footer'
-import { V2Header } from '../layout/V2Header'
-import {
-  browserLocalStorage,
-  readAccountRole,
-  readCurrentFounderId,
-  writeAccountRole,
-  type AccountRole,
-} from '../search/accountState'
-import { useState } from 'react'
 import './founder-evidence.css'
 
-export interface FounderEvidencePageProps {
+export interface FounderEvidenceDrawerProps {
   founder: Founder
-  evidence: FounderEvidenceData
-  aiStatus?: string
-  aiTone?: 'enabled' | 'issue' | 'off'
+  evidence: FounderEvidenceData | null
+  onClose: () => void
+  onRetry?: () => void
 }
 
 export interface FounderEvidenceItem {
@@ -40,115 +32,144 @@ function classification(result: FounderEvidenceItem) {
   return result.classification === 'founder' ? 'Founder' : 'Company'
 }
 
-export function FounderEvidencePage({
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+export function FounderEvidenceDrawer({
   founder,
   evidence,
-  aiStatus,
-  aiTone,
-}: FounderEvidencePageProps) {
-  const founders = [founder]
-  const [role, setRole] = useState<AccountRole>(() =>
-    readAccountRole(browserLocalStorage()),
-  )
-  const [currentFounderId] = useState(() =>
-    readCurrentFounderId(browserLocalStorage(), founders),
-  )
-  const currentFounder =
-    founders.find((item) => item.id === currentFounderId) ?? founder
-  const stale = evidence.status === 'stale'
+  onClose,
+  onRetry,
+}: FounderEvidenceDrawerProps) {
+  const dialogRef = useRef<HTMLElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const titleId = useId()
+  const results = evidence?.items.slice(0, 5) ?? []
+  const stale = evidence?.status === 'stale'
+  const providerFailure = evidence?.status === 'provider_failure'
   const unsupported =
-    evidence.status === 'unsupported' ||
-    evidence.status === 'no_results' ||
-    evidence.status === 'provider_failure'
+    evidence?.status === 'unsupported' ||
+    evidence?.status === 'no_results'
 
-  function changeRole(next: AccountRole) {
-    setRole(next)
-    writeAccountRole(browserLocalStorage(), next)
-  }
+  useEffect(() => {
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    closeRef.current?.focus()
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return
+      const items = [...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)]
+      if (!items.length) return
+      const first = items[0]!
+      const last = items.at(-1)!
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      if (trigger?.isConnected) trigger.focus()
+    }
+  }, [onClose])
 
   return (
-    <div className="v2-shell v2-evidence-shell">
-      <V2Header
-        active="founder-index"
-        role={role}
-        currentFounder={currentFounder}
-        onRoleChange={changeRole}
-      />
-      <main>
-        <section className="v2-evidence-heading">
-          <div>
-            <span>Founder detail · Web Search</span>
-            <h1>Review the evidence, not just the summary.</h1>
+    <>
+      <div className="v2-evidence-scrim" aria-hidden="true" onClick={onClose} />
+      <aside
+        ref={dialogRef}
+        className={`v2-evidence-drawer v2-evidence-${evidence?.status ?? 'loading'}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-busy={!evidence}
+      >
+        <header className="v2-evidence-drawer-head">
+          <div className="v2-evidence-identity">
+            <span aria-hidden="true">
+              {founder.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2)}
+            </span>
+            <div>
+              <small>Founder web search</small>
+              <strong>{founder.name}</strong>
+              <p>{founder.company}</p>
+            </div>
           </div>
-          <p>
-            Web Search stays separate from the founder record. Every supported
-            claim points to a source, retrieval date, provider, and entity
-            match.
-          </p>
-        </section>
-        <section className="v2-evidence-workspace">
-          <aside className="v2-evidence-founder">
-            <div className="v2-evidence-identity">
-              <span aria-hidden="true">
-                {founder.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2)}
-              </span>
-              <div><h2>{founder.name}</h2><p>{founder.company}</p></div>
-            </div>
-            <div className="v2-evidence-separation">
-              <strong>Authoritative founder data</strong>
-              <p>These values come from the loaded founder dataset. Web Search cannot replace or edit them.</p>
-            </div>
-            {[
-              ['Role', founder.role],
-              ['Market', founder.companyVertical],
-              ['Cohort', `${founder.cohortGroup} · ${founder.cohortSection}`],
-              ['Education', founder.education],
-            ].map(([label, value]) => (
-              <div className="v2-evidence-fact" key={label}>
-                <span>{label}</span><strong>{value}</strong>
-              </div>
-            ))}
-          </aside>
-          <section className={`v2-evidence-panel v2-evidence-${evidence.status}`}>
+          <button ref={closeRef} type="button" className="v2-evidence-close" aria-label="Close top web results" onClick={onClose}>
+            ×
+          </button>
+        </header>
+        <div className="v2-evidence-title">
+          <div>
+            <span>Source-backed discovery</span>
+            <h2 id={titleId}>Top web results</h2>
+          </div>
+          <strong>{evidence ? results.length : '—'}</strong>
+        </div>
+        {!evidence ? (
+          <div className="v2-evidence-loading" role="status">Loading top web results…</div>
+        ) : (
+          <>
             <div className="v2-evidence-status">
               <div className="v2-evidence-status-icon">
                 {unsupported ? '—' : stale ? '!' : '✓'}
               </div>
               <div>
                 <strong>
-                  {unsupported
+                  {providerFailure
+                    ? 'Web results could not load'
+                    : unsupported
                     ? 'No citable evidence returned'
                     : stale
-                      ? 'Evidence is available, but it is stale'
-                      : 'Supported by cited Web Search evidence'}
+                      ? 'Results are available, but may be stale'
+                      : 'Top web results'}
                 </strong>
                 <span>
-                  {unsupported
-                    ? 'Authoritative founder fields remain unchanged.'
+                  {providerFailure
+                    ? 'The search workspace and founder record remain unchanged.'
+                    : unsupported
+                    ? 'The founder record remains unchanged.'
                     : stale
-                      ? 'The latest successful run is older than its stale-after date.'
-                      : 'Source records support the founder and company claims shown here.'}
+                      ? 'The latest successful search is older than its stale-after date.'
+                      : 'Showing the five highest-ranked cited results.'}
                 </span>
               </div>
-              <div className="v2-evidence-count">
-                <strong>{evidence.items.length}</strong><span>Evidence items</span>
-              </div>
             </div>
-            {unsupported ? (
+            {providerFailure ? (
+              <div className="v2-evidence-empty">
+                <b>!</b>
+                <h3>Web results are temporarily unavailable.</h3>
+                <p>Retry the request without leaving your current search.</p>
+                {onRetry && (
+                  <button type="button" className="v2-evidence-retry" onClick={onRetry}>
+                    Try again
+                  </button>
+                )}
+              </div>
+            ) : unsupported ? (
               <div className="v2-evidence-empty">
                 <b>?</b>
-                <h2>Nothing here can support a claim yet.</h2>
-                <p>Without a source URL and retrievable citation, provider text is not promoted into evidence.</p>
+                <h3>Nothing citable found yet.</h3>
+                <p>Results appear only when a source URL and retrievable citation are available.</p>
               </div>
             ) : (
               <ol className="v2-evidence-list">
-                {evidence.items.map((item) => (
+                {results.map((item, index) => (
                   <li key={`${item.url}-${item.rank}`}>
-                    <div className="v2-evidence-rank">Rank<strong>{String(item.rank).padStart(2, '0')}</strong></div>
+                    <div className="v2-evidence-rank">Rank<strong>{String(index + 1).padStart(2, '0')}</strong></div>
                     <article>
                       <span className="v2-evidence-classification">{classification(item)}</span>
                       {stale && <span className="v2-evidence-stale">Stale</span>}
-                      <h2>{item.title}</h2>
+                      <h3>{item.title}</h3>
                       <a href={item.url} target="_blank" rel="noreferrer">{item.url} ↗</a>
                       <p>{item.snippet}</p>
                       <dl>
@@ -162,10 +183,9 @@ export function FounderEvidencePage({
                 ))}
               </ol>
             )}
-          </section>
-        </section>
-      </main>
-      <V2Footer role={role} aiStatus={aiStatus} aiTone={aiTone} />
-    </div>
+          </>
+        )}
+      </aside>
+    </>
   )
 }

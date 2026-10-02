@@ -1,9 +1,10 @@
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import rawFounders from '../founders.json'
 import { buildScaleFixture } from '../shared/fixtures'
 import { normalizeFounders } from '../shared/founder'
+import * as api from './api'
 import { matchDinnerRoute, readPlanRequest } from './dinner/dinnerRoutes'
 import { createSearchCohortHandoff } from './search/searchHandoff'
 import { V2App } from './V2App'
@@ -116,21 +117,50 @@ describe('V2App routing', () => {
     expect(await screen.findByRole('heading', { name: 'AI Provider' })).toBeInTheDocument()
   })
 
-  it('renders founder web evidence at its detail route', async () => {
+  it('renders a founder evidence deep link as a drawer over Search', async () => {
+    const navigate = vi.fn()
     render(
       <V2App
         pathname={`/v2/founders/${FOUNDERS[0]!.id}/evidence`}
         search=""
         initialFounders={FOUNDERS}
         initialEvidence={{ status: 'no_results', items: [] }}
+        navigate={navigate}
       />,
     )
-    expect(
-      await screen.findByRole('heading', {
-        name: 'Review the evidence, not just the summary.',
-      }),
-    ).toBeInTheDocument()
-    expect(screen.getByText('No citable evidence returned')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Find the right founders.' })).toBeInTheDocument()
+    const dialog = await screen.findByRole('dialog', { name: 'Top web results' })
+    expect(within(dialog).getByText('No citable evidence returned')).toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close top web results' }))
+    expect(navigate).toHaveBeenCalledWith('/v2/search')
+  })
+
+  it('keeps Search available and retries inside the drawer when evidence loading fails', async () => {
+    const evidenceRequest = vi
+      .spyOn(api, 'fetchFounderEvidence')
+      .mockRejectedValueOnce(new Error('Evidence provider unavailable'))
+      .mockResolvedValueOnce({ status: 'fresh', items: [] })
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    render(
+      <V2App
+        pathname={`/v2/founders/${FOUNDERS[0]!.id}/evidence`}
+        search=""
+        initialFounders={FOUNDERS}
+        initialCredentials={{ masterKeyConfigured: false, providers: [] }}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Find the right founders.' })).toBeInTheDocument()
+    const dialog = await screen.findByRole('dialog', { name: 'Top web results' })
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Try again' }))
+
+    expect(await within(dialog).findByText('Showing the five highest-ranked cited results.')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Founder app could not load.' })).not.toBeInTheDocument()
+    expect(evidenceRequest).toHaveBeenCalledTimes(2)
+
+    evidenceRequest.mockRestore()
+    consoleError.mockRestore()
   })
 
   it('waits for Demo fixtures before reopening a saved plan', async () => {

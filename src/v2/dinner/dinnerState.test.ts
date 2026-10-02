@@ -5,6 +5,7 @@ import { buildScaleFixture } from '../../shared/fixtures'
 import { normalizeFounders, type Founder } from '../../shared/founder'
 import {
   addDimension,
+  availableDimensions,
   assignmentOf,
   buildDinnerRequest,
   buildDinnerView,
@@ -129,18 +130,27 @@ describe('table setup', () => {
 })
 
 describe('criteria editing', () => {
-  it('starts with the approved three dimensions and adds the rest in order', () => {
+  it('starts with the approved dimensions and explicitly adds an available field with the chosen weight', () => {
     expect(DEFAULT_CRITERIA.map((c) => [c.label, c.objective, c.weight, c.description])).toEqual([
       ['Company vertical', 'similarity', 'H', 'Shared market context'],
       ['Role', 'diversity', 'H', 'Cross-functional tables'],
       ['Age', 'diversity', 'M', 'Broader perspectives'],
     ])
-    let criteria = DEFAULT_CRITERIA
-    for (let i = 0; i < 5; i += 1) criteria = addDimension(criteria)
-    expect(criteria.map((c) => c.label)).toEqual(['Company vertical', 'Role', 'Age', 'Education', 'Company', 'Cohort group', 'Cohort section'])
-    expect(criteria[3]).toMatchObject({ objective: 'diversity', weight: 'M', description: 'Mix academic backgrounds' })
-    criteria = removeDimension(criteria, 'education')
-    expect(addDimension(criteria).at(-1)?.label).toBe('Education')
+    expect(availableDimensions(DEFAULT_CRITERIA).map((c) => c.label)).toEqual(['Education', 'Company', 'Cohort group', 'Cohort section'])
+
+    let criteria = addDimension(DEFAULT_CRITERIA, 'education', 'H')
+    expect(criteria.at(-1)).toMatchObject({
+      field: 'education',
+      label: 'Education',
+      objective: 'diversity',
+      weight: 'H',
+      description: 'Mix academic backgrounds',
+    })
+    expect(addDimension(criteria, 'education', 'L')).toBe(criteria)
+
+    criteria = removeDimension(criteria, 'age')
+    expect(availableDimensions(criteria).map((c) => c.label)).toEqual(['Age', 'Company', 'Cohort group', 'Cohort section'])
+    expect(addDimension(criteria, 'age', 'L').at(-1)).toMatchObject({ field: 'age', label: 'Age', weight: 'L' })
     expect(toggleObjective(DEFAULT_CRITERIA, 'role')[1]!.objective).toBe('similarity')
     expect(setWeight(DEFAULT_CRITERIA, 'age', 'L')[2]!.weight).toBe('L')
   })

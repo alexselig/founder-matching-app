@@ -44,7 +44,11 @@ export function writeCurrentFounderId(storage: KeyValueStorage | undefined, foun
   safeWrite(storage, CURRENT_FOUNDER_KEY, founderId)
 }
 
-export function readAccountTipDismissed(storage: KeyValueStorage | undefined) {
+export function readAccountTipDismissed(
+  storage: KeyValueStorage | undefined,
+  navigationType: PerformanceNavigationTiming['type'] = 'navigate',
+) {
+  if (navigationType === 'reload') return false
   return safeRead(storage, ACCOUNT_TIP_DISMISSED_KEY) === 'true'
 }
 
@@ -66,4 +70,10 @@ export function browserSessionStorage() {
   } catch {
     return undefined
   }
+}
+
+export function browserNavigationType(): PerformanceNavigationTiming['type'] {
+  if (typeof performance === 'undefined' || typeof performance.getEntriesByType !== 'function') return 'navigate'
+  const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
+  return navigation?.type ?? 'navigate'
 }

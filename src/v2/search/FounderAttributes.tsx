@@ -9,7 +9,17 @@ export function FounderAvatar({ name, className = '' }: { name: string; classNam
   )
 }
 
-export function FounderAttributes({ founder, id, hidden }: { founder: Founder; id: string; hidden?: boolean }) {
+export function FounderAttributes({
+  founder,
+  id,
+  hidden,
+  onViewWebResults,
+}: {
+  founder: Founder
+  id: string
+  hidden?: boolean
+  onViewWebResults?: (founder: Founder) => void
+}) {
   return (
     <div className="v2-details" id={id} hidden={hidden}>
       <dl className="v2-details-grid">
@@ -20,12 +30,15 @@ export function FounderAttributes({ founder, id, hidden }: { founder: Founder; i
           </div>
         ))}
       </dl>
-      <a
-        className="v2-evidence-link"
-        href={`/v2/founders/${encodeURIComponent(founder.id)}/evidence`}
-      >
-        Review Web Search evidence →
-      </a>
+      {onViewWebResults ? (
+        <button type="button" className="v2-evidence-link" onClick={() => onViewWebResults(founder)}>
+          View top web results →
+        </button>
+      ) : (
+        <a className="v2-evidence-link" href={`/v2/founders/${encodeURIComponent(founder.id)}/evidence`}>
+          View top web results →
+        </a>
+      )}
     </div>
   )
 }

@@ -1,6 +1,9 @@
-import { useId, type ReactNode } from 'react'
+import { useId, useRef, useState, type ReactNode } from 'react'
 
+import { DinnerDimensionDialog } from './DinnerDimensionDialog'
 import {
+  addDimension,
+  canAddDimension,
   objectiveLabel,
   removeDimension,
   setWeight,
@@ -52,8 +55,12 @@ export function DinnerSetupRail({
   onCriteriaChange,
   onEditSetup,
 }: DinnerSetupRailProps) {
+  const [dimensionOpen, setDimensionOpen] = useState(false)
+  const railRef = useRef<HTMLElement>(null)
+
   return (
-    <aside className="v2-dinner-setup" aria-label="Dinner setup">
+    <>
+      <aside ref={railRef} className="v2-dinner-setup" aria-label="Dinner setup" tabIndex={-1}>
       <div className="v2-dinner-setup-title">
         <span className="v2-dinner-eyebrow">Dinner matching</span>
         <h1>Build the room.</h1>
@@ -119,6 +126,16 @@ export function DinnerSetupRail({
             </div>
           </div>
         ))}
+        {canAddDimension(criteria) && (
+          <button
+            type="button"
+            className="v2-dinner-add-dimension"
+            disabled={editDisabled}
+            onClick={() => setDimensionOpen(true)}
+          >
+            + Add dimension
+          </button>
+        )}
         <button type="button" className="v2-dinner-setup-link" disabled={editDisabled} onClick={onEditSetup}>
           Edit setup
         </button>
@@ -138,7 +155,20 @@ export function DinnerSetupRail({
       <button type="button" className="v2-dinner-setup-link v2-dinner-setup-link-compact" disabled={editDisabled} onClick={onEditSetup}>
         Edit setup
       </button>
-    </aside>
+      </aside>
+      {dimensionOpen && !editDisabled && <div className="v2-setup-scrim" onClick={() => setDimensionOpen(false)} />}
+      {dimensionOpen && !editDisabled && (
+        <DinnerDimensionDialog
+          criteria={criteria}
+          onAdd={(field, weight) => {
+            onCriteriaChange(addDimension(criteria, field, weight))
+            setDimensionOpen(false)
+          }}
+          onClose={() => setDimensionOpen(false)}
+          returnFocusRef={railRef}
+        />
+      )}
+    </>
   )
 }
 
@@ -196,6 +226,10 @@ export function DinnerTables({
     if (scroll) scrollToCard(next)
   }
 
+  function updateThreshold(value: number) {
+    onThresholdChange(Math.max(MIN_THRESHOLD, Math.min(MAX_THRESHOLD, Math.round(value))))
+  }
+
   return (
     <section className="v2-dinner-workspace" aria-label="Seating plan results">
       <div className="v2-dinner-work-head">
@@ -222,20 +256,67 @@ export function DinnerTables({
       </div>
 
       <div className="v2-dinner-work-tools">
-        <div className="v2-dinner-tool-left">
-          <div className="v2-dinner-segmented" role="group" aria-label="Workspace view">
-            {(['tables', 'analysis'] as const).map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={workspace === item ? 'v2-dinner-active' : undefined}
-                aria-pressed={workspace === item}
-                onClick={() => onWorkspaceChange(item)}
-              >
-                {item === 'tables' ? 'Tables' : 'Analysis'}
-              </button>
-            ))}
-          </div>
+        <div className="v2-dinner-segmented" role="group" aria-label="Workspace view">
+          {(['tables', 'analysis'] as const).map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={workspace === item ? 'v2-dinner-active' : undefined}
+              aria-pressed={workspace === item}
+              onClick={() => onWorkspaceChange(item)}
+            >
+              {item === 'tables' ? 'Tables' : 'Analysis'}
+            </button>
+          ))}
+        </div>
+        <div className="v2-dinner-threshold">
+          <label htmlFor={thresholdId}>Threshold</label>
+          <button
+            type="button"
+            aria-label="Decrease threshold"
+            disabled={busy || threshold <= MIN_THRESHOLD}
+            onClick={() => updateThreshold(threshold - 1)}
+          >
+            −
+          </button>
+          <input
+            id={thresholdId}
+            type="number"
+            min={MIN_THRESHOLD}
+            max={MAX_THRESHOLD}
+            step={1}
+            value={threshold}
+            disabled={busy}
+            onChange={(event) => updateThreshold(Number(event.target.value))}
+          />
+          <button
+            type="button"
+            aria-label="Increase threshold"
+            disabled={busy || threshold >= MAX_THRESHOLD}
+            onClick={() => updateThreshold(threshold + 1)}
+          >
+            +
+          </button>
+        </div>
+        <div className="v2-dinner-legend" aria-label="Fit score legend">
+          <span>
+            <i className="v2-dinner-strong-bg" />
+            90+
+          </span>
+          <span>
+            <i className="v2-dinner-good-bg" />
+            80–89
+          </span>
+          <span>
+            <i className="v2-dinner-watch-bg" />
+            70–79
+          </span>
+          <span>
+            <i className="v2-dinner-risk-bg" />
+            &lt;70
+          </span>
+        </div>
+        {!analysisOpen && (
           <div className="v2-dinner-density" role="group" aria-label="Table density">
             <span className="v2-dinner-density-label">Density</span>
             {(['compact', 'comfortable'] as const).map((item) => (
@@ -250,39 +331,7 @@ export function DinnerTables({
               </button>
             ))}
           </div>
-        </div>
-        <div className="v2-dinner-tool-right">
-          <div className="v2-dinner-legend" aria-label="Fit score legend">
-            <span>
-              <i className="v2-dinner-strong-bg" />
-              90+
-            </span>
-            <span>
-              <i className="v2-dinner-good-bg" />
-              80–89
-            </span>
-            <span>
-              <i className="v2-dinner-watch-bg" />
-              70–79
-            </span>
-            <span>
-              <i className="v2-dinner-risk-bg" />
-              &lt;70
-            </span>
-          </div>
-          <div className="v2-dinner-threshold">
-            <label htmlFor={thresholdId}>Threshold</label> <output htmlFor={thresholdId}>{threshold}</output>
-            <input
-              id={thresholdId}
-              type="range"
-              min={MIN_THRESHOLD}
-              max={MAX_THRESHOLD}
-              value={threshold}
-              disabled={busy}
-              onChange={(event) => onThresholdChange(Number(event.target.value))}
-            />
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="v2-dinner-table-workspace" hidden={analysisOpen}>

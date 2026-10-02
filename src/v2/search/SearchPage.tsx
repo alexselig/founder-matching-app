@@ -48,6 +48,7 @@ export interface SearchPageProps {
   founders: readonly Founder[]
   navigate?: (url: string) => void
   exportResults?: (results: readonly SearchResult[]) => void
+  onViewWebResults?: (founder: Founder) => void
   aiStatus?: string
   aiTone?: 'enabled' | 'issue' | 'off'
 }
@@ -84,6 +85,7 @@ export function SearchPage({
   founders,
   navigate = defaultNavigate,
   exportResults = downloadSearchResultsCsv,
+  onViewWebResults,
   aiStatus,
   aiTone,
 }: SearchPageProps) {
@@ -238,7 +240,7 @@ export function SearchPage({
   return (
     <div className="v2-shell v2-search">
       <V2Header active="founder-index" role={role} currentFounder={currentFounder} onRoleChange={changeRole} />
-      <main className="v2-search-main">
+      <main className={active ? 'v2-search-main' : 'v2-search-main v2-search-zero'}>
         <section className="v2-hero" aria-labelledby="v2-search-title">
           <div className="v2-hero-title">
             <div className="v2-eyebrow">
@@ -302,13 +304,13 @@ export function SearchPage({
                 onReturnToDiscovery={() => returnToDiscovery()}
               />
             ) : view === 'grid' ? (
-              <GridResults groups={groups} />
+              <GridResults groups={groups} onViewWebResults={onViewWebResults} />
             ) : (
-              <ListResults groups={groups} />
+              <ListResults groups={groups} onViewWebResults={onViewWebResults} />
             )}
           </>
         ) : (
-          <ZeroQueryDiscovery collections={collections} />
+          <ZeroQueryDiscovery collections={collections} onViewWebResults={onViewWebResults} />
         )}
       </main>
       <V2Footer

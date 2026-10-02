@@ -31,6 +31,19 @@ describe('Dinner and Seating Plans responsive header', () => {
 })
 
 describe('Dinner tables responsive grid', () => {
+  it('uses full-height workspace tabs and keeps density at the far right', () => {
+    const css = read('dinner-results.css')
+    expect(css).toMatch(/\.v2-dinner-segmented \{[^}]*align-self: stretch/)
+    expect(css).toMatch(/\.v2-dinner-segmented button \{[^}]*height: 100%/)
+    expect(css).toMatch(/\.v2-dinner-segmented \.v2-dinner-active \{[^}]*box-shadow: inset 0 -3px var\(--v2-blue\)/)
+    expect(css).toMatch(/\.v2-dinner-density \{[^}]*margin-left: auto/)
+
+    const tablet = css.slice(css.indexOf('@container dinner (max-width: 900px)'), css.indexOf('@container dinner (max-width: 560px)'))
+    const phone = css.slice(css.indexOf('@container dinner (max-width: 560px)'))
+    expect(tablet).toMatch(/\.v2-dinner-work-tools \{[^}]*padding: 0 10px 0 0/)
+    expect(phone).toMatch(/\.v2-dinner-work-tools \{[^}]*padding: 0 8px 0 0/)
+  })
+
   it('drops to the reference two-card tablet grid before three cards squeeze founder names', () => {
     const css = read('dinner-results.css')
     const narrowDesktop = css.slice(css.indexOf('@container dinner (max-width: 1180px)'), css.indexOf('@container dinner (max-width: 900px)'))

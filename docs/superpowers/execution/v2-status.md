@@ -16,6 +16,7 @@
 | 12. Founder AI credential setup | Complete | `main` | `1222eaa`, `c470fdc` | AI setup available in Founder and Admin modes; provider validation no longer assumes premium Anthropic model access; pasted credentials normalized; 48 focused tests; lint; client/server build |
 | 13. Criteria controls and version navigation | Complete | `main` | `36355b5` | Generated criteria match the approved desktop treatment; criteria remain removable during review; V1 includes a compact V1/V2 footer; 28 dinner tests; browser visual QA |
 | 14. Safe Render public demo | Complete | `main` | `cf971cb`, `7328a4e` | Free Render Blueprint live; public Demo mode forced and locked; mutating V2 APIs return `403 public_demo_read_only`; live health, API, and browser verification passed |
+| 15. Final navigation, Dinner review, and showcase polish | Complete | `main` | Pending release commit | Context-preserving V1/V2 links; V1 navigation regrouping; full-height Dinner tabs; numeric threshold stepper; explicit dimension/weight dialog in setup and review; retryable in-place top-five web-results drawer; reload-only account callout; 553 tests; 2 Playwright E2E tests; lint/build; 16 refreshed screenshots |
 
 ## Current task list
 
@@ -48,10 +49,22 @@
   - Mutations return `403 public_demo_read_only`.
   - Browser verification confirms Demo mode is On and disabled.
 - [x] Add the final Render URL to the README, this status page, and the public overview.
+- [x] Preserve workflow context when switching between V1 and V2.
+- [x] Regroup V1 navigation and align its version switcher with V2.
+- [x] Replace the Dinner threshold slider with a bounded numeric stepper.
+- [x] Present Tables and Analysis as full-height workspace tabs and hide Density in Analysis.
+- [x] Replace automatic Dinner dimension insertion with an explicit dimension-and-weight dialog in setup and generated-plan review.
+- [x] Show the top five cited web results in a right-side card without navigating away from Search.
+- [x] Anchor zero-query recommendations to the footer and give the remaining vertical space to Search.
+- [x] Show the account-switch callout on initial load and browser reload, while preserving dismissal across normal page navigation.
+- [x] Rename the export confirmation title to `CONFIRM EXPORT CONTENT`.
+- [x] Refresh all 16 public showcase screenshots.
+  - The GitHub hero now shows the 20-table Demo plan.
+  - Web results are shown as the in-context right-side card.
+  - Dinner captures include the final workspace tabs, threshold stepper, criteria controls, dimension dialog, and export title.
 - [ ] Wire Founder Search to the existing `/api/v2/ai/interpret/search` endpoint.
   - Search currently uses deterministic local query compilation.
   - This is the only known AI wiring gap; table assignment intentionally remains deterministic.
-- [ ] Refresh the public showcase screenshots to include the final footer controls and Demo callout.
 
 ## Release
 
@@ -70,7 +83,7 @@
 - Task 8 encrypted provider credentials, append-only dinner versions, and exports passed review.
 - Runtime coordinator loads production APIs by default and public-safe deterministic fixtures only in admin Demo mode.
 - AI provider setup and founder evidence review use approved designs and server-backed contracts.
-- Integrated verification: 529/529 tests, lint, client/server build, built-only 574-founder startup smoke, 2/2 Playwright E2E tests, manual browser QA, and 16 public-safe screenshots.
+- Integrated verification: 553/553 tests, lint, client/server build, 2/2 Playwright E2E tests, manual browser QA, and 16 distinct public-safe screenshots at their required dimensions.
 - GitHub Pages serves the showcase from `main` `/docs`; the page and screenshot assets return HTTP 200.
 - Post-release dinner configuration verification: 531/531 tests, lint, client/server build, built-only smoke, 2/2 Playwright E2E tests, and manual 574-founder seating QA.
 - Footer verification: 33 targeted tests, lint, client build, and browser hover-placement QA at 1440×900.
@@ -78,3 +91,4 @@
 - Criteria and V1 navigation verification: 28 dinner tests plus browser visual QA.
 - Render public-demo verification: 47 targeted tests, lint, full client/server build, Blueprint parse, and exact local Render-environment smoke.
 - Live Render verification: deploy `dep-davv8u9mgk9c73c988p0` is live; `/healthz`, founder GET APIs, read-only mutation guard, and forced Demo-mode browser behavior passed.
+- Final polish verification: the web-results card opens without changing `/v2/search`, caps output at five cited results, the account callout stays dismissed through navigation but reappears on reload, and the GitHub hero capture uses the 20-table plan.
