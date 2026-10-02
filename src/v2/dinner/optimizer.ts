@@ -172,14 +172,16 @@ export function capacities(founderCount: number, tableCount: number): number[] {
 }
 
 export function defaultComparisonBudget(founderCount: number) {
-  if (!Number.isInteger(founderCount) || founderCount <= 0) {
-    throw new Error('Founder count must be a positive integer')
+  if (!Number.isInteger(founderCount) || founderCount < 0) {
+    throw new Error('Founder count must be a non-negative integer')
   }
   return Math.min(
     DEFAULT_MAX_COMPARISONS,
     Math.max(
       MIN_DEFAULT_COMPARISONS,
-      Math.floor(DEFAULT_COMPARISON_FOUNDER_BUDGET / founderCount),
+      Math.floor(
+        DEFAULT_COMPARISON_FOUNDER_BUDGET / Math.max(1, founderCount),
+      ),
     ),
   )
 }

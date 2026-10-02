@@ -76,6 +76,21 @@ describe('balanced capacities', () => {
 })
 
 describe('deterministic constrained maximin optimization', () => {
+  it('returns a valid empty solution for an empty cohort', () => {
+    const solution = optimizeDinner({
+      founders: [],
+      tableCount: 1,
+      criteria,
+    })
+
+    expect(solution.tables).toHaveLength(1)
+    expect(solution.tables[0]!.founderIds).toEqual([])
+    expect(solution.optimization).toMatchObject({
+      comparisons: 0,
+      converged: true,
+    })
+  })
+
   it.each([
     ['three-tables', 3],
     ['five-tables', 5],
