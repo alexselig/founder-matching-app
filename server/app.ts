@@ -9,11 +9,19 @@ import {
   type HealthResponse,
 } from '../src/shared/contracts.js'
 import type { FounderRepository } from './repositories/founders.js'
+import type { WebResultsRepository } from './repositories/webResults.js'
+import { aiRoutes } from './routes/ai.js'
+import { enrichmentRoutes } from './routes/enrichment.js'
 import { founderRoutes } from './routes/founders.js'
+import type { AiInterpretationService } from './services/aiInterpretation.js'
+import type { EnrichmentRunManager } from './services/enrichment.js'
 
 export interface ServerOptions {
   databaseStatus: () => DatabaseStatus
   founderRepository: FounderRepository
+  webResultsRepository: WebResultsRepository
+  enrichmentRunManager: EnrichmentRunManager
+  aiInterpretationService: AiInterpretationService
   staticRoot?: string
 }
 
@@ -59,6 +67,13 @@ export function createServer(options: ServerOptions): FastifyInstance {
 
   server.register(founderRoutes, {
     repository: options.founderRepository,
+  })
+  server.register(enrichmentRoutes, {
+    repository: options.webResultsRepository,
+    runManager: options.enrichmentRunManager,
+  })
+  server.register(aiRoutes, {
+    service: options.aiInterpretationService,
   })
 
   server.setNotFoundHandler((request, reply) => {

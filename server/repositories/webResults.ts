@@ -10,6 +10,18 @@ import {
 } from './validation.js'
 
 export type WebResultClassification = 'founder' | 'company' | 'both'
+export type WebEnrichmentRunStatus =
+  | 'queued'
+  | 'running'
+  | 'complete'
+  | 'partial'
+  | 'failed'
+
+export interface WebEnrichmentError {
+  code: string
+  message: string
+  retryable: boolean
+}
 
 export interface WebResultInput {
   rank: number
@@ -40,7 +52,11 @@ export interface WebEnrichmentRun {
   founderId: string
   queryFingerprint: string
   provider: string
+  status?: WebEnrichmentRunStatus
   retrievedAt: string
+  completedAt?: string
+  warnings?: string[]
+  error?: WebEnrichmentError
   queryContext?: unknown
   rawProviderMetadata?: unknown
   results: WebResultInput[]
@@ -51,7 +67,11 @@ interface WebRunRow {
   founder_id: string
   query_fingerprint: string
   provider: string
+  status: WebEnrichmentRunStatus
   retrieved_at: string
+  completed_at: string | null
+  warnings_json: string | null
+  error_json: string | null
   query_context_json: string | null
   raw_provider_metadata_json: string | null
 }
@@ -79,7 +99,11 @@ interface NormalizedRunInput {
   founderId: string
   queryFingerprint: string
   provider: string
+  status: WebEnrichmentRunStatus
   retrievedAt: string
+  completedAt: string | null
+  warningsJson: string | null
+  errorJson: string | null
   queryContextJson: string | null
   rawProviderMetadataJson: string | null
   results: Array<{
@@ -103,6 +127,13 @@ const WEB_RESULT_CLASSIFICATIONS: readonly WebResultClassification[] = [
   'founder',
   'company',
   'both',
+]
+const WEB_ENRICHMENT_STATUSES: readonly WebEnrichmentRunStatus[] = [
+  'queued',
+  'running',
+  'complete',
+  'partial',
+  'failed',
 ]
 
 function assertNonEmpty(value: unknown, label: string): asserts value is string {
@@ -138,6 +169,73 @@ function assertClassification(
       'invalid_data',
     )
   }
+}
+
+function assertStatus(
+  value: unknown,
+): asserts value is WebEnrichmentRunStatus {
+  if (
+    typeof value !== 'string' ||
+    !WEB_ENRICHMENT_STATUSES.includes(
+      value as WebEnrichmentRunStatus,
+    )
+  ) {
+    throw new RepositoryError(
+      'Enrichment status is invalid',
+      'invalid_data',
+    )
+  }
+}
+
+function normalizeWarnings(value: unknown) {
+  if (value === undefined) {
+    return null
+  }
+  assertDenseArray(value, 'Enrichment warnings')
+  if (
+    value.some(
+      (warning) =>
+        typeof warning !== 'string' || warning.length === 0,
+    )
+  ) {
+    throw new RepositoryError(
+      'Enrichment warnings must be non-empty strings',
+      'invalid_data',
+    )
+  }
+  return encodeOptionalJson(value, 'Enrichment warnings')
+}
+
+function normalizeError(value: unknown) {
+  if (value === undefined) {
+    return null
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new RepositoryError(
+      'Enrichment error must be an object',
+      'invalid_data',
+    )
+  }
+  const error = value as Record<string, unknown>
+  if (
+    Object.keys(error).some(
+      (key) =>
+        key !== 'code' &&
+        key !== 'message' &&
+        key !== 'retryable',
+    ) ||
+    typeof error.code !== 'string' ||
+    !error.code ||
+    typeof error.message !== 'string' ||
+    !error.message ||
+    typeof error.retryable !== 'boolean'
+  ) {
+    throw new RepositoryError(
+      'Enrichment error has an invalid shape',
+      'invalid_data',
+    )
+  }
+  return encodeOptionalJson(error, 'Enrichment error')
 }
 
 function assertEntityMatch(value: unknown) {
@@ -239,10 +337,21 @@ function validateRun(run: WebEnrichmentRun): NormalizedRunInput {
   assertNonEmpty(run.founderId, 'Founder ID')
   assertNonEmpty(run.queryFingerprint, 'Query fingerprint')
   assertNonEmpty(run.provider, 'Provider')
+  const status = run.status ?? 'complete'
+  assertStatus(status)
   const retrievedAt = normalizeTimestamp(
     run.retrievedAt,
     'Run retrieval time',
   )
+  const completedAt =
+    run.completedAt === undefined
+      ? null
+      : normalizeTimestamp(
+          run.completedAt,
+          'Run completion time',
+        )
+  const warningsJson = normalizeWarnings(run.warnings)
+  const errorJson = normalizeError(run.error)
   const queryContextJson = encodeOptionalJson(
     run.queryContext,
     'Enrichment query context',
@@ -350,7 +459,11 @@ function validateRun(run: WebEnrichmentRun): NormalizedRunInput {
     founderId: run.founderId,
     queryFingerprint: run.queryFingerprint,
     provider: run.provider,
+    status,
     retrievedAt,
+    completedAt,
+    warningsJson,
+    errorJson,
     queryContextJson,
     rawProviderMetadataJson,
     results,
@@ -411,17 +524,25 @@ export class WebResultsRepository {
                founder_id,
                query_fingerprint,
                provider,
+               status,
                retrieved_at,
+               completed_at,
+               warnings_json,
+               error_json,
                query_context_json,
                raw_provider_metadata_json
-             ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
           .run(
             normalized.id,
             normalized.founderId,
             normalized.queryFingerprint,
             normalized.provider,
+            normalized.status,
             normalized.retrievedAt,
+            normalized.completedAt,
+            normalized.warningsJson,
+            normalized.errorJson,
             normalized.queryContextJson,
             normalized.rawProviderMetadataJson,
           )
@@ -487,6 +608,12 @@ export class WebResultsRepository {
           `SELECT id
            FROM web_enrichment_runs
            WHERE founder_id = ?
+             AND status IN ('complete', 'partial')
+             AND EXISTS (
+               SELECT 1
+               FROM web_results
+               WHERE web_results.run_id = web_enrichment_runs.id
+             )
            ORDER BY retrieved_at DESC, id DESC
            LIMIT 1`,
         )
@@ -514,7 +641,11 @@ export class WebResultsRepository {
              founder_id,
              query_fingerprint,
              provider,
+             status,
              retrieved_at,
+             completed_at,
+             warnings_json,
+             error_json,
              query_context_json,
              raw_provider_metadata_json
            FROM web_enrichment_runs
@@ -524,33 +655,98 @@ export class WebResultsRepository {
         .all(founderId) as WebRunRow[]
 
       return rows.map((row) => {
-        const queryContext = parseOptionalJson(
-          row.query_context_json,
-          'enrichment query context',
-        )
-        const rawProviderMetadata = parseOptionalJson(
-          row.raw_provider_metadata_json,
-          'enrichment provider metadata',
-        )
-
-        return {
-          id: row.id,
-          founderId: row.founder_id,
-          queryFingerprint: row.query_fingerprint,
-          provider: row.provider,
-          retrievedAt: row.retrieved_at,
-          ...(queryContext === undefined ? {} : { queryContext }),
-          ...(rawProviderMetadata === undefined
-            ? {}
-            : { rawProviderMetadata }),
-          results: this.resultsForRun(row.id),
-        }
+        return this.rowToRun(row)
       })
     } catch (error) {
       throwRepositoryFailure(
         error,
         `Failed to list web result runs for founder ${founderId}`,
       )
+    }
+  }
+
+  findLatestByFingerprint(
+    founderId: string,
+    queryFingerprint: string,
+    provider: string,
+  ): WebEnrichmentRun | undefined {
+    assertRepositoryId(founderId, 'Founder ID')
+    assertNonEmpty(queryFingerprint, 'Query fingerprint')
+    assertNonEmpty(provider, 'Provider')
+
+    try {
+      this.assertFounderExists(founderId)
+      const row = this.database
+        .prepare(
+          `SELECT
+               id,
+               founder_id,
+               query_fingerprint,
+               provider,
+               status,
+               retrieved_at,
+               completed_at,
+               warnings_json,
+               error_json,
+               query_context_json,
+               raw_provider_metadata_json
+             FROM web_enrichment_runs
+             WHERE founder_id = ?
+               AND query_fingerprint = ?
+               AND provider = ?
+             ORDER BY retrieved_at DESC, id DESC
+             LIMIT 1`,
+        )
+        .get(
+          founderId,
+          queryFingerprint,
+          provider,
+        ) as WebRunRow | undefined
+
+      return row ? this.rowToRun(row) : undefined
+    } catch (error) {
+      throwRepositoryFailure(
+        error,
+        `Failed to read reusable web results for founder ${founderId}`,
+      )
+    }
+  }
+
+  private rowToRun(row: WebRunRow): WebEnrichmentRun {
+    const queryContext = parseOptionalJson(
+      row.query_context_json,
+      'enrichment query context',
+    )
+    const rawProviderMetadata = parseOptionalJson(
+      row.raw_provider_metadata_json,
+      'enrichment provider metadata',
+    )
+    const warnings = parseOptionalJson(
+      row.warnings_json,
+      'enrichment warnings',
+    ) as string[] | undefined
+    const error = parseOptionalJson(
+      row.error_json,
+      'enrichment error',
+    ) as WebEnrichmentError | undefined
+
+    return {
+      id: row.id,
+      founderId: row.founder_id,
+      queryFingerprint: row.query_fingerprint,
+      provider: row.provider,
+      status: row.status,
+      retrievedAt: row.retrieved_at,
+      ...(row.completed_at === null
+        ? {}
+        : { completedAt: row.completed_at }),
+      ...(warnings === undefined ? {} : { warnings }),
+      ...(error === undefined ? {} : { error }),
+      ...(queryContext === undefined ? {} : { queryContext }),
+      ...(rawProviderMetadata === undefined
+        ? {}
+        : { rawProviderMetadata }),
+      results: this.resultsForRun(row.id),
     }
   }
 

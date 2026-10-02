@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   FounderDetailResponseSchema,
   FounderListResponseSchema,
+  InterpretationResponseSchema,
 } from '../src/shared/contracts.js'
 import { normalizeFounders } from '../src/shared/founder.js'
 import { createDatabase, type SqliteDatabase } from './database.js'
@@ -15,6 +16,13 @@ import {
   startServer,
 } from './index.js'
 import { FounderRepository } from './repositories/founders.js'
+import { WebResultsRepository } from './repositories/webResults.js'
+import type { ProviderAdapter } from './providers/types.js'
+import { createAiInterpretationService } from './services/aiInterpretation.js'
+import {
+  createEnrichmentRunManager,
+  createEnrichmentService,
+} from './services/enrichment.js'
 import { createServer } from './app'
 
 const staticRoot = path.resolve(process.cwd(), 'server/test-fixtures/runtime-dist')
@@ -24,6 +32,13 @@ const founders = normalizeFounders(
 )
 let database: SqliteDatabase
 let founderRepository: FounderRepository
+let webResultsRepository: WebResultsRepository
+let enrichmentRunManager: ReturnType<
+  typeof createEnrichmentRunManager
+>
+let aiInterpretationService: ReturnType<
+  typeof createAiInterpretationService
+>
 
 beforeAll(async () => {
   await rm(staticRoot, { recursive: true, force: true })
@@ -36,6 +51,45 @@ beforeAll(async () => {
   database = createDatabase({ filename: ':memory:' })
   founderRepository = new FounderRepository(database)
   founderRepository.saveAll(founders)
+  webResultsRepository = new WebResultsRepository(database)
+  const provider: ProviderAdapter = {
+    id: 'openai',
+    capabilities: {
+      searchIntent: true,
+      dinnerCriteria: true,
+      hardRules: true,
+      reranking: true,
+      webSearch: true,
+      citations: true,
+    },
+    validateCredential: async () => undefined,
+    parseSearch: async () => ({ text: '', dimensions: [] }),
+    parseDinnerCriteria: async () => ({
+      criteria: [
+        {
+          field: 'role',
+          objective: 'diverse',
+          weight: 'high',
+          enabled: true,
+        },
+      ],
+    }),
+    parseHardRule: async () => ({
+      type: 'same_company_separation',
+    }),
+    searchWeb: async () => [],
+  }
+  const enrichmentService = createEnrichmentService({
+    founderRepository,
+    webResultsRepository,
+    providers: [provider],
+  })
+  enrichmentRunManager = createEnrichmentRunManager({
+    service: enrichmentService,
+  })
+  aiInterpretationService = createAiInterpretationService({
+    providers: [provider],
+  })
 })
 
 afterAll(async () => {
@@ -49,6 +103,9 @@ function serverOptions() {
   return {
     databaseStatus: () => 'ready' as const,
     founderRepository,
+    webResultsRepository,
+    enrichmentRunManager,
+    aiInterpretationService,
     staticRoot,
   }
 }
@@ -202,6 +259,46 @@ describe('createServer', () => {
     ).toEqual({
       ok: true,
       data: founder,
+    })
+
+    await server.close()
+  })
+
+  it('registers AI and enrichment routes in the real Fastify app', async () => {
+    const server = createServer(serverOptions())
+
+    const interpretationResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v2/ai/interpret/search',
+      payload: {
+        provider: 'openai',
+        input: 'all founders',
+      },
+    })
+
+    expect(interpretationResponse.statusCode).toBe(200)
+    expect(
+      InterpretationResponseSchema.parse(
+        interpretationResponse.json(),
+      ),
+    ).toMatchObject({
+      ok: true,
+      data: {
+        status: 'interpreted',
+      },
+    })
+
+    const webResultsResponse = await server.inject({
+      method: 'GET',
+      url: `/api/v2/founders/${encodeURIComponent(founders[0]!.id)}/web-results`,
+    })
+
+    expect(webResultsResponse.statusCode).toBe(200)
+    expect(webResultsResponse.json()).toMatchObject({
+      ok: true,
+      data: {
+        status: 'no_results',
+      },
     })
 
     await server.close()

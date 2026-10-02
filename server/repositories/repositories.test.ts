@@ -384,6 +384,69 @@ describe('SQLite repositories', () => {
     expect(founderRepository.get(founderId)).toEqual(founders[0])
   })
 
+  it('persists failed attempts while latest continues to return the latest successful evidence', () => {
+    const founderId = founders[0]!.id
+    const successful = makeRun(
+      founderId,
+      'run-successful',
+      '2026-10-01T10:00:00.000Z',
+    )
+    const failed: WebEnrichmentRun = {
+      id: 'run-failed',
+      founderId,
+      queryFingerprint: 'failed-fingerprint',
+      provider: 'fixture',
+      status: 'failed',
+      retrievedAt: '2026-10-01T11:00:00.000Z',
+      completedAt: '2026-10-01T11:00:01.000Z',
+      error: {
+        code: 'unavailable',
+        message: 'Provider unavailable',
+        retryable: true,
+      },
+      results: [],
+    }
+
+    webResultsRepository.appendRun(successful)
+    webResultsRepository.appendRun(failed)
+
+    expect(
+      webResultsRepository.latest(founderId).map((result) => result.runId),
+    ).toEqual(Array(5).fill(successful.id))
+    expect(webResultsRepository.listRuns(founderId)[0]).toMatchObject({
+      id: failed.id,
+      status: 'failed',
+      error: failed.error,
+    })
+  })
+
+  it('finds the newest reusable run for one provider and query fingerprint', () => {
+    const founderId = founders[0]!.id
+    const first = makeRun(
+      founderId,
+      'run-fingerprint-first',
+      '2026-10-01T10:00:00.000Z',
+    )
+    first.queryFingerprint = 'shared-fingerprint'
+    const second = makeRun(
+      founderId,
+      'run-fingerprint-second',
+      '2026-10-01T11:00:00.000Z',
+    )
+    second.queryFingerprint = 'shared-fingerprint'
+
+    webResultsRepository.appendRun(first)
+    webResultsRepository.appendRun(second)
+
+    expect(
+      webResultsRepository.findLatestByFingerprint(
+        founderId,
+        'shared-fingerprint',
+        'fixture',
+      )?.id,
+    ).toBe(second.id)
+  })
+
   it('returns empty enrichment collections only for existing founders without runs', () => {
     const founderId = founders[0]!.id
 
