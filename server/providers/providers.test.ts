@@ -838,12 +838,12 @@ describe('provider adapters', () => {
       ],
       stop_reason: 'end_turn',
     }))
-    const retrieve = vi.fn(async () => ({
-      id: 'claude-opus-4-8',
+    const list = vi.fn(async () => ({
+      data: [{ id: 'claude-opus-4-8' }],
     }))
     const clientFactory = vi.fn(() => ({
       messages: { create },
-      models: { retrieve },
+      models: { list },
     }))
     const provider = createAnthropicProvider({
       apiKey: 'anthropic-secret',
@@ -864,7 +864,7 @@ describe('provider adapters', () => {
 
     await provider.validateCredential()
     expect(clientFactory).toHaveBeenLastCalledWith('anthropic-secret')
-    expect(retrieve).toHaveBeenCalledWith('claude-opus-4-8')
+    expect(list).toHaveBeenCalledWith({ limit: 1 })
   })
 
   it('extracts Anthropic web-search source metadata without an OpenAI-compatible shim', async () => {

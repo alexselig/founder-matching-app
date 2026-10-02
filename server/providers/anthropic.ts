@@ -237,7 +237,7 @@ export function createAnthropicProvider(
     capabilities,
     async validateCredential() {
       try {
-        await clientFactory(options.apiKey).models.retrieve(ANTHROPIC_MODEL)
+        await clientFactory(options.apiKey).models.list({ limit: 1 })
       } catch (error) {
         throw mapAnthropicError(error)
       }

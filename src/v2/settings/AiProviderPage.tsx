@@ -140,23 +140,6 @@ export function AiProviderPage({
     setMessage(`${PROVIDER_LABELS[provider]} credential removed`)
   }
 
-  if (role !== 'admin') {
-    return (
-      <div className="v2-shell">
-        <V2Header
-          role={role}
-          currentFounder={currentFounder}
-          onRoleChange={changeRole}
-        />
-        <main className="v2-ai-restricted">
-          <h1>AI configuration is for YC admins.</h1>
-          <p>Switch to a YC Admin account to manage provider credentials.</p>
-        </main>
-        <V2Footer role={role} />
-      </div>
-    )
-  }
-
   const valid = state === 'valid'
   const invalid = state === 'invalid'
   const validating = state === 'validating'
@@ -170,7 +153,7 @@ export function AiProviderPage({
       <main>
         <section className="v2-ai-page-head">
           <div className="v2-ai-title-block">
-            <span>Table Config / AI</span>
+            <span>Settings / AI</span>
             <h1>AI Provider</h1>
             <p>
               Connect one provider for AI-assisted search, dinner criteria,
@@ -178,7 +161,7 @@ export function AiProviderPage({
             </p>
           </div>
           <div className="v2-ai-head-copy">
-            <span>Admin-only configuration</span>
+            <span>Available in both account views</span>
             <h2>Bring your own credential</h2>
             <p>
               Choose a provider and model, then validate its credential. Basic
