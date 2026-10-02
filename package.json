@@ -9,6 +9,7 @@
     "build:client": "tsc -b && vite build",
     "build:server": "tsc -p tsconfig.server.json && node server/copy-server-assets.mjs",
     "build": "npm run build:client && npm run build:server",
+    "fixtures:demo": "tsx scripts/generate-demo-fixtures.ts",
     "smoke:server-built": "node server/smoke-built-server.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
