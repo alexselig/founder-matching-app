@@ -44,6 +44,11 @@ describe('V2 responsive routes', () => {
     expect(ai).toMatch(/@media \(max-width: 620px\)[\s\S]*\.v2-ai-config \{[^}]*padding: 24px 20px/)
     expect(evidence).toMatch(/@media \(max-width: 640px\)[\s\S]*\.v2-evidence-close \{[^}]*width: 44px;[^}]*height: 44px/)
   })
+
+  it('keeps the web-results action as a flat text button', () => {
+    const evidence = readV2('evidence/founder-evidence.css')
+    expect(evidence).toMatch(/\.v2-evidence-link \{[^}]*appearance: none;[^}]*border: 0;[^}]*box-shadow: none;[^}]*background: transparent/)
+  })
 })
 
 describe('Dinner and Seating Plans responsive header', () => {

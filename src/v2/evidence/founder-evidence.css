@@ -37,7 +37,7 @@
 .v2-evidence-empty h3 { margin-bottom: 0; }
 .v2-evidence-empty p, .v2-evidence-loading { color: #5b5f66; font-size: 11px; line-height: 1.5; }
 .v2-evidence-retry { min-height: 34px; margin-top: 6px; padding: 0 14px; border: 1px solid #111; background: #111; color: #fff; font-size: 10px; font-weight: 800; text-transform: uppercase; }
-.v2-evidence-link { display: inline-block; margin-top: 14px; padding: 0; border: 0; background: transparent; color: #2f5bea; font: inherit; font-weight: 800; text-align: left; }
+.v2-evidence-link { appearance: none; display: inline-block; margin-top: 14px; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; color: #2f5bea; font: inherit; font-weight: 800; text-align: left; text-decoration: none; }
 @keyframes v2-evidence-enter { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes v2-evidence-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (max-width: 640px) {
