@@ -188,6 +188,18 @@ function citationResults(message: Anthropic.Message) {
   return [...results.values()]
 }
 
+function generatedText(message: Anthropic.Message) {
+  return (
+    message.content
+      .filter(
+        (block): block is Anthropic.TextBlock => block.type === 'text',
+      )
+      .map((block) => block.text)
+      .join('')
+      .trim() || undefined
+  )
+}
+
 export function createAnthropicProvider(
   options: AnthropicProviderOptions,
 ): ProviderAdapter {
@@ -286,7 +298,19 @@ export function createAnthropicProvider(
             'Anthropic declined the web search request',
           )
         }
-        return citationResults(message)
+        const citations = citationResults(message)
+        if (citations.length > 0) return citations
+        const summary = generatedText(message)
+        return summary
+          ? [
+              {
+                title: 'Anthropic generated web summary',
+                url: 'https://www.anthropic.com/',
+                snippet: summary,
+                provenance: 'summary_only',
+              },
+            ]
+          : []
       } catch (error) {
         throw mapAnthropicError(error)
       }

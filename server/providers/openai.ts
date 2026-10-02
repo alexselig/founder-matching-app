@@ -82,6 +82,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
+function optionalOutputText(body: unknown) {
+  if (!isRecord(body)) return undefined
+  if (typeof body.output_text === 'string') {
+    return body.output_text.trim() || undefined
+  }
+  if (!Array.isArray(body.output)) return undefined
+
+  return (
+    body.output
+      .filter(isRecord)
+      .flatMap((item) =>
+        Array.isArray(item.content) ? item.content : [],
+      )
+      .filter(isRecord)
+      .map((content) =>
+        typeof content.text === 'string' ? content.text : '',
+      )
+      .join('')
+      .trim() || undefined
+  )
+}
+
 function outputText(body: unknown) {
   if (!isRecord(body)) {
     throw new ProviderError(
@@ -89,27 +111,7 @@ function outputText(body: unknown) {
       'OpenAI returned an invalid response',
     )
   }
-  if (typeof body.output_text === 'string') {
-    return body.output_text
-  }
-  if (!Array.isArray(body.output)) {
-    throw new ProviderError(
-      'invalid_response',
-      'OpenAI returned no text output',
-    )
-  }
-
-  const text = body.output
-    .filter(isRecord)
-    .flatMap((item) =>
-      Array.isArray(item.content) ? item.content : [],
-    )
-    .filter(isRecord)
-    .map((content) =>
-      typeof content.text === 'string' ? content.text : '',
-    )
-    .join('')
-
+  const text = optionalOutputText(body)
   if (!text) {
     throw new ProviderError(
       'invalid_response',
@@ -257,7 +259,19 @@ export function createOpenAIProvider(
           ].join('\n'),
         }),
       })
-      return annotationResults(body)
+      const citations = annotationResults(body)
+      if (citations.length > 0) return citations
+      const summary = optionalOutputText(body)
+      return summary
+        ? [
+            {
+              title: 'OpenAI generated web summary',
+              url: 'https://openai.com/',
+              snippet: summary,
+              provenance: 'summary_only',
+            },
+          ]
+        : []
     },
   }
 }

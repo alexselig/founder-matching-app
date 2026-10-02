@@ -12,6 +12,7 @@ import {
 } from '../../src/shared/contracts.js'
 import { normalizeFounders } from '../../src/shared/founder.js'
 import { createDatabase, type SqliteDatabase } from '../database.js'
+import { createOpenAIProvider } from '../providers/openai.js'
 import type { ProviderAdapter } from '../providers/types.js'
 import { ProviderError } from '../providers/types.js'
 import { FounderRepository } from '../repositories/founders.js'
@@ -479,6 +480,55 @@ describe('enrichment and interpretation routes', () => {
         latestAttempt: {
           status: 'complete',
           resultCount: 0,
+        },
+      },
+    })
+  })
+
+  it('reports an uncited nonempty provider answer as unsupported', async () => {
+    const founderRepository = new FounderRepository(database)
+    const webResultsRepository = new WebResultsRepository(database)
+    const provider = createOpenAIProvider({
+      apiKey: 'openai-secret',
+      model: 'openai-test-model',
+      transport: vi.fn(async () =>
+        new Response(JSON.stringify({
+          output_text:
+            `${founders[0]!.name} leads ${founders[0]!.company} without citations.`,
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    })
+    const service = createEnrichmentService({
+      founderRepository,
+      webResultsRepository,
+      providers: [provider],
+      now: () => new Date('2026-10-01T12:00:00.000Z'),
+      createId: () => 'uncited-route-run',
+    })
+    await service.enrichFounder(founders[0]!.id, {
+      provider: 'openai',
+    })
+
+    const response = await server.inject({
+      method: 'GET',
+      url: `/api/v2/founders/${encodeURIComponent(founders[0]!.id)}/web-results`,
+    })
+
+    expect(response.json()).toMatchObject({
+      ok: true,
+      data: {
+        status: 'unsupported',
+        items: [],
+        latestAttempt: {
+          status: 'partial',
+          resultCount: 0,
+          warnings: [
+            '1 provider result(s) lacked usable provenance',
+            'Provider results did not contain identity-matched cited evidence',
+          ],
         },
       },
     })

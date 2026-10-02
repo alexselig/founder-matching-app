@@ -82,6 +82,28 @@ function providerHttpError(response: Response) {
   )
 }
 
+function optionalOutputText(body: unknown) {
+  if (!isRecord(body)) return undefined
+  if (typeof body.output_text === 'string') {
+    return body.output_text.trim() || undefined
+  }
+  if (!Array.isArray(body.output)) return undefined
+
+  return (
+    body.output
+      .filter(isRecord)
+      .flatMap((item) =>
+        Array.isArray(item.content) ? item.content : [],
+      )
+      .filter(isRecord)
+      .map((content) =>
+        typeof content.text === 'string' ? content.text : '',
+      )
+      .join('')
+      .trim() || undefined
+  )
+}
+
 function outputText(body: unknown) {
   if (!isRecord(body)) {
     throw new ProviderError(
@@ -89,25 +111,7 @@ function outputText(body: unknown) {
       'xAI returned an invalid response',
     )
   }
-  if (typeof body.output_text === 'string') {
-    return body.output_text
-  }
-  if (!Array.isArray(body.output)) {
-    throw new ProviderError(
-      'invalid_response',
-      'xAI returned no text output',
-    )
-  }
-  const text = body.output
-    .filter(isRecord)
-    .flatMap((item) =>
-      Array.isArray(item.content) ? item.content : [],
-    )
-    .filter(isRecord)
-    .map((content) =>
-      typeof content.text === 'string' ? content.text : '',
-    )
-    .join('')
+  const text = optionalOutputText(body)
   if (!text) {
     throw new ProviderError(
       'invalid_response',
@@ -191,7 +195,6 @@ function citationResults(body: unknown): ProviderWebResult[] {
           : 'xAI web source'
       const localText = [
         citation.snippet,
-        citation.text,
         citation.cited_text,
         title === 'xAI web source' ? undefined : title,
       ].find((value): value is string =>
@@ -304,7 +307,19 @@ export function createXaiProvider(
           ].join('\n'),
         }),
       })
-      return citationResults(body)
+      const citations = citationResults(body)
+      if (citations.length > 0) return citations
+      const summary = optionalOutputText(body)
+      return summary
+        ? [
+            {
+              title: 'xAI generated web summary',
+              url: 'https://x.ai/',
+              snippet: summary,
+              provenance: 'summary_only',
+            },
+          ]
+        : []
     },
   }
 }
