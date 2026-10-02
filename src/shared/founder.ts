@@ -1,7 +1,7 @@
-import { FOUNDER_SCHEMA } from './schemaRegistry'
+import { FOUNDER_SCHEMA } from './schemaRegistry.js'
 
 export { FOUNDER_SCHEMA }
-export type { FounderFieldDefinition } from './schemaRegistry'
+export type { FounderFieldDefinition } from './schemaRegistry.js'
 
 export interface RawFounder {
   Id: string
@@ -67,7 +67,7 @@ function requireString(
 
 function requireAge(row: Record<string, unknown>, index: number) {
   const age = row.Age
-  if (!Number.isInteger(age) || age < 0) {
+  if (typeof age !== 'number' || !Number.isInteger(age) || age < 0) {
     throw new Error(`Founder record ${index + 1} has an invalid Age`)
   }
   return age

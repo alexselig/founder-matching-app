@@ -1,4 +1,4 @@
-import type { Founder } from './founder'
+import type { Founder } from './founder.js'
 
 export type ScaleScenario =
   | 'three-tables'
@@ -24,6 +24,15 @@ interface VariationRequirements {
 }
 
 interface VariationStats extends VariationRequirements {}
+const TRACKABLE_FIELDS: readonly (keyof VariationRequirements)[] = [
+  'companyVertical',
+  'company',
+  'age',
+  'education',
+  'role',
+  'cohortGroup',
+  'cohortSection',
+]
 
 function stableHash(value: string) {
   let hash = 2166136261
@@ -34,8 +43,18 @@ function stableHash(value: string) {
   return hash >>> 0
 }
 
-function distinctCount(values: readonly string[] | readonly number[]) {
-  return new Set(values).size
+function distinctCount<T>(values: Iterable<T>) {
+  return new Set<T>(values).size
+}
+
+function hasOwnScenario(value: string): value is ScaleScenario {
+  return Object.hasOwn(SCENARIO_COUNTS, value)
+}
+
+function assertScaleScenario(value: string): asserts value is ScaleScenario {
+  if (!hasOwnScenario(value)) {
+    throw new Error(`Unknown scale scenario: ${value}`)
+  }
 }
 
 function buildVariationStats(founders: readonly Founder[]): VariationStats {
@@ -78,46 +97,184 @@ function meetsVariationRequirements(
   )
 }
 
-function variationScore(stats: VariationStats, requirements: VariationRequirements) {
-  return (
-    Math.min(stats.companyVertical / requirements.companyVertical, 1) * 5 +
-    Math.min(stats.company / requirements.company, 1) * 5 +
-    Math.min(stats.age / requirements.age, 1) * 3 +
-    Math.min(stats.education / requirements.education, 1) * 2 +
-    Math.min(stats.role / requirements.role, 1) * 2 +
-    Math.min(stats.cohortGroup / requirements.cohortGroup, 1) * 2 +
-    Math.min(stats.cohortSection / requirements.cohortSection, 1) * 3
-  )
+type TrackableField = keyof VariationRequirements
+
+type CandidateContext = {
+  readonly currentDistinctValues: Readonly<Record<TrackableField, ReadonlySet<string>>>
+  readonly currentCounts: VariationStats
+  readonly requirements: VariationRequirements
+  readonly valueFrequencies: Readonly<Record<TrackableField, ReadonlyMap<string, number>>>
 }
 
-export function buildScaleFixture(founders: Founder[], scenario: ScaleScenario): Founder[] {
+function stringifyFieldValue(value: string | number) {
+  return String(value)
+}
+
+function createDistinctValueSets(founders: readonly Founder[]) {
+  return {
+    companyVertical: new Set(founders.map((founder) => founder.companyVertical)),
+    company: new Set(founders.map((founder) => founder.company)),
+    age: new Set(founders.map((founder) => stringifyFieldValue(founder.age))),
+    education: new Set(founders.map((founder) => founder.education)),
+    role: new Set(founders.map((founder) => founder.role)),
+    cohortGroup: new Set(founders.map((founder) => founder.cohortGroup)),
+    cohortSection: new Set(founders.map((founder) => founder.cohortSection)),
+  }
+}
+
+function createValueFrequencies(founders: readonly Founder[]) {
+  const entries = TRACKABLE_FIELDS.map((fieldName) => [fieldName, new Map<string, number>()])
+  const frequencies = Object.fromEntries(entries) as Record<TrackableField, Map<string, number>>
+
+  for (const founder of founders) {
+    const fieldValues = founderFieldValues(founder)
+    for (const [fieldName, value] of Object.entries(fieldValues) as Array<[TrackableField, string]>) {
+      frequencies[fieldName].set(value, (frequencies[fieldName].get(value) ?? 0) + 1)
+    }
+  }
+
+  return frequencies
+}
+
+function founderFieldValues(founder: Founder): Record<TrackableField, string> {
+  return {
+    companyVertical: founder.companyVertical,
+    company: founder.company,
+    age: stringifyFieldValue(founder.age),
+    education: founder.education,
+    role: founder.role,
+    cohortGroup: founder.cohortGroup,
+    cohortSection: founder.cohortSection,
+  }
+}
+
+function countRemainingDistinctValues(founders: readonly Founder[]) {
+  const frequencies = createValueFrequencies(founders)
+  return {
+    companyVertical: frequencies.companyVertical.size,
+    company: frequencies.company.size,
+    age: frequencies.age.size,
+    education: frequencies.education.size,
+    role: frequencies.role.size,
+    cohortGroup: frequencies.cohortGroup.size,
+    cohortSection: frequencies.cohortSection.size,
+  }
+}
+
+function scoreFounder(founder: Founder, context: CandidateContext) {
+  const fieldValues = founderFieldValues(founder)
+  let score = 0
+
+  for (const fieldName of TRACKABLE_FIELDS) {
+    if (context.currentCounts[fieldName] >= context.requirements[fieldName]) {
+      continue
+    }
+
+    const fieldValue = fieldValues[fieldName]
+    if (context.currentDistinctValues[fieldName].has(fieldValue)) {
+      continue
+    }
+
+    const frequency = context.valueFrequencies[fieldName].get(fieldValue) ?? 1
+    const remainingGap = context.requirements[fieldName] - context.currentCounts[fieldName]
+    score += remainingGap * 1000 + Math.round(100 / frequency)
+  }
+
+  return score
+}
+
+function describeRequirements(requirements: VariationRequirements, stats: VariationStats) {
+  return `required ${JSON.stringify(requirements)}, actual ${JSON.stringify(stats)}`
+}
+
+function buildSatisfyingSelection(
+  founders: readonly Founder[],
+  targetCount: number,
+  requirements: VariationRequirements,
+) {
+  const ordered = [...founders].sort(
+    (left, right) => stableHash(left.id) - stableHash(right.id) || left.id.localeCompare(right.id),
+  )
+  const remaining = [...ordered]
+  const selection: Founder[] = []
+
+  while (selection.length < targetCount) {
+    const currentCounts = buildVariationStats(selection)
+    if (meetsVariationRequirements(currentCounts, requirements)) {
+      break
+    }
+
+    const currentDistinctValues = createDistinctValueSets(selection)
+    const valueFrequencies = createValueFrequencies(remaining)
+    const candidates = remaining
+      .map((founder, index) => ({
+        founder,
+        index,
+        score: scoreFounder(founder, {
+          currentDistinctValues,
+          currentCounts,
+          requirements,
+          valueFrequencies,
+        }),
+      }))
+      .filter((candidate) => candidate.score > 0)
+      .sort((left, right) => right.score - left.score || left.index - right.index)
+
+    if (!candidates.length) {
+      break
+    }
+
+    const best = candidates[0]
+    selection.push(best.founder)
+    remaining.splice(best.index, 1)
+  }
+
+  for (const founder of remaining) {
+    if (selection.length >= targetCount) {
+      break
+    }
+    selection.push(founder)
+  }
+
+  return selection
+}
+
+function assertVariationRequirementsCanBeMet(
+  founders: readonly Founder[],
+  targetCount: number,
+  requirements: VariationRequirements,
+) {
+  const remainingCounts = countRemainingDistinctValues(founders)
+  for (const fieldName of TRACKABLE_FIELDS) {
+    if (remainingCounts[fieldName] < requirements[fieldName]) {
+      throw new Error(
+        `Could not satisfy variation requirements for ${targetCount} founders: ` +
+          `${fieldName} needs ${requirements[fieldName]} distinct values but only ${remainingCounts[fieldName]} exist`,
+      )
+    }
+  }
+}
+
+export function buildScaleFixture(founders: Founder[], scenario: ScaleScenario | string): Founder[] {
+  assertScaleScenario(scenario)
   const targetCount = SCENARIO_COUNTS[scenario]
 
   if (founders.length < targetCount) {
     throw new Error(`Scenario ${scenario} requires ${targetCount} founders`)
   }
 
-  const ordered = [...founders].sort(
-    (left, right) => stableHash(left.id) - stableHash(right.id) || left.id.localeCompare(right.id),
-  )
   const requirements = buildVariationRequirements(founders, targetCount)
-  let bestOffset = 0
-  let bestScore = -Infinity
+  assertVariationRequirementsCanBeMet(founders, targetCount, requirements)
 
-  for (let offset = 0; offset <= ordered.length - targetCount; offset += 1) {
-    const selection = ordered.slice(offset, offset + targetCount)
-    const stats = buildVariationStats(selection)
+  const selection = buildSatisfyingSelection(founders, targetCount, requirements)
+  const stats = buildVariationStats(selection)
 
-    if (meetsVariationRequirements(stats, requirements)) {
-      return selection
-    }
-
-    const score = variationScore(stats, requirements)
-    if (score > bestScore) {
-      bestScore = score
-      bestOffset = offset
-    }
+  if (!meetsVariationRequirements(stats, requirements)) {
+    throw new Error(
+      `Could not satisfy variation requirements for scenario ${scenario}: ` +
+        describeRequirements(requirements, stats),
+    )
   }
 
-  return ordered.slice(bestOffset, bestOffset + targetCount)
+  return selection
 }

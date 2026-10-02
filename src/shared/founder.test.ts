@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { FOUNDER_SCHEMA, normalizeFounders } from './founder'
+import { FOUNDER_SCHEMA, normalizeFounders, type FounderFieldDefinition } from './founder.js'
 
 const foundersFixturePath = resolve(process.cwd(), 'src/founders.json')
 const rawFixtureText = readFileSync(foundersFixturePath, 'utf8')
@@ -78,5 +78,30 @@ describe('founder normalization', () => {
       aliases: ['company vertical', 'industry', 'sector', 'vertical'],
       normalizer: 'vertical-path',
     })
+  })
+
+  it('keeps the shared schema deeply immutable', () => {
+    expect(Object.isFrozen(FOUNDER_SCHEMA)).toBe(true)
+    for (const field of FOUNDER_SCHEMA) {
+      expect(Object.isFrozen(field)).toBe(true)
+      expect(Object.isFrozen(field.aliases)).toBe(true)
+    }
+
+    const firstField = FOUNDER_SCHEMA[0]!
+    const originalLabel = firstField.label
+    const originalAlias = firstField.aliases[0]
+
+    expect(() => {
+      ;(FOUNDER_SCHEMA as FounderFieldDefinition[]).push(firstField)
+    }).toThrow(TypeError)
+    expect(() => {
+      ;(firstField as { label: string }).label = 'Mutated'
+    }).toThrow(TypeError)
+    expect(() => {
+      ;(firstField.aliases as string[]).push('mutated')
+    }).toThrow(TypeError)
+
+    expect(firstField.label).toBe(originalLabel)
+    expect(firstField.aliases[0]).toBe(originalAlias)
   })
 })
