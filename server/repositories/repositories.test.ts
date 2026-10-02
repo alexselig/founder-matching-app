@@ -4,7 +4,11 @@ import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { normalizeFounders, type Founder } from '../../src/shared/founder.js'
-import { createDatabase, type SqliteDatabase } from '../database.js'
+import {
+  createDatabase,
+  type DatabaseOptions,
+  type SqliteDatabase,
+} from '../database.js'
 import { DinnerRepository } from './dinners.js'
 import { RepositoryError } from './errors.js'
 import { FounderRepository } from './founders.js'
@@ -78,6 +82,20 @@ describe('SQLite repositories', () => {
     if (database.open) {
       database.close()
     }
+  })
+
+  it('requires callers to explicitly choose a database filename', () => {
+    const createWithoutOptions = () => {
+      const unconfiguredCreateDatabase = createDatabase as (
+        options?: DatabaseOptions,
+      ) => SqliteDatabase
+      const unconfiguredDatabase = unconfiguredCreateDatabase()
+      unconfiguredDatabase.close()
+    }
+
+    expect(createWithoutOptions).toThrow(
+      'Database filename is required; use :memory: explicitly for ephemeral storage',
+    )
   })
 
   it('creates the normalized V2 tables, FTS table, and required indexes', () => {
@@ -171,6 +189,65 @@ describe('SQLite repositories', () => {
     expect(founderRepository.get(founderId)).toEqual(founders[0])
   })
 
+  it('returns empty enrichment collections only for existing founders without runs', () => {
+    const founderId = founders[0]!.id
+
+    expect(webResultsRepository.latest(founderId)).toEqual([])
+    expect(webResultsRepository.listRuns(founderId)).toEqual([])
+  })
+
+  it('returns not_found for enrichment reads for an unknown founder', () => {
+    expectRepositoryError(
+      () => webResultsRepository.latest('missing-founder'),
+      'not_found',
+    )
+    expectRepositoryError(
+      () => webResultsRepository.listRuns('missing-founder'),
+      'not_found',
+    )
+  })
+
+  it('normalizes enrichment timestamps to UTC before chronological ordering', () => {
+    const founderId = founders[0]!.id
+    const laterOffsetRun = makeRun(
+      founderId,
+      'run-offset-later',
+      '2026-10-01T12:00:00-07:00',
+    )
+    const earlierUtcRun = makeRun(
+      founderId,
+      'run-utc-earlier',
+      '2026-10-01T18:30:00.000Z',
+    )
+
+    webResultsRepository.appendRun(laterOffsetRun)
+    webResultsRepository.appendRun(earlierUtcRun)
+
+    expect(
+      webResultsRepository.latest(founderId).map((result) => result.runId),
+    ).toEqual(Array(5).fill(laterOffsetRun.id))
+    expect(
+      webResultsRepository
+        .latest(founderId)
+        .map((result) => result.retrievedAt),
+    ).toEqual(Array(5).fill('2026-10-01T19:00:00.000Z'))
+    expect(
+      webResultsRepository.listRuns(founderId).map((run) => ({
+        id: run.id,
+        retrievedAt: run.retrievedAt,
+      })),
+    ).toEqual([
+      {
+        id: laterOffsetRun.id,
+        retrievedAt: '2026-10-01T19:00:00.000Z',
+      },
+      {
+        id: earlierUtcRun.id,
+        retrievedAt: '2026-10-01T18:30:00.000Z',
+      },
+    ])
+  })
+
   it('rejects enrichment runs with more than five evidence items', () => {
     const run = makeRun(
       founders[0]!.id,
@@ -189,7 +266,60 @@ describe('SQLite repositories', () => {
     )
   })
 
-  it('rejects duplicate append-only enrichment runs as conflicts', () => {
+  it.each([
+    {
+      label: 'result shape',
+      mutate: (run: WebEnrichmentRun) => {
+        ;(run.results as unknown[])[0] = null
+      },
+    },
+    {
+      label: 'classification',
+      mutate: (run: WebEnrichmentRun) => {
+        ;(
+          run.results[0] as WebEnrichmentRun['results'][number] & {
+            classification: string
+          }
+        ).classification = 'unsupported'
+      },
+    },
+    {
+      label: 'rank',
+      mutate: (run: WebEnrichmentRun) => {
+        run.results[0]!.rank = 0
+      },
+    },
+    {
+      label: 'confidence',
+      mutate: (run: WebEnrichmentRun) => {
+        run.results[0]!.confidence = 1.1
+      },
+    },
+  ])('rejects invalid web result $label as invalid_data', ({ mutate }) => {
+    const run = makeRun(
+      founders[0]!.id,
+      'run-invalid-data',
+      '2026-10-01T12:00:00.000Z',
+    )
+    mutate(run)
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(run),
+      'invalid_data',
+    )
+  })
+
+  it('rejects a non-object enrichment run as invalid_data', () => {
+    expectRepositoryError(
+      () =>
+        webResultsRepository.appendRun(
+          null as unknown as WebEnrichmentRun,
+        ),
+      'invalid_data',
+    )
+  })
+
+  it('rejects duplicate append-only enrichment run IDs as conflicts', () => {
     const run = makeRun(
       founders[0]!.id,
       'run-conflict',
@@ -197,6 +327,20 @@ describe('SQLite repositories', () => {
     )
 
     webResultsRepository.appendRun(run)
+
+    expectRepositoryError(
+      () => webResultsRepository.appendRun(run),
+      'conflict',
+    )
+  })
+
+  it('rejects duplicate enrichment ranks as conflicts', () => {
+    const run = makeRun(
+      founders[0]!.id,
+      'run-rank-conflict',
+      '2026-10-01T12:00:00.000Z',
+    )
+    run.results[1]!.rank = run.results[0]!.rank
 
     expectRepositoryError(
       () => webResultsRepository.appendRun(run),
