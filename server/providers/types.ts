@@ -77,7 +77,7 @@ export interface ProviderWebResult {
 export interface ProviderAdapter {
   id: ProviderId
   capabilities: ProviderCapabilities
-  validateCredential(secret: string): Promise<void>
+  validateCredential(): Promise<void>
   parseSearch(input: string): Promise<unknown>
   parseDinnerCriteria(input: string): Promise<unknown>
   parseHardRule(input: string): Promise<unknown>

@@ -153,6 +153,68 @@ describe('AI interpretation', () => {
     })
   })
 
+  it('rejects contains for numeric age interpretation', async () => {
+    const service = createAiInterpretationService({
+      providers: [
+        fakeProvider({
+          parseSearch: async () => ({
+            text: '',
+            dimensions: [
+              {
+                field: 'age',
+                operator: 'contains',
+                value: 30,
+              },
+            ],
+          }),
+        }),
+      ],
+    })
+
+    await expect(
+      service.interpretSearch('openai', 'age contains 30'),
+    ).resolves.toMatchObject({
+      status: 'fallback',
+      reason: 'invalid_output',
+    })
+  })
+
+  it.each([
+    { operator: 'is', value: 30 },
+    { operator: 'atLeast', value: 30 },
+    { operator: 'atMost', value: 40 },
+    { operator: 'between', value: { min: 30, max: 40 } },
+  ] as const)(
+    'accepts canonical numeric age operator $operator',
+    async ({ operator, value }) => {
+      const service = createAiInterpretationService({
+        providers: [
+          fakeProvider({
+            parseSearch: async () => ({
+              text: '',
+              dimensions: [
+                {
+                  field: 'age',
+                  operator,
+                  value,
+                },
+              ],
+            }),
+          }),
+        ],
+      })
+
+      await expect(
+        service.interpretSearch('openai', 'age request'),
+      ).resolves.toMatchObject({
+        status: 'interpreted',
+        value: {
+          dimensions: [{ field: 'age', operator, value }],
+        },
+      })
+    },
+  )
+
   it('returns an explicit rate-limited fallback', async () => {
     const service = createAiInterpretationService({
       providers: [

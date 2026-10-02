@@ -1,3 +1,4 @@
+import Anthropic from '@anthropic-ai/sdk'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createAnthropicProvider } from './anthropic.js'
@@ -42,16 +43,26 @@ describe('provider adapters', () => {
   it('uses the xAI Responses API through its isolated injected transport', async () => {
     const transport = vi.fn(async () =>
       jsonResponse({
-        output_text: JSON.stringify({
-          criteria: [
-            {
-              field: 'role',
-              objective: 'diverse',
-              weight: 'high',
-              enabled: true,
-            },
-          ],
-        }),
+        output: [
+          {
+            type: 'message',
+            content: [
+              {
+                type: 'output_text',
+                text: JSON.stringify({
+                  criteria: [
+                    {
+                      field: 'role',
+                      objective: 'diverse',
+                      weight: 'high',
+                      enabled: true,
+                    },
+                  ],
+                }),
+              },
+            ],
+          },
+        ],
       }),
     )
     const provider = createXaiProvider({
@@ -67,6 +78,156 @@ describe('provider adapters', () => {
     })
     const [url] = transport.mock.calls[0]!
     expect(url).toBe('https://api.x.ai/v1/responses')
+  })
+
+  it('extracts source-local OpenAI citation text instead of copying the whole answer', async () => {
+    const founderSentence =
+      'Ada Founder leads Analytical Engines.'
+    const companySentence =
+      'Analytical Engines announced a new analytics product.'
+    const text = `${founderSentence} ${companySentence}`
+    const transport = vi.fn(async () =>
+      jsonResponse({
+        output: [
+          {
+            type: 'message',
+            content: [
+              {
+                type: 'output_text',
+                text,
+                annotations: [
+                  {
+                    type: 'url_citation',
+                    url: 'https://profiles.test/ada',
+                    title: 'Ada Founder profile',
+                    start_index: 0,
+                    end_index: founderSentence.length,
+                  },
+                  {
+                    type: 'url_citation',
+                    url: 'https://news.test/company',
+                    title: 'Analytical Engines news',
+                    start_index: founderSentence.length + 1,
+                    end_index: text.length,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    )
+    const provider = createOpenAIProvider({
+      apiKey: 'openai-secret',
+      model: 'openai-test-model',
+      transport,
+    })
+
+    const results = await provider.searchWeb({
+      founderId: 'founder-1',
+      context: {
+        name: 'Ada Founder',
+        company: 'Analytical Engines',
+        companyVertical: 'B2B Software -> Analytics',
+        role: 'CEO',
+        education: 'Mathematics',
+        cohortGroup: 'W26',
+        cohortSection: 'A',
+      },
+      query: '"Ada Founder" "Analytical Engines"',
+    })
+
+    expect(results).toEqual([
+      expect.objectContaining({
+        url: 'https://profiles.test/ada',
+        snippet: founderSentence,
+      }),
+      expect.objectContaining({
+        url: 'https://news.test/company',
+        snippet: companySentence,
+      }),
+    ])
+    expect(results[1]!.snippet).not.toContain('Ada Founder')
+  })
+
+  it('parses nested xAI citation annotations and keeps top-level citations source-local', async () => {
+    const founderSentence =
+      'Ada Founder leads Analytical Engines.'
+    const companySentence =
+      'Analytical Engines announced a new analytics product.'
+    const text = `${founderSentence} ${companySentence}`
+    const transport = vi.fn(async () =>
+      jsonResponse({
+        output: [
+          {
+            type: 'message',
+            content: [
+              {
+                type: 'output_text',
+                text,
+                annotations: [
+                  {
+                    type: 'url_citation',
+                    url: 'https://profiles.test/ada',
+                    title: 'Ada Founder profile',
+                    start_index: 0,
+                    end_index: founderSentence.length,
+                  },
+                  {
+                    type: 'url_citation',
+                    url: 'https://news.test/company',
+                    title: 'Analytical Engines news',
+                    start_index: founderSentence.length + 1,
+                    end_index: text.length,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        citations: [
+          {
+            url: 'https://directory.test/analytical-engines',
+            title: 'Company directory',
+          },
+        ],
+      }),
+    )
+    const provider = createXaiProvider({
+      apiKey: 'xai-secret',
+      model: 'xai-test-model',
+      transport,
+    })
+
+    const results = await provider.searchWeb({
+      founderId: 'founder-1',
+      context: {
+        name: 'Ada Founder',
+        company: 'Analytical Engines',
+        companyVertical: 'B2B Software -> Analytics',
+        role: 'CEO',
+        education: 'Mathematics',
+        cohortGroup: 'W26',
+        cohortSection: 'A',
+      },
+      query: '"Ada Founder" "Analytical Engines"',
+    })
+
+    expect(results.slice(0, 2)).toEqual([
+      expect.objectContaining({
+        url: 'https://profiles.test/ada',
+        snippet: founderSentence,
+      }),
+      expect.objectContaining({
+        url: 'https://news.test/company',
+        snippet: companySentence,
+      }),
+    ])
+    expect(results[2]).toMatchObject({
+      url: 'https://directory.test/analytical-engines',
+      title: 'Company directory',
+    })
+    expect(results[2]!.snippet).not.toContain('Ada Founder')
   })
 
   it('uses the official Anthropic SDK with Claude Opus 4.8', async () => {
@@ -105,8 +266,8 @@ describe('provider adapters', () => {
       }),
     )
 
-    await provider.validateCredential('candidate-secret')
-    expect(clientFactory).toHaveBeenLastCalledWith('candidate-secret')
+    await provider.validateCredential()
+    expect(clientFactory).toHaveBeenLastCalledWith('anthropic-secret')
     expect(retrieve).toHaveBeenCalledWith('claude-opus-4-8')
   })
 
@@ -184,5 +345,60 @@ describe('provider adapters', () => {
     await expect(provider.parseSearch('query')).rejects.not.toThrow(
       /openai-secret/,
     )
+  })
+
+  it('treats a missing xAI Retry-After header as absent', async () => {
+    const provider = createXaiProvider({
+      apiKey: 'xai-secret',
+      model: 'xai-test-model',
+      transport: vi.fn(async () =>
+        new Response('{}', {
+          status: 429,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    })
+
+    await expect(provider.searchWeb({
+      founderId: 'founder-1',
+      context: {
+        name: 'Ada Founder',
+        company: 'Analytical Engines',
+        companyVertical: 'Analytics',
+        role: 'CEO',
+        education: 'Mathematics',
+        cohortGroup: 'W26',
+        cohortSection: 'A',
+      },
+      query: 'Ada Founder',
+    })).rejects.toMatchObject({
+      code: 'rate_limited',
+      retryAfterMs: undefined,
+    })
+  })
+
+  it('treats an empty Anthropic Retry-After header as absent', async () => {
+    const rateLimitError = new Anthropic.RateLimitError(
+      429,
+      {},
+      'rate limited',
+      new Headers({ 'retry-after': '' }),
+    )
+    const provider = createAnthropicProvider({
+      apiKey: 'anthropic-secret',
+      clientFactory: () => ({
+        messages: {
+          create: vi.fn(async () => {
+            throw rateLimitError
+          }),
+        },
+        models: { retrieve: vi.fn() },
+      }),
+    })
+
+    await expect(provider.parseSearch('query')).rejects.toMatchObject({
+      code: 'rate_limited',
+      retryAfterMs: undefined,
+    })
   })
 })

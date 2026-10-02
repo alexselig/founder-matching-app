@@ -4,6 +4,7 @@ import {
   type ProviderWebResult,
   type WebSearchQuery,
 } from './types.js'
+import { responseAnnotationResults } from './citations.js'
 
 type FetchTransport = typeof fetch
 
@@ -155,58 +156,11 @@ function interpretationInstruction(
 }
 
 function annotationResults(body: unknown): ProviderWebResult[] {
-  if (!isRecord(body) || !Array.isArray(body.output)) {
-    return []
-  }
-  const fallbackSnippet =
-    typeof body.output_text === 'string' ? body.output_text : ''
-  const results: ProviderWebResult[] = []
-
-  for (const item of body.output) {
-    if (!isRecord(item) || !Array.isArray(item.content)) {
-      continue
-    }
-    for (const content of item.content) {
-      if (!isRecord(content) || !Array.isArray(content.annotations)) {
-        continue
-      }
-      const contentText =
-        typeof content.text === 'string'
-          ? content.text
-          : fallbackSnippet
-      for (const annotation of content.annotations) {
-        if (
-          !isRecord(annotation) ||
-          annotation.type !== 'url_citation' ||
-          typeof annotation.url !== 'string'
-        ) {
-          continue
-        }
-        results.push({
-          ...(typeof annotation.id === 'string'
-            ? { id: annotation.id }
-            : {}),
-          title:
-            typeof annotation.title === 'string'
-              ? annotation.title
-              : new URL(annotation.url).hostname,
-          url: annotation.url,
-          snippet: contentText || 'OpenAI web search citation.',
-          provenance: 'citation',
-          rawMetadata: {
-            ...(typeof annotation.start_index === 'number'
-              ? { startIndex: annotation.start_index }
-              : {}),
-            ...(typeof annotation.end_index === 'number'
-              ? { endIndex: annotation.end_index }
-              : {}),
-          },
-        })
-      }
-    }
-  }
-
-  return results
+  return responseAnnotationResults(
+    body,
+    'OpenAI web source',
+    'OpenAI URL citation.',
+  )
 }
 
 export function createOpenAIProvider(
@@ -282,8 +236,8 @@ export function createOpenAIProvider(
   return {
     id: 'openai',
     capabilities,
-    async validateCredential(secret) {
-      await request('/models?limit=1', { method: 'GET' }, secret)
+    async validateCredential() {
+      await request('/models?limit=1', { method: 'GET' })
     },
     parseSearch: (input) => interpret('search', input),
     parseDinnerCriteria: (input) =>

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import type { Founder } from './founder.js'
+import { FOUNDER_SCHEMA } from './schemaRegistry.js'
 
 export const appVersion = 'v2'
 export const FOUNDER_LIST_MAX_LIMIT = 1000
@@ -170,18 +171,29 @@ const NumericRangeSchema = z
     'Range minimum must not exceed maximum',
   )
 
+const AI_SEARCH_FIELDS = FOUNDER_SCHEMA.filter(
+  (field) => field.filter,
+)
+const AI_SEARCH_FIELD_KEYS = AI_SEARCH_FIELDS.map(
+  (field) => field.key,
+) as [string, ...string[]]
+const AI_SEARCH_FIELD_BY_KEY = new Map<
+  string,
+  (typeof AI_SEARCH_FIELDS)[number]
+>(
+  AI_SEARCH_FIELDS.map((field) => [field.key, field]),
+)
+const TEXT_SEARCH_OPERATORS = ['is', 'contains', 'startsWith'] as const
+const NUMBER_SEARCH_OPERATORS = [
+  'between',
+  'is',
+  'atLeast',
+  'atMost',
+] as const
+
 export const SearchDimensionSchema = z
   .object({
-    field: z.enum([
-      'id',
-      'cohortGroup',
-      'cohortSection',
-      'companyVertical',
-      'company',
-      'age',
-      'education',
-      'role',
-    ]),
+    field: z.enum(AI_SEARCH_FIELD_KEYS),
     operator: SearchOperatorSchema,
     value: z.union([
       z.string().min(1),
@@ -192,7 +204,22 @@ export const SearchDimensionSchema = z
   })
   .strict()
   .superRefine((dimension, context) => {
-    if (dimension.field === 'age') {
+    const field = AI_SEARCH_FIELD_BY_KEY.get(dimension.field)
+    const allowedOperators =
+      field?.kind === 'number'
+        ? NUMBER_SEARCH_OPERATORS
+        : TEXT_SEARCH_OPERATORS
+    if (!(allowedOperators as readonly string[]).includes(
+      dimension.operator,
+    )) {
+      context.addIssue({
+        code: 'custom',
+        message: `${dimension.operator} is not valid for ${dimension.field}`,
+        path: ['operator'],
+      })
+    }
+
+    if (field?.kind === 'number') {
       if (
         dimension.operator === 'between' &&
         typeof dimension.value !== 'object'
@@ -214,9 +241,6 @@ export const SearchDimensionSchema = z
     }
 
     if (
-      !['is', 'contains', 'startsWith'].includes(
-        dimension.operator,
-      ) ||
       typeof dimension.value !== 'string'
     ) {
       context.addIssue({
