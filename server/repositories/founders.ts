@@ -420,4 +420,44 @@ export class FounderRepository {
       throwRepositoryFailure(error, `Failed to read founder ${id}`)
     }
   }
+
+  getMany(ids: readonly string[]): Map<string, Founder> {
+    assertDenseArray(ids, 'Founder IDs')
+    for (const id of ids) {
+      assertRepositoryId(id, 'Founder ID')
+    }
+
+    try {
+      const rows = this.database
+        .prepare(
+          `SELECT
+             id,
+             name,
+             cohort_group,
+             cohort_section,
+             company_vertical,
+             company_vertical_levels_json,
+             company,
+             age,
+             education,
+             role,
+             search_name,
+             raw_json
+           FROM founders
+           WHERE id IN (SELECT value FROM json_each(?))`,
+        )
+        .all(JSON.stringify(ids)) as FounderRow[]
+      const byId = new Map(rows.map((row) => [row.id, rowToFounder(row)]))
+      const found = new Map<string, Founder>()
+      for (const id of ids) {
+        const founder = byId.get(id)
+        if (founder) {
+          found.set(id, founder)
+        }
+      }
+      return found
+    } catch (error) {
+      throwRepositoryFailure(error, 'Failed to read founders')
+    }
+  }
 }

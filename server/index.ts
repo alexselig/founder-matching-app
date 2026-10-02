@@ -6,8 +6,20 @@ import type { FastifyInstance } from 'fastify'
 
 import { normalizeFounders } from '../src/shared/founder.js'
 import { createServer } from './app.js'
-import { createDatabase } from './database.js'
+import { createDatabase, type SqliteDatabase } from './database.js'
+import { DinnerRepository } from './repositories/dinners.js'
 import { FounderRepository } from './repositories/founders.js'
+import { WebResultsRepository } from './repositories/webResults.js'
+import {
+  CredentialError,
+  createCredentialVault,
+} from './services/credentials.js'
+import { DinnerService } from './services/dinners.js'
+import { ExportService } from './services/export.js'
+
+export interface StartServerDependencies {
+  openDatabase?: (filename: string) => SqliteDatabase
+}
 
 export function requireDurableDatabasePath(
   environment: NodeJS.ProcessEnv,
@@ -85,21 +97,36 @@ function resolveStaticRoot(environment: NodeJS.ProcessEnv) {
 
 export async function startServer(
   environment: NodeJS.ProcessEnv = process.env,
+  dependencies: StartServerDependencies = {},
 ): Promise<FastifyInstance> {
   const port = Number(environment.PORT ?? '3000')
   const host = environment.HOST ?? '127.0.0.1'
-  const database = createDatabase({
-    filename: requireDurableDatabasePath(environment),
-  })
+  const openDatabase =
+    dependencies.openDatabase ??
+    ((filename: string) => createDatabase({ filename }))
+  const database = openDatabase(requireDurableDatabasePath(environment))
 
   try {
+    // Fails fast on a malformed key, or on stored credentials it cannot decrypt.
+    const credentialVault = createCredentialVault(database, environment)
     const founderRepository = new FounderRepository(database)
     founderRepository.saveAll(loadFounders())
+    const dinnerService = new DinnerService({
+      dinners: new DinnerRepository(database),
+      founders: founderRepository,
+    })
 
     const server = createServer({
       databaseStatus: () =>
         database.open ? 'ready' : 'not-ready',
       founderRepository,
+      credentialVault,
+      dinnerService,
+      exportService: new ExportService({
+        dinners: dinnerService,
+        founders: founderRepository,
+        webResults: new WebResultsRepository(database),
+      }),
       staticRoot: resolveStaticRoot(environment),
     })
     let closing = false
@@ -156,8 +183,13 @@ function isMainModule() {
 if (isMainModule()) {
   try {
     await startServer()
-  } catch {
-    console.error('Founder app server failed to start')
+  } catch (error) {
+    // Credential errors carry fixed, secret-free messages; others may not.
+    console.error(
+      error instanceof CredentialError
+        ? `Founder app server failed to start: ${error.message}`
+        : 'Founder app server failed to start',
+    )
     process.exitCode = 1
   }
 }

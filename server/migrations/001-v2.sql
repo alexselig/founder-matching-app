@@ -237,3 +237,18 @@ CREATE TABLE IF NOT EXISTS dinner_versions (
 
 CREATE INDEX IF NOT EXISTS idx_dinner_versions_configuration_id
   ON dinner_versions(configuration_id);
+
+CREATE TABLE IF NOT EXISTS provider_credentials (
+  provider TEXT PRIMARY KEY NOT NULL CHECK (
+    provider IN ('openai', 'anthropic', 'xai')
+  ),
+  encryption_version INTEGER NOT NULL CHECK (encryption_version = 1),
+  ciphertext TEXT NOT NULL CHECK (length(ciphertext) > 0),
+  iv TEXT NOT NULL CHECK (length(iv) > 0),
+  auth_tag TEXT NOT NULL CHECK (length(auth_tag) > 0),
+  key_check TEXT NOT NULL CHECK (length(key_check) > 0),
+  last_four TEXT NOT NULL CHECK (length(last_four) = 4),
+  validated_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);

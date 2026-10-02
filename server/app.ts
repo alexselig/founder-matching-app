@@ -9,11 +9,24 @@ import {
   type HealthResponse,
 } from '../src/shared/contracts.js'
 import type { FounderRepository } from './repositories/founders.js'
+import { dinnerRoutes } from './routes/dinners.js'
+import { exportRoutes } from './routes/exports.js'
 import { founderRoutes } from './routes/founders.js'
+import {
+  providerRoutes,
+  type CredentialValidator,
+} from './routes/providers.js'
+import type { CredentialVault } from './services/credentials.js'
+import type { DinnerService } from './services/dinners.js'
+import type { ExportService } from './services/export.js'
 
 export interface ServerOptions {
   databaseStatus: () => DatabaseStatus
   founderRepository: FounderRepository
+  credentialVault: CredentialVault
+  dinnerService: DinnerService
+  exportService: ExportService
+  credentialValidator?: CredentialValidator
   staticRoot?: string
 }
 
@@ -59,6 +72,20 @@ export function createServer(options: ServerOptions): FastifyInstance {
 
   server.register(founderRoutes, {
     repository: options.founderRepository,
+  })
+
+  server.register(providerRoutes, {
+    vault: options.credentialVault,
+    validateCredential: options.credentialValidator,
+  })
+
+  server.register(dinnerRoutes, {
+    dinners: options.dinnerService,
+    exports: options.exportService,
+  })
+
+  server.register(exportRoutes, {
+    exports: options.exportService,
   })
 
   server.setNotFoundHandler((request, reply) => {
