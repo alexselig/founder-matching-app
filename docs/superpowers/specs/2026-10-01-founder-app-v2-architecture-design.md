@@ -216,12 +216,14 @@ every available source attribute for that founder: opaque ID, company,
 company-vertical full path, age, education, role, cohort group, and cohort
 section. Identity and matched dimensions remain visible by default. The full
 attribute set sits behind an independently controlled chevron disclosure that
-is collapsed by default. Its `More` label and chevron sit on the right side of
-the same row as Matched dimensions, reducing the default card height. Long
-values wrap when expanded; source attributes are not silently truncated.
-The Match dimensions area retains its orange-accented background, while the
-adjacent `More` control uses a separate white surface so it does not read as
-part of the matching criterion.
+is collapsed by default. Its `More` label and chevron are left-aligned directly
+below the company name in the identity column. The Matched dimensions block
+starts at the same vertical position as the founder-name text rather than
+centering against the combined identity block. Long values wrap when expanded;
+source attributes are not silently truncated. The Match dimensions area
+retains its orange-accented background, while the separate `More` control stays
+on the white identity surface so it does not read as part of the matching
+criterion.
 
 On Search routes, the persistent footer places Export Results and Create Dinner
 Matching on the far right. These contextual actions remain visually separate
@@ -236,6 +238,11 @@ chevron that clearly communicates dropdown behavior. The button exposes
 expanded state, keyboard operation, focus styling, and an accessible name. Its
 resting background is the same white surface as the header; hover, focus, and
 open states provide the interaction contrast.
+
+The account-switcher callout uses a 4px Bauhaus-blue highlight across its top
+edge. Both exposed diagonal edges of its pointer use the same 4px blue stroke,
+so the pointer reads as a continuous extension of that highlighted edge rather
+than reverting to the standard ink outline.
 
 Activating it opens an anchored searchable founder selector containing every
 founder in the loaded cohort. Selecting a founder closes the dropdown and
