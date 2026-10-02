@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { performance } from 'node:perf_hooks'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildScaleFixture } from '../../shared/fixtures.js'
@@ -13,6 +14,7 @@ import {
 import { compileCriteria } from './criteria.js'
 import {
   compareDinnerMetrics,
+  defaultComparisonBudget,
   DinnerConflictError,
   optimizeDinner,
 } from './optimizer.js'
@@ -167,6 +169,41 @@ describe('dinner alternatives', () => {
       )
     },
     60_000,
+  )
+
+  it(
+    'bounds the default full-dataset optimizer plus alternatives path',
+    () => {
+      const tableCount = Math.ceil(referenceFounders.length / 8)
+      const request = {
+        founders: referenceFounders,
+        tableCount,
+        criteria: scaleCriteria,
+      }
+      const startedAt = performance.now()
+      const base = optimizeDinner(request)
+      const alternatives = generateAlternatives(request, 2, base)
+      const elapsedMilliseconds = performance.now() - startedAt
+
+      expect(generateAlternatives(request, 2, base)).toEqual(alternatives)
+      expect(elapsedMilliseconds).toBeLessThan(20_000)
+      expect(base.optimization.comparisons).toBe(
+        defaultComparisonBudget(referenceFounders.length),
+      )
+      expect(alternatives).toHaveLength(2)
+      for (const alternative of alternatives) {
+        expect(alternative.optimization.comparisons).toBe(
+          defaultComparisonBudget(referenceFounders.length),
+        )
+        expect(compareDinnerMetrics(alternative.metrics, base.metrics)).toBeLessThanOrEqual(
+          0,
+        )
+        expect(structuralDifference(base, alternative)).toBeGreaterThanOrEqual(
+          ALTERNATIVE_STRUCTURAL_DIFFERENCE,
+        )
+      }
+    },
+    45_000,
   )
 
   it('reports fully locked cohorts as structurally rigid', () => {

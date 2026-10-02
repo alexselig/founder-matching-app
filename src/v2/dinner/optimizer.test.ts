@@ -103,6 +103,95 @@ describe('deterministic constrained maximin optimization', () => {
     20_000,
   )
 
+  it.each([
+    ['without same-company separation', false],
+    ['with same-company separation', true],
+  ] as const)(
+    'satisfies 160-founder Design max 3 %s',
+    (_label, separateCompanies) => {
+      const founders = buildScaleFixture(referenceFounders, 'twenty-tables')
+      const ruleInputs = [
+        {
+          id: 'design-max-3',
+          type: 'field-count' as const,
+          field: 'role',
+          value: 'Design',
+          max: 3,
+        },
+        ...(separateCompanies
+          ? [{ id: 'company-separation', type: 'same-company-separation' as const }]
+          : []),
+      ]
+      const compiledRules = compileHardRules(ruleInputs, founders)
+
+      const first = optimizeDinner({
+        founders,
+        tableCount: 20,
+        criteria,
+        rules: compiledRules.rules,
+        maxIterations: 0,
+      })
+      const second = optimizeDinner({
+        founders,
+        tableCount: 20,
+        criteria,
+        rules: compiledRules.rules,
+        maxIterations: 0,
+      })
+
+      expect(first).toEqual(second)
+      expect(findRuleViolations(first.tables, founders, compiledRules.rules)).toEqual([])
+      expect(
+        first.tables.every(
+          (table) =>
+            table.founderIds.filter(
+              (founderId) =>
+                founders.find((candidate) => candidate.id === founderId)?.role ===
+                'Design',
+            ).length <= 3,
+        ),
+      ).toBe(true)
+    },
+    20_000,
+  )
+
+  it.each([
+    ['without same-company separation', false],
+    ['with same-company separation', true],
+  ] as const)(
+    'satisfies full-dataset Design max 3 %s',
+    (_label, separateCompanies) => {
+      const tableCount = Math.ceil(referenceFounders.length / 8)
+      const ruleInputs = [
+        {
+          id: 'design-max-3',
+          type: 'field-count' as const,
+          field: 'role',
+          value: 'Design',
+          max: 3,
+        },
+        ...(separateCompanies
+          ? [{ id: 'company-separation', type: 'same-company-separation' as const }]
+          : []),
+      ]
+      const compiledRules = compileHardRules(ruleInputs, referenceFounders)
+      const solution = optimizeDinner({
+        founders: referenceFounders,
+        tableCount,
+        criteria,
+        rules: compiledRules.rules,
+        maxIterations: 0,
+      })
+
+      expect(findRuleViolations(
+        solution.tables,
+        referenceFounders,
+        compiledRules.rules,
+      )).toEqual([])
+    },
+    30_000,
+  )
+
   it('returns the same assignment and metrics for the same request', () => {
     const founders = buildScaleFixture(referenceFounders, 'three-tables')
     const request = { founders, tableCount: 3, criteria, maxIterations: 2 }
