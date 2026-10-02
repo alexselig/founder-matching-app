@@ -78,6 +78,40 @@ function makeSparseArray<T>(value: T): T[] {
   return array
 }
 
+const sparseWebMetadataCases = [
+  {
+    label: 'query context',
+    mutate: (run: WebEnrichmentRun) => {
+      run.queryContext = {
+        aliases: makeSparseArray('founder'),
+      }
+    },
+  },
+  {
+    label: 'run provider metadata',
+    mutate: (run: WebEnrichmentRun) => {
+      run.rawProviderMetadata = {
+        request: {
+          sources: makeSparseArray('web'),
+        },
+      }
+    },
+  },
+  {
+    label: 'result provider metadata',
+    mutate: (run: WebEnrichmentRun) => {
+      run.results[0]!.rawProviderMetadata = {
+        provider: {
+          signals: makeSparseArray('verified'),
+        },
+      }
+    },
+  },
+] satisfies Array<{
+  label: string
+  mutate: (run: WebEnrichmentRun) => void
+}>
+
 function expectRepositoryError(
   action: () => unknown,
   code: RepositoryError['code'],
@@ -504,7 +538,7 @@ describe('SQLite repositories', () => {
     )
   })
 
-  it('rejects sparse web result collections and nested metadata arrays', () => {
+  it('rejects sparse web result collections', () => {
     const sparseResultsRun = makeRun(
       founders[0]!.id,
       'run-sparse-results',
@@ -518,18 +552,57 @@ describe('SQLite repositories', () => {
       () => webResultsRepository.appendRun(sparseResultsRun),
       'invalid_data',
     )
+  })
 
-    const sparseMetadataRun = makeRun(
-      founders[0]!.id,
-      'run-sparse-metadata',
+  it.each(sparseWebMetadataCases)(
+    'rejects sparse $label before a missing-founder lookup',
+    ({ mutate }) => {
+      const run = makeRun(
+        'missing-founder',
+        'run-missing-founder-metadata',
+        '2026-10-01T12:00:00.000Z',
+      )
+      mutate(run)
+
+      expectRepositoryError(
+        () => webResultsRepository.appendRun(run),
+        'invalid_data',
+      )
+    },
+  )
+
+  it.each(sparseWebMetadataCases)(
+    'rejects sparse $label before touching a closed database',
+    ({ mutate }) => {
+      const run = makeRun(
+        founders[0]!.id,
+        'run-closed-database-metadata',
+        '2026-10-01T12:00:00.000Z',
+      )
+      mutate(run)
+      database.close()
+
+      expectRepositoryError(
+        () => webResultsRepository.appendRun(run),
+        'invalid_data',
+      )
+    },
+  )
+
+  it('rejects non-serializable nested result metadata before database access', () => {
+    const run = makeRun(
+      'missing-founder',
+      'run-circular-result-metadata',
       '2026-10-01T12:00:00.000Z',
     )
-    sparseMetadataRun.queryContext = {
-      aliases: makeSparseArray('founder'),
+    const circularMetadata: Record<string, unknown> = {}
+    circularMetadata.self = circularMetadata
+    run.results[0]!.rawProviderMetadata = {
+      nested: circularMetadata,
     }
 
     expectRepositoryError(
-      () => webResultsRepository.appendRun(sparseMetadataRun),
+      () => webResultsRepository.appendRun(run),
       'invalid_data',
     )
   })

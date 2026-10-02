@@ -75,11 +75,27 @@ interface WebResultRow {
 }
 
 interface NormalizedRunInput {
+  id: string
+  founderId: string
+  queryFingerprint: string
+  provider: string
   retrievedAt: string
+  queryContextJson: string | null
+  rawProviderMetadataJson: string | null
   results: Array<{
-    input: WebResultInput
+    rank: number
+    classification: WebResultClassification
+    title: string
+    url: string
+    domain: string
+    snippet: string
+    provider: string
+    providerResultId: string | null
     retrievedAt: string
+    confidence: number | null
+    entityMatchJson: string
     staleAfter: string | null
+    rawProviderMetadataJson: string | null
   }>
 }
 
@@ -170,9 +186,8 @@ function encodeOptionalJson(value: unknown, label: string) {
     return null
   }
 
-  assertNoSparseArrays(value, label)
-
   try {
+    assertNoSparseArrays(value, label)
     const encoded = JSON.stringify(value)
     if (encoded === undefined) {
       throw new Error(`${label} is not JSON serializable`)
@@ -219,6 +234,14 @@ function validateRun(run: WebEnrichmentRun): NormalizedRunInput {
   const retrievedAt = normalizeTimestamp(
     run.retrievedAt,
     'Run retrieval time',
+  )
+  const queryContextJson = encodeOptionalJson(
+    run.queryContext,
+    'Enrichment query context',
+  )
+  const rawProviderMetadataJson = encodeOptionalJson(
+    run.rawProviderMetadata,
+    'Enrichment provider metadata',
   )
 
   assertDenseArray(run.results, 'Enrichment run results')
@@ -285,8 +308,21 @@ function validateRun(run: WebEnrichmentRun): NormalizedRunInput {
     assertEntityMatch(result.entityMatch)
 
     return {
-      input: result,
+      rank: result.rank,
+      classification: result.classification,
+      title: result.title,
+      url: result.url,
+      domain: result.domain,
+      snippet: result.snippet,
+      provider: result.provider,
+      providerResultId: result.providerResultId ?? null,
       retrievedAt: resultRetrievedAt,
+      confidence: result.confidence ?? null,
+      entityMatchJson:
+        encodeOptionalJson(
+          result.entityMatch ?? {},
+          'Web result entity match',
+        ) ?? '{}',
       staleAfter:
         result.staleAfter === undefined
           ? null
@@ -294,11 +330,21 @@ function validateRun(run: WebEnrichmentRun): NormalizedRunInput {
               result.staleAfter,
               'Web result stale-after time',
             ),
+      rawProviderMetadataJson: encodeOptionalJson(
+        result.rawProviderMetadata,
+        'Web result provider metadata',
+      ),
     }
   })
 
   return {
+    id: run.id,
+    founderId: run.founderId,
+    queryFingerprint: run.queryFingerprint,
+    provider: run.provider,
     retrievedAt,
+    queryContextJson,
+    rawProviderMetadataJson,
     results,
   }
 }
@@ -348,7 +394,7 @@ export class WebResultsRepository {
 
     try {
       const append = this.database.transaction(() => {
-        this.assertFounderExists(run.founderId)
+        this.assertFounderExists(normalized.founderId)
 
         this.database
           .prepare(
@@ -363,19 +409,13 @@ export class WebResultsRepository {
              ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
           )
           .run(
-            run.id,
-            run.founderId,
-            run.queryFingerprint,
-            run.provider,
+            normalized.id,
+            normalized.founderId,
+            normalized.queryFingerprint,
+            normalized.provider,
             normalized.retrievedAt,
-            encodeOptionalJson(
-              run.queryContext,
-              'Enrichment query context',
-            ),
-            encodeOptionalJson(
-              run.rawProviderMetadata,
-              'Enrichment provider metadata',
-            ),
+            normalized.queryContextJson,
+            normalized.rawProviderMetadataJson,
           )
 
         const insertResult = this.database.prepare(
@@ -399,29 +439,22 @@ export class WebResultsRepository {
         )
 
         for (const normalizedResult of normalized.results) {
-          const { input: result } = normalizedResult
           insertResult.run(
-            run.id,
-            run.founderId,
-            result.rank,
-            result.classification,
-            result.title,
-            result.url,
-            result.domain,
-            result.snippet,
-            result.provider,
-            result.providerResultId ?? null,
+            normalized.id,
+            normalized.founderId,
+            normalizedResult.rank,
+            normalizedResult.classification,
+            normalizedResult.title,
+            normalizedResult.url,
+            normalizedResult.domain,
+            normalizedResult.snippet,
+            normalizedResult.provider,
+            normalizedResult.providerResultId,
             normalizedResult.retrievedAt,
-            result.confidence ?? null,
-            encodeOptionalJson(
-              result.entityMatch ?? {},
-              'Web result entity match',
-            ),
+            normalizedResult.confidence,
+            normalizedResult.entityMatchJson,
             normalizedResult.staleAfter,
-            encodeOptionalJson(
-              result.rawProviderMetadata,
-              'Web result provider metadata',
-            ),
+            normalizedResult.rawProviderMetadataJson,
           )
         }
       })
@@ -430,7 +463,7 @@ export class WebResultsRepository {
     } catch (error) {
       throwRepositoryFailure(
         error,
-        `Failed to append enrichment run ${run.id}`,
+        `Failed to append enrichment run ${normalized.id}`,
       )
     }
   }
