@@ -351,7 +351,7 @@ function AlgorithmPage() {
               express the kind of room they want without presenting the result
               as a scientifically perfect match.
             </p>
-            <a className="yc-link-button" href={v1Href('/admin')}>Try the grouping workspace</a>
+            <a className="bauhaus-link-button" href={v1Href('/admin')}>Try the grouping workspace</a>
           </div>
         </section>
 

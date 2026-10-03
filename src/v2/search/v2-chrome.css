@@ -1,7 +1,7 @@
 /* V2 chrome: shell tokens, header, footer. Every selector is v2-namespaced so V1 styling is untouched. */
 
 .v2-shell {
-  --v2-orange: var(--yc-orange, #f26522);
+  --v2-orange: var(--bauhaus-orange, #f26522);
   --v2-orange-soft: #fff3ed;
   --v2-blue: var(--bauhaus-blue, #2f5bea);
   --v2-on-blue: #fff;
