@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Founder Index V2: search, evidence review, deterministic dinner matching, saved plans, secure AI credentials, and public-safe Demo mode.">
+    <meta name="description" content="Founder Index V2: move from zero-query founder discovery to a reviewable seating arrangement, with founder and admin modes, Demo data, analysis, and optional AI.">
     <title>Founder Index V2 — Product showcase</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="./showcase.css">
@@ -12,9 +12,12 @@
     <header class="masthead">
       <a class="wordmark" href="#top">Founder Index <span>V2</span></a>
       <nav aria-label="Showcase sections">
-        <a href="#search">Search</a>
-        <a href="#matching">Dinner matching</a>
-        <a href="#trust">Trust</a>
+        <a href="#flow">Search → seating</a>
+        <a href="#zero-query">Zero query</a>
+        <a href="#modes">Modes</a>
+        <a href="#demo">Demo data</a>
+        <a href="#analysis">Analysis</a>
+        <a href="#ai">AI</a>
         <a href="#storyboard">Storyboard</a>
       </nav>
       <a class="repo-link" href="https://founder-index-demo.onrender.com/v2">Open live demo ↗</a>
@@ -23,100 +26,169 @@
     <main id="top">
       <section class="hero">
         <div class="hero-copy">
-          <p class="brandline">Founder discovery · Dinner intelligence</p>
-          <h1>Find the right people.<br><em>Build the right room.</em></h1>
+          <p class="brandline">Founder discovery → Seating intelligence</p>
+          <h1>Search the people.<br><em>Shape the room.</em></h1>
           <p class="hero-dek">
-            Founder Index combines schema-wide search, citable web evidence, and deterministic
-            seating optimization in one reviewable workflow. Every screenshot below comes from
-            the running application using synthetic Demo data.
+            Start with explainable discovery, refine a founder cohort, and turn it into a seating
+            arrangement you can analyze and improve. Switch between Founder and YC Admin modes,
+            explore safely with Demo data, and add AI only where it helps.
           </p>
           <div class="hero-actions">
             <a class="primary" href="https://founder-index-demo.onrender.com/v2">Open the live demo</a>
-            <a href="#storyboard">Review the 16-screen proof</a>
+            <a href="#storyboard">Review the 17-screen proof</a>
           </div>
         </div>
         <figure class="hero-frame">
-          <img src="./showcase/images/09-tables.png" alt="Founder Index table view with twenty optimized dinner tables">
+          <div class="hero-sequence">
+            <img src="./showcase/images/02-search-grid.png" alt="Structured founder search results">
+            <span aria-hidden="true">→</span>
+            <img src="./showcase/images/09-tables.png" alt="Twenty-table seating arrangement">
+          </div>
           <figcaption>
-            <span>Live product capture</span>
-            Tables view · deterministic assignment · editable locks
+            <span>One connected workflow</span>
+            Search cohort → configure objectives → review the room
           </figcaption>
         </figure>
       </section>
 
       <section class="proof-strip" aria-label="Product facts">
-        <div><strong>574</strong><span>Production founder records supported</span></div>
-        <div><strong>160</strong><span>Public-safe synthetic Demo founders</span></div>
-        <div><strong>20</strong><span>Tables verified in responsive layouts</span></div>
-        <div><strong>0</strong><span>API keys stored in the browser</span></div>
+        <div><strong>0</strong><span>Queries required to understand the index</span></div>
+        <div><strong>2</strong><span>Purpose-built Founder and YC Admin modes</span></div>
+        <div><strong>160</strong><span>Fictitious founders in public Demo mode</span></div>
+        <div><strong>20</strong><span>Tables analyzed in one arrangement</span></div>
       </section>
 
-      <section class="chapter" id="search">
+      <section class="chapter" id="flow">
         <div class="chapter-label">
-          <p class="brandline">01 · Founder discovery</p>
-          <h2>Search starts broad, then becomes exact.</h2>
+          <p class="brandline">01 · Search → seating</p>
+          <h2>One cohort. One continuous flow.</h2>
         </div>
         <div class="chapter-copy">
           <p>
-            Zero-query collections make the index useful before anyone types. Natural-language
-            input compiles into visible, editable dimensions, with grid and list views, grouping,
-            sorting, export, and explicit no-results recovery.
+            Natural language becomes visible search dimensions. Refine, sort, and group the
+            results, then send that exact ordered cohort into dinner setup without rebuilding it.
           </p>
           <ul class="feature-ledger">
-            <li><span>Discovery</span><strong>Explainable recommendations with visible reasons</strong></li>
-            <li><span>Control</span><strong>Every interpreted dimension remains editable</strong></li>
-            <li><span>Recovery</span><strong>Failed searches preserve intent instead of resetting</strong></li>
+            <li><span>Search</span><strong>Natural language compiles into editable dimensions</strong></li>
+            <li><span>Handoff</span><strong>The ordered result cohort moves directly into Dinner Matching</strong></li>
+            <li><span>Setup</span><strong>Organizers add capacity, objectives, weights, and hard rules</strong></li>
           </ul>
         </div>
+        <div class="paired-shots">
+          <figure>
+            <img src="./showcase/images/02-search-grid.png" alt="Founder search results grouped in a grid">
+            <figcaption>Refine the cohort and keep every interpreted dimension visible.</figcaption>
+          </figure>
+          <figure>
+            <img src="./showcase/images/07-dinner-configuration.png" alt="Dinner setup using a founder search cohort">
+            <figcaption>Carry the cohort into capacity, criteria, rules, and generation.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="chapter chapter-dark" id="zero-query">
+        <div class="chapter-label">
+          <p class="brandline">02 · Zero-query discovery</p>
+          <h2>Understand the index before you search.</h2>
+        </div>
+        <div class="chapter-copy">
+          <p>
+            The first screen is useful without a query. It surfaces explainable founder groups
+            based on useful adjacency, complementary backgrounds, and shared context, with a
+            visible reason for every recommendation.
+          </p>
+        </div>
         <figure class="wide-shot">
-          <img src="./showcase/images/02-search-grid.png" alt="Founder search results grouped in a grid">
+          <img src="./showcase/images/01-search-zero.png" alt="Zero-query founder discovery with explainable recommendations">
         </figure>
       </section>
 
-      <section class="chapter chapter-dark" id="matching">
+      <section class="chapter" id="modes">
         <div class="chapter-label">
-          <p class="brandline">02 · Dinner matching</p>
-          <h2>A seating plan you can inspect, challenge, and improve.</h2>
+          <p class="brandline">03 · Founder and admin modes</p>
+          <h2>The same index, shaped around two jobs.</h2>
         </div>
         <div class="chapter-copy">
           <p>
-            Organizers define the cohort, capacity, objectives, and hard rules. The optimizer
-            produces complete assignments only, shows weak placements, compares structural
-            alternatives, and keeps every manual decision visible.
+            Founder mode keeps discovery and export front and center. YC Admin mode adds saved
+            plans, cohort handoff, dinner configuration, table editing, analysis, and export.
+            The account switcher makes the boundary explicit.
+          </p>
+        </div>
+        <figure class="wide-shot">
+          <img src="./showcase/images/17-account-modes.png" alt="Account menu showing Founder and YC Admin modes">
+          <figcaption>Switch between a founder’s discovery workflow and an organizer’s planning workflow.</figcaption>
+        </figure>
+      </section>
+
+      <section class="chapter chapter-dark" id="demo">
+        <div class="chapter-label">
+          <p class="brandline">04 · Public Demo data</p>
+          <h2>Explore the whole product without touching real data.</h2>
+        </div>
+        <div class="chapter-copy">
+          <p>
+            Demo mode ships with 160 fictitious founders, realistic search results, and saved
+            seating history. The public deployment is read-only, so visitors can inspect every
+            major workflow without changing shared data or entering credentials.
+          </p>
+        </div>
+        <div class="paired-shots">
+          <figure>
+            <img src="./showcase/images/06-seating-plans-populated.png" alt="Saved seating plans populated with fictitious Demo data">
+            <figcaption>Sample plans make version history, recovery, and reopening immediately explorable.</figcaption>
+          </figure>
+          <figure>
+            <img src="./showcase/images/16-mobile-tables.png" alt="Responsive seating tables using fictitious Demo data">
+            <figcaption>The same synthetic data works across desktop, tablet, and phone layouts.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="chapter" id="analysis">
+        <div class="chapter-label">
+          <p class="brandline">05 · Arrangement analysis</p>
+          <h2>See where the room works and where it does not.</h2>
+        </div>
+        <div class="chapter-copy">
+          <p>
+            The analysis view scores the arrangement against organizer objectives, surfaces the
+            weakest placements, shows match distribution and role mix, and recommends concrete
+            improvements that remain under organizer control.
           </p>
         </div>
         <div class="paired-shots">
           <figure>
             <img src="./showcase/images/10-analysis.png" alt="Dinner analysis with objective performance and weakest placements">
-            <figcaption>Analysis turns an arrangement into a reviewable decision.</figcaption>
+            <figcaption>Objective performance, weak placements, distribution, and role makeup.</figcaption>
           </figure>
           <figure>
             <img src="./showcase/images/11-alternatives.png" alt="Three dinner arrangements compared side by side">
-            <figcaption>Alternatives disclose tradeoffs before a solution is selected.</figcaption>
+            <figcaption>Compare structural alternatives before choosing an arrangement.</figcaption>
           </figure>
         </div>
       </section>
 
-      <section class="chapter" id="trust">
+      <section class="chapter chapter-dark" id="ai">
         <div class="chapter-label">
-          <p class="brandline">03 · Evidence and privacy</p>
-          <h2>AI can assist without becoming the source of truth.</h2>
+          <p class="brandline">06 · Optional AI integration</p>
+          <h2>AI helps. The product still works without it.</h2>
         </div>
         <div class="chapter-copy">
           <p>
-            Authoritative founder fields stay separate from web evidence. Supported claims retain
-            source URL, retrieval date, provider, confidence, and entity match. Provider credentials
-            travel directly to the server, are validated, and are encrypted before local persistence.
+            AI can interpret natural-language search, suggest dinner criteria, rerank results, and
+            collect cited web evidence. Basic Search and deterministic dinner matching remain
+            available when AI is disabled.
           </p>
         </div>
         <div class="paired-shots">
           <figure>
-            <img src="./showcase/images/14-web-evidence.png" alt="Top web results shown in a right-side card over Founder Search">
-            <figcaption>The five highest-ranked cited results stay in the search context.</figcaption>
+            <img src="./showcase/images/14-web-evidence.png" alt="Top web results shown in a full-height panel over Founder Search">
+            <figcaption>Cited web evidence stays attached to the founder and source.</figcaption>
           </figure>
           <figure>
             <img src="./showcase/images/15-ai-provider.png" alt="AI provider credential configuration and security boundary">
-            <figcaption>Redacted metadata is visible; the raw credential is not.</figcaption>
+            <figcaption>Credentials go to the server, are validated, and never enter browser storage.</figcaption>
           </figure>
         </div>
       </section>
@@ -138,7 +210,7 @@
         <div class="storyboard-head">
           <div>
             <p class="brandline">Release storyboard</p>
-            <h2>Sixteen verified states.</h2>
+            <h2>Seventeen verified states.</h2>
           </div>
           <p>
             The sequence covers discovery, search, failure recovery, plan creation, analysis,
@@ -162,6 +234,7 @@
           <figure><span>14</span><img src="./showcase/images/14-web-evidence.png" alt="Top web results drawer"><figcaption>Search · top web results</figcaption></figure>
           <figure><span>15</span><img src="./showcase/images/15-ai-provider.png" alt="AI provider setup"><figcaption>AI · secure credential</figcaption></figure>
           <figure class="mobile-proof"><span>16</span><img src="./showcase/images/16-mobile-tables.png" alt="Responsive mobile table view"><figcaption>Tables · mobile</figcaption></figure>
+          <figure><span>17</span><img src="./showcase/images/17-account-modes.png" alt="Founder and YC Admin account modes"><figcaption>Account · Founder / Admin</figcaption></figure>
         </div>
       </section>
     </main>

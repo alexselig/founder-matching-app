@@ -57,11 +57,11 @@ async function openTwentyTablePlan(page) {
 await withPage('/v2/search', '01-search-zero.png')
 
 await withPage('/v2/search', '02-search-grid.png', async (page) => {
-  await runSearch(page, 'Engineering founders in B2B software, age 25–33')
+  await runSearch(page, 'Founders under 40')
 })
 
 await withPage('/v2/search', '03-search-list.png', async (page) => {
-  await runSearch(page, 'Engineering founders in B2B software, age 25–33')
+  await runSearch(page, 'Founders under 40')
   await page.getByRole('button', { name: 'List view' }).click()
 })
 
@@ -142,5 +142,10 @@ await withPage(
   { viewport: { width: 390, height: 844 } },
 )
 
+await withPage('/v2/search', '17-account-modes.png', async (page) => {
+  await page.getByRole('button', { name: /Current organizer/ }).click()
+  await page.getByRole('menu', { name: 'Account view' }).waitFor()
+})
+
 await browser.close()
-console.log(`Captured 16 showcase images in ${outputDir}`)
+console.log(`Captured 17 showcase images in ${outputDir}`)

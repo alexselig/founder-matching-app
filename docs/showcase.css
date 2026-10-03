@@ -62,6 +62,8 @@ img { display: block; max-width: 100%; }
 .hero-actions .primary { padding: 13px 16px; border: 1px solid var(--ink); color: #fff; background: var(--ink); }
 .hero-frame { align-self: center; margin: 40px 0 40px -1px; border: 1px solid var(--ink); border-right: 0; background: var(--panel); }
 .hero-frame img { width: 100%; }
+.hero-sequence { display: grid; grid-template-rows: auto 56px auto; background: var(--panel); }
+.hero-sequence span { display: grid; place-items: center; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); color: var(--rust); font: 400 34px/1 "Instrument Serif", serif; transform: rotate(90deg); }
 .hero-frame figcaption { display: flex; justify-content: space-between; gap: 20px; padding: 14px 18px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 11px; }
 .hero-frame figcaption span { color: var(--teal); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 
@@ -116,6 +118,7 @@ footer a { font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--ink
   .hero, .chapter, .architecture { grid-template-columns: 1fr; }
   .hero-copy { border-right: 0; border-bottom: 1px solid var(--ink); }
   .hero-frame { margin: 28px 0; border-left: 0; }
+  .hero-sequence span { height: 48px; }
   .proof-strip { grid-template-columns: 1fr 1fr; }
   .proof-strip div:nth-child(2) { border-right: 0; }
   .proof-strip div:nth-child(-n+2) { border-bottom: 1px solid var(--rule); }

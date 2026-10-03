@@ -10,38 +10,39 @@ seating plans.
 <table>
   <tr>
     <td width="50%">
+      <a href="docs/showcase/images/02-search-grid.png"><img width="49%" src="docs/showcase/images/02-search-grid.png" alt="Structured founder search results"></a>
+      <a href="docs/showcase/images/07-dinner-configuration.png"><img width="49%" src="docs/showcase/images/07-dinner-configuration.png" alt="Dinner setup created from a founder search cohort"></a>
+      <strong>Move from search to a seating arrangement.</strong><br>
+      Search, refine the cohort, then hand the ordered founders directly into dinner setup.
+    </td>
+    <td width="50%">
       <a href="docs/showcase/images/01-search-zero.png"><img src="docs/showcase/images/01-search-zero.png" alt="Founder discovery with explainable zero-query suggestions"></a>
-      <strong>Discover founders before typing.</strong><br>
-      Start from explainable adjacent, complementary, and cross-domain suggestions.
-    </td>
-    <td width="50%">
-      <a href="docs/showcase/images/02-search-grid.png"><img src="docs/showcase/images/02-search-grid.png" alt="Structured founder search results"></a>
-      <strong>Turn natural language into structured search.</strong><br>
-      Inspect and edit the dimensions behind every result set.
+      <strong>Understand the index without searching.</strong><br>
+      The zero-query state explains adjacent, complementary, and shared-context founders before anyone types.
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <a href="docs/showcase/images/06-seating-plans-populated.png"><img src="docs/showcase/images/06-seating-plans-populated.png" alt="Saved seating plans archive"></a>
-      <strong>Resume and review saved plans.</strong><br>
-      Reopen arrangements, inspect versions, and recover plans that need attention.
+      <a href="docs/showcase/images/17-account-modes.png"><img src="docs/showcase/images/17-account-modes.png" alt="Founder and YC Admin account modes"></a>
+      <strong>Use the product as a founder or an organizer.</strong><br>
+      Founder mode focuses on discovery and export. YC Admin mode unlocks saved plans and dinner matching.
     </td>
     <td width="50%">
-      <a href="docs/showcase/images/07-dinner-configuration.png"><img src="docs/showcase/images/07-dinner-configuration.png" alt="Dinner setup with dimensions and weights"></a>
-      <strong>Configure the matching objective.</strong><br>
-      Select a cohort, table shape, dimensions, rules, and weights before optimization.
+      <a href="docs/showcase/images/06-seating-plans-populated.png"><img src="docs/showcase/images/06-seating-plans-populated.png" alt="Saved seating plans populated with synthetic demo data"></a>
+      <strong>Explore safely with Demo data.</strong><br>
+      The public site is read-only and uses 160 fictitious founders plus sample seating history.
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <a href="docs/showcase/images/09-tables.png"><img src="docs/showcase/images/09-tables.png" alt="Optimized seating tables workspace"></a>
-      <strong>Review every seat placement.</strong><br>
-      Scan continuous compact tables, thresholds, locks, and below-threshold seats.
+      <a href="docs/showcase/images/10-analysis.png"><img src="docs/showcase/images/10-analysis.png" alt="Seating arrangement analysis with objectives and weakest placements"></a>
+      <strong>Analyze the seating arrangement.</strong><br>
+      Review objective performance, weak placements, score distribution, role mix, and recommended improvements.
     </td>
     <td width="50%">
-      <a href="docs/showcase/images/14-web-evidence.png"><img src="docs/showcase/images/14-web-evidence.png" alt="Top web results evidence drawer"></a>
-      <strong>Check the evidence behind a profile.</strong><br>
-      Open recent web results without leaving the founder workflow.
+      <a href="docs/showcase/images/15-ai-provider.png"><img src="docs/showcase/images/15-ai-provider.png" alt="Optional AI provider integration and credential boundary"></a>
+      <strong>Add AI without making it a dependency.</strong><br>
+      AI can interpret searches, suggest criteria, rerank results, and gather cited evidence; deterministic search and matching still work without it.
     </td>
   </tr>
 </table>
